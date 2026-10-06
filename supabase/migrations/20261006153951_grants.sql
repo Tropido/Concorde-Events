@@ -18,7 +18,7 @@ grant usage on schema private to anon, authenticated, service_role;
 -- Public catalogue.
 grant select on public.categories, public.products, public.product_stock,
   public.product_prices, public.fx_rates, public.cms_content to anon, authenticated;
-grant select on public.catalogue_prices to anon, authenticated;
+grant select on public.catalogue_prices, public.current_fx to anon, authenticated;
 
 -- Signed-in users (rows limited by RLS).
 grant select, update on public.profiles to authenticated;

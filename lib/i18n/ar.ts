@@ -1,4 +1,5 @@
 import type { Translations } from "./translations";
+import { adminAr } from "./admin-ar";
 
 // Arabic plural forms: 1, 2 (dual), 3–10, 11+.
 const plural = (n: number, one: string, two: string, few: string, many: string) =>
@@ -378,6 +379,7 @@ export const ar: Translations = {
     tierRetail: "السعر العادي",
     notes: "ملاحظات",
   },
+  admin: adminAr,
   footer: {
     tagline: "تصميم الفعاليات وتأجير الأثاث الفاخر.",
     aboutText: "تقدم كونكورد إيفنتس لمصممي الديكور ومنظمي الحفلات كتالوجاً مميزاً للحفلات والأعراس والمناسبات الخاصة.",

@@ -15,7 +15,7 @@ type ProductRow = {
 };
 type PriceRow = {
   product_id: string; tier: "retail" | "pro"; amount: number; currency: Currency;
-  amount_eur: number | null; amount_tnd: number | null; rate: number | null; rate_source: "provider" | "manual" | null; rate_time: string | null;
+  amount_eur: number | null; amount_tnd: number | null;
 };
 
 function toPrice(row: PriceRow, display: Currency): Price {
@@ -57,13 +57,14 @@ export async function getCatalogue(prefs: Prefs, viewer: Viewer | null, opts: { 
   const productQuery = supabase.from("products").select(PRODUCT_COLUMNS).eq("status", "active")
     .order("featured", { ascending: false }).order("title_fr");
 
-  const [products, stock, prices, categories] = await Promise.all([
+  const [products, stock, prices, categories, rate] = await Promise.all([
     productQuery,
     supabase.from("product_stock").select("product_id, quantity_owned, quantity_maintenance").eq("country", prefs.country),
-    supabase.from("catalogue_prices").select("product_id, tier, amount, currency, amount_eur, amount_tnd, rate, rate_source, rate_time").eq("country", prefs.country),
+    supabase.from("catalogue_prices").select("product_id, tier, amount, currency, amount_eur, amount_tnd").eq("country", prefs.country),
     supabase.from("categories").select("id, slug, name_fr, name_ar, description_fr, description_ar, image_url, display_order").order("display_order"),
+    supabase.from("current_fx").select("rate, source, rate_time").maybeSingle(),
   ]);
-  for (const r of [products, stock, prices, categories]) if (r.error) throw r.error;
+  for (const r of [products, stock, prices, categories, rate]) if (r.error) throw r.error;
 
   const stockBy = new Map<string, number>(
     (stock.data ?? []).map((s) => [s.product_id, s.quantity_owned - s.quantity_maintenance]),
@@ -82,9 +83,8 @@ export async function getCatalogue(prefs: Prefs, viewer: Viewer | null, opts: { 
       return mapProduct(p, prefs, stockBy.get(p.id) ?? 0, row ? toPrice(row, prefs.currency) : null);
     });
 
-  const anyRate = ((prices.data ?? []) as PriceRow[]).find((p) => p.rate);
-  const fx: FxInfo | null = anyRate
-    ? { rate: Number(anyRate.rate), source: anyRate.rate_source!, rateTime: anyRate.rate_time! }
+  const fx: FxInfo | null = rate.data
+    ? { rate: Number(rate.data.rate), source: rate.data.source, rateTime: rate.data.rate_time }
     : null;
 
   const counts = new Map<string, number>();

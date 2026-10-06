@@ -1,5 +1,6 @@
 import type { RequestStatus } from "@/lib/types";
 import type { RangeProblem } from "@/lib/dates";
+import type { AdminTranslations } from "./admin-types";
 import { fr } from "./fr";
 import { ar } from "./ar";
 
@@ -100,6 +101,7 @@ export interface Translations {
     fxNote: (rate: string, source: string, date: string) => string; manualRate: string; providerRate: string;
     notInvoice: string; tierPro: string; tierRetail: string; notes: string;
   };
+  admin: AdminTranslations;
   footer: { tagline: string; aboutText: string; quickLinks: string; legal: string; rights: string; whatsapp: string; proSpace: string; proLogin: string; proRegister: string; proTools: string };
 }
 

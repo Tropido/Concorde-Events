@@ -1,4 +1,5 @@
 import type { Translations } from "./translations";
+import { adminFr } from "./admin-fr";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
@@ -376,6 +377,7 @@ export const fr: Translations = {
     tierRetail: "Tarif standard",
     notes: "Précisions",
   },
+  admin: adminFr,
   footer: {
     tagline: "Architecture événementielle & curation de mobilier haut de gamme.",
     aboutText: "Concorde Events propose aux scénographes, agences et particuliers exigeants un catalogue d'exception pour galas, mariages et réceptions.",

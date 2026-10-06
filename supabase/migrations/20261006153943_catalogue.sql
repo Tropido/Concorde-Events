@@ -149,6 +149,11 @@ select
 from public.product_prices p
 left join lateral private.current_rate() r on true;
 
+-- The effective rate (same rule as conversions), for display and admin screens.
+create view public.current_fx
+with (security_invoker = true) as
+select rate, source, rate_time from private.current_rate();
+
 create trigger touch_products before update on public.products
   for each row execute function private.touch_updated_at();
 create trigger touch_product_stock before update on public.product_stock
