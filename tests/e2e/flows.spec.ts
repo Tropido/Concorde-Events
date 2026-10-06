@@ -89,6 +89,8 @@ test("signup confirmation, password recovery and logout", async ({ page, baseURL
   await expect(page).toHaveURL(/\/account$/);
   await expect(page.getByRole("heading", { name: /Signup E2E/ })).toBeVisible();
   await page.getByRole("button", { name: /se déconnecter/i }).first().click();
+  // Sign-out revokes every session of the user: let it finish before starting recovery.
+  await expect(page.getByRole("link", { name: /^connexion$/i }).first()).toBeVisible();
 
   const rec = await service.auth.admin.generateLink({ type: "recovery", email });
   if (rec.error) throw rec.error;

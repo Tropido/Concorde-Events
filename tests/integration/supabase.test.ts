@@ -8,10 +8,12 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-try {
-  process.loadEnvFile(".env.test.local");
-} catch {
-  // Missing file: suite is skipped below.
+for (const file of [".env.test.local", ".env.local"]) {
+  try {
+    process.loadEnvFile(file);
+  } catch {
+    // Missing file: the suite is skipped below.
+  }
 }
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";

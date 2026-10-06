@@ -16,11 +16,12 @@ async function siteOrigin() {
   return h.get("origin") ?? `${h.get("x-forwarded-proto") ?? "https"}://${h.get("host")}`;
 }
 
-function authError(e: { code?: string; status?: number }): AuthErrorKey {
+function authError(e: { code?: string; status?: number; message?: string }): AuthErrorKey {
   if (e.code === "invalid_credentials") return "invalidCredentials";
   if (e.code === "email_not_confirmed") return "emailNotConfirmed";
   if (e.code === "weak_password") return "weakPassword";
   if (e.status === 429 || e.code?.startsWith("over_")) return "rateLimited";
+  console.error("auth error", e.status, e.code, e.message);
   return "generic";
 }
 

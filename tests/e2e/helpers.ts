@@ -1,5 +1,9 @@
+import net from "node:net";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { expect, type Page } from "@playwright/test";
+
+// Same local-network workaround as the dev server (see playwright.config.ts).
+net.setDefaultAutoSelectFamilyAttemptTimeout(1500);
 
 try {
   process.loadEnvFile(".env.test.local");
