@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { cn } from "@/lib/utils/formatters";
 
 export interface DockProps {
@@ -26,13 +26,18 @@ export interface DockItemProps {
   className?: string;
   children: React.ReactNode;
   onClick?: () => void;
+  "aria-label"?: string;
 }
 
-export function DockItem({ className, children, onClick }: DockItemProps) {
+// Renders a real <button> when it has its own action, so it is reachable by keyboard.
+export function DockItem({ className, children, onClick, "aria-label": label }: DockItemProps) {
   const [hovered, setHovered] = useState(false);
+  const Tag = onClick ? "button" : "div";
 
   return (
-    <div
+    <Tag
+      type={onClick ? "button" : undefined}
+      aria-label={label}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onClick={onClick}
@@ -48,13 +53,13 @@ export function DockItem({ className, children, onClick }: DockItemProps) {
       >
         {children}
       </motion.div>
-    </div>
+    </Tag>
   );
 }
 
 export function DockLabel({ children }: { children: React.ReactNode }) {
   return (
-    <div className="absolute -top-10 left-1/2 -translate-x-1/2 rounded-md bg-neutral-900/90 text-white px-2 py-1 text-[10px] font-medium tracking-wide shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+    <div className="absolute -top-10 left-1/2 -translate-x-1/2 rounded-md bg-neutral-900/90 text-white px-2 py-1 text-[10px] font-medium tracking-wide shadow-md whitespace-nowrap opacity-0 group-hover:opacity-100 group-focus-visible:opacity-100 transition-opacity pointer-events-none">
       {children}
     </div>
   );
