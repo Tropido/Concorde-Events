@@ -1,194 +1,130 @@
 "use client";
 
-import React, { useState } from "react";
-import { FurnitureItem } from "@/lib/types";
-import { calculateRangeAvailability } from "@/lib/utils/availability";
+import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
-import { format, addDays, startOfMonth, endOfMonth, eachDayOfInterval, isBefore, isSameDay, parseISO } from "date-fns";
-import { ChevronLeft, ChevronRight, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
-import { motion } from "framer-motion";
+import { dayNumber, fromDayNumber, todayIn } from "@/lib/dates";
+import { useAvailability } from "@/components/catalogue/use-availability";
+import { cn } from "@/lib/utils/formatters";
 
-interface AvailabilityCalendarProps {
-  item: FurnitureItem;
+interface Props {
+  productId: string;
+  /** Usable stock in this country; days at <= 25% of it are shown as limited. */
+  stock: number;
   startDate: string;
   endDate: string;
   onSelectDates: (start: string, end: string) => void;
 }
 
-export function AvailabilityCalendar({
-  item,
-  startDate,
-  endDate,
-  onSelectDates,
-}: AvailabilityCalendarProps) {
-  const { t, language } = useApp();
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date(2026, 7, 1)); // Default Aug 2026
+const MONDAY = dayNumber("2024-01-01")!; // a known Monday, for weekday labels
 
-  const monthStart = startOfMonth(currentMonth);
-  const monthEnd = endOfMonth(currentMonth);
-  const daysInMonth = eachDayOfInterval({ start: monthStart, end: monthEnd });
+function monthInfo(year: number, month: number) {
+  const first = Date.UTC(year, month, 1) / 86_400_000;
+  const last = Date.UTC(year, month + 1, 0) / 86_400_000;
+  // getUTCDay: Sunday = 0. Weeks start on Monday in France and Tunisia.
+  const offset = (new Date(first * 86_400_000).getUTCDay() + 6) % 7;
+  return { first, last, offset };
+}
 
-  const { minAvailableInPeriod, isAvailableForRange } = calculateRangeAvailability(
-    item,
-    startDate,
-    endDate
+export function AvailabilityCalendar({ productId, stock, startDate, endDate, onSelectDates }: Props) {
+  const { t, language, country } = useApp();
+  const locale = language === "ar" ? "ar-TN" : "fr-FR";
+  const today = dayNumber(todayIn(country))!;
+  const initial = new Date((dayNumber(startDate) ?? today) * 86_400_000);
+  const [view, setView] = useState({ y: initial.getUTCFullYear(), m: initial.getUTCMonth() });
+  const { first, last, offset } = monthInfo(view.y, view.m);
+  const { days, error } = useAvailability(productId, country, fromDayNumber(first), fromDayNumber(last));
+
+  const s = dayNumber(startDate);
+  const e = dayNumber(endDate);
+  const weekdays = useMemo(
+    () => Array.from({ length: 7 }, (_, i) =>
+      new Intl.DateTimeFormat(locale, { weekday: "short", timeZone: "UTC" }).format(new Date((MONDAY + i) * 86_400_000))),
+    [locale],
+  );
+  const monthLabel = new Intl.DateTimeFormat(locale, { month: "long", year: "numeric", timeZone: "UTC" }).format(
+    new Date(first * 86_400_000),
   );
 
-  const [tempStart, setTempStart] = useState<string | null>(null);
-
-  const handleDateClick = (dateStr: string) => {
-    if (!tempStart) {
-      setTempStart(dateStr);
-      onSelectDates(dateStr, dateStr);
-    } else {
-      if (isBefore(parseISO(dateStr), parseISO(tempStart))) {
-        setTempStart(dateStr);
-        onSelectDates(dateStr, dateStr);
-      } else {
-        onSelectDates(tempStart, dateStr);
-        setTempStart(null);
-      }
-    }
+  const pick = (n: number) => {
+    const iso = fromDayNumber(n);
+    // First click (or a click before the current start) starts a new range; the next sets the end.
+    if (s === null || e !== null || n <= s) onSelectDates(iso, "");
+    else onSelectDates(startDate, iso);
   };
 
-  const isSelectedRange = (dateStr: string) => {
-    const d = parseISO(dateStr);
-    const s = parseISO(startDate);
-    const e = parseISO(endDate);
-    return (isSameDay(d, s) || isSameDay(d, e) || (d > s && d < e));
-  };
-
-  const dayHeaders = language === "ar"
-    ? ["أحد", "إثنين", "ثلاثاء", "أربعاء", "خميس", "جمعة", "سبت"]
-    : ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
+  const shift = (delta: number) =>
+    setView(({ y, m }) => ({ y: m + delta < 0 ? y - 1 : m + delta > 11 ? y + 1 : y, m: (m + delta + 12) % 12 }));
 
   return (
-    <div className="bg-[#fcf8f4]/90 dark:bg-[#1a1511]/90 backdrop-blur-xl border border-tan/40 dark:border-fadedCopper/40 p-6 rounded-3xl shadow-xl space-y-6 text-coffeeBean dark:text-almondCream">
-      {/* Header Controls */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h3 className="text-lg font-bold flex items-center gap-2 font-serif">
-            <span>{t.scheduling.title}</span>
-            <span className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full bg-tan/20 text-toffeeBrown dark:text-tan border border-tan/30">
-              {t.scheduling.badge}
-            </span>
-          </h3>
-          <p className="text-xs text-coffeeBean/70 dark:text-almondCream/70 mt-1">
-            {t.scheduling.totalOwned}: <strong className="text-coffeeBean dark:text-white">{item.quantity_owned}</strong>
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setCurrentMonth(addDays(monthStart, -20))}
-            className="p-2 rounded-xl bg-desertSand/30 dark:bg-darkSurface hover:bg-desertSand/50 transition-colors text-coffeeBean dark:text-almondCream apple-press"
-          >
-            <ChevronLeft className="w-4 h-4" />
-          </button>
-          <span className="text-xs sm:text-sm font-bold min-w-[110px] text-center">
-            {format(currentMonth, "MMMM yyyy")}
-          </span>
-          <button
-            type="button"
-            onClick={() => setCurrentMonth(addDays(monthEnd, 5))}
-            className="p-2 rounded-xl bg-desertSand/30 dark:bg-darkSurface hover:bg-desertSand/50 transition-colors text-coffeeBean dark:text-almondCream apple-press"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+    <div className="space-y-4 text-coffeeBean dark:text-almondCream">
+      <div className="flex items-center justify-between gap-2">
+        <button type="button" onClick={() => shift(-1)} aria-label={t.calendar.prev}
+          className="p-2 rounded-xl bg-desertSand/30 dark:bg-darkSurface hover:bg-desertSand/50 apple-press">
+          <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
+        </button>
+        <span className="text-sm font-bold capitalize" aria-live="polite">{monthLabel}</span>
+        <button type="button" onClick={() => shift(1)} aria-label={t.calendar.next}
+          className="p-2 rounded-xl bg-desertSand/30 dark:bg-darkSurface hover:bg-desertSand/50 apple-press">
+          <ChevronRight className="w-4 h-4 rtl:rotate-180" />
+        </button>
       </div>
 
-      {/* Legend Indicators */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 p-3 rounded-2xl bg-desertSand/20 dark:bg-darkSurface text-xs border border-tan/25">
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-          <span className="font-medium text-[11px]">{t.scheduling.legendAvailable}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-toffeeBrown"></span>
-          <span className="font-medium text-[11px]">{t.scheduling.legendSelected}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
-          <span className="font-medium text-[11px]">{t.scheduling.legendLimited}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
-          <span className="font-medium text-[11px]">Complet</span>
-        </div>
-      </div>
+      <p className="text-[11px] text-coffeeBean/70 dark:text-almondCream/70">{t.calendar.hint}</p>
+      {error && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{t.common.errorGeneric}</p>}
 
-      {/* Days Grid */}
-      <div className="grid grid-cols-7 gap-2 text-center">
-        {dayHeaders.map((day) => (
-          <div key={day} className="text-[11px] font-bold text-coffeeBean/60 dark:text-tan/70 uppercase tracking-wider py-1">
-            {day}
-          </div>
+      <div className="grid grid-cols-7 gap-1.5 text-center" role="grid">
+        {weekdays.map((w) => (
+          <div key={w} className="text-[10px] font-bold uppercase text-coffeeBean/60 dark:text-tan/70 py-1">{w}</div>
         ))}
-
-        {daysInMonth.map((day) => {
-          const dateStr = format(day, "yyyy-MM-dd");
-          const calc = calculateRangeAvailability(item, dateStr, dateStr);
-          const avail = calc.minAvailableInPeriod;
-          const status = calc.dailyBreakdown[0]?.status;
-
-          const isSelected = isSelectedRange(dateStr);
-
-          let bgClass = "bg-tan/15 text-coffeeBean dark:text-almondCream border-tan/30 hover:border-toffeeBrown";
-          if (status === "limited") {
-            bgClass = "bg-amber-500/10 text-amber-800 dark:text-amber-300 border-amber-500/30 hover:border-amber-500";
-          } else if (status === "fully_booked") {
-            bgClass = "bg-rose-500/10 text-rose-500 dark:text-rose-400 border-rose-500/30 cursor-not-allowed opacity-60";
-          } else if (status === "unavailable") {
-            bgClass = "bg-neutral-500/10 text-neutral-400 border-neutral-300 dark:border-zinc-700 cursor-not-allowed opacity-40";
-          }
-
-          if (isSelected) {
-            bgClass = "bg-toffeeBrown text-white font-bold border-tan shadow-lg shadow-toffeeBrown/30 scale-105 z-10";
-          }
-
+        {Array.from({ length: offset }, (_, i) => <div key={`pad-${i}`} aria-hidden />)}
+        {Array.from({ length: last - first + 1 }, (_, i) => {
+          const n = first + i;
+          const iso = fromDayNumber(n);
+          const avail = days?.get(iso);
+          const past = n < today;
+          const full = avail === 0;
+          const limited = avail !== undefined && avail > 0 && avail <= Math.ceil(stock * 0.25);
+          const selected = s !== null && (n === s || (e !== null && n >= s && n <= e));
           return (
-            <motion.button
-              key={dateStr}
+            <button
+              key={iso}
               type="button"
-              whileHover={{ scale: status !== "fully_booked" && status !== "unavailable" ? 1.06 : 1 }}
-              onClick={() => status !== "fully_booked" && status !== "unavailable" && handleDateClick(dateStr)}
-              className={`flex flex-col items-center justify-center p-2 rounded-2xl border transition-all min-h-[56px] apple-press ${bgClass}`}
+              disabled={past || full}
+              onClick={() => pick(n)}
+              aria-pressed={selected}
+              aria-label={new Intl.DateTimeFormat(locale, { dateStyle: "full", timeZone: "UTC" }).format(new Date(n * 86_400_000))}
+              className={cn(
+                "flex flex-col items-center justify-center rounded-xl border min-h-[48px] text-xs transition-colors",
+                "border-tan/30 bg-tan/10 hover:border-toffeeBrown disabled:cursor-not-allowed",
+                limited && "bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-200",
+                full && "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300",
+                past && "opacity-35",
+                selected && "bg-toffeeBrown border-tan text-white font-bold",
+              )}
             >
-              <span className="text-xs font-bold">{format(day, "d")}</span>
-              <span className="text-[9px] opacity-85">{avail > 0 ? `${avail}` : "—"}</span>
-            </motion.button>
+              <span className="font-bold">{new Intl.DateTimeFormat(locale, { day: "numeric", timeZone: "UTC" }).format(new Date(n * 86_400_000))}</span>
+              <span className="text-[9px] opacity-80">{past || avail === undefined ? " " : avail}</span>
+            </button>
           );
         })}
       </div>
 
-      {/* Live Selection Summary Banner (Apple Glass Pill) */}
-      <div className="p-4 rounded-2xl bg-coffeeBean text-almondCream dark:bg-darkSurface border border-fadedCopper/30 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <div>
-          <div className="text-[11px] text-tan uppercase tracking-wider font-semibold">
-            {t.scheduling.legendSelected} (
-            {Math.max(1, Math.ceil((parseISO(endDate).getTime() - parseISO(startDate).getTime()) / (1000 * 60 * 60 * 24)))} {language === "ar" ? "أيام" : "Jours"})
-          </div>
-          <div className="text-sm font-bold text-white mt-0.5 font-serif">
-            {format(parseISO(startDate), "d MMM yyyy")} — {format(parseISO(endDate), "d MMM yyyy")}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {isAvailableForRange ? (
-            <div className="flex items-center gap-2 text-emerald-300 text-xs font-semibold px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30">
-              <CheckCircle2 className="w-4 h-4" />
-              <span>{t.scheduling.unitsAvailable}: {minAvailableInPeriod}</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-2 text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-full bg-rose-500/15 border border-rose-500/30">
-              <XCircle className="w-4 h-4" />
-              <span>Complet pour ces dates</span>
-            </div>
-          )}
-        </div>
+      <div className="flex flex-wrap gap-3 text-[11px]">
+        <Legend className="bg-tan/40" label={t.scheduling.legendAvailable} />
+        <Legend className="bg-amber-500" label={t.scheduling.legendLimited} />
+        <Legend className="bg-rose-500" label={t.scheduling.legendFull} />
+        <Legend className="bg-toffeeBrown" label={t.scheduling.legendSelected} />
       </div>
     </div>
+  );
+}
+
+function Legend({ className, label }: { className: string; label: string }) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span className={cn("w-2.5 h-2.5 rounded-full", className)} aria-hidden />
+      {label}
+    </span>
   );
 }

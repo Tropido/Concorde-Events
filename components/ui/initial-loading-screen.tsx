@@ -5,18 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Sparkles } from "lucide-react";
 
 export function InitialLoadingScreen() {
-  const [loading, setLoading] = useState(true);
+  // Starts hidden so returning visitors never see a flash; shown once per session otherwise.
+  const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
     // Only show on initial session load
     try {
-      const hasLoaded = sessionStorage.getItem("concorde:initial_loaded");
-      if (hasLoaded) {
-        setLoading(false);
-        return;
-      }
-    } catch (e) {}
+      if (sessionStorage.getItem("concorde:initial_loaded") || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    } catch {
+      return;
+    }
+    setLoading(true);
 
     // Animate progress smoothly
     const interval = setInterval(() => {
@@ -27,7 +27,9 @@ export function InitialLoadingScreen() {
             setLoading(false);
             try {
               sessionStorage.setItem("concorde:initial_loaded", "true");
-            } catch (e) {}
+            } catch {
+              // ignore
+            }
           }, 350);
           return 100;
         }
