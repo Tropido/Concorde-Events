@@ -82,22 +82,18 @@ export function InitialLoadingScreen() {
                 CONCORDE EVENTS
               </h2>
               <p className="text-[10px] sm:text-xs font-semibold uppercase tracking-[0.3em] text-tan/80">
-                Paris • Tunis • Haute Scénographie
+                Paris • Tunis
               </p>
             </div>
 
-            {/* Smooth Progress Indicator */}
-            <div className="w-48 sm:w-56 space-y-2 pt-4">
+            {/* Decorative intro bar (not a real progress measure, so no label or percentage). */}
+            <div aria-hidden className="w-48 sm:w-56 pt-4">
               <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden">
                 <motion.div
                   className="h-full bg-gradient-to-r from-tan via-toffeeBrown to-fadedCopper rounded-full"
                   style={{ width: `${Math.min(100, progress)}%` }}
                   transition={{ ease: "easeOut" }}
                 />
-              </div>
-              <div className="flex justify-between text-[10px] font-mono text-tan/60 uppercase tracking-wider">
-                <span>Synchronisation</span>
-                <span>{Math.min(100, progress)}%</span>
               </div>
             </div>
           </motion.div>
