@@ -98,7 +98,7 @@ The capacity invariant is one deferred constraint trigger with a per-country adv
 - [x] Admin back office, FX cron
 - [x] Security review of the full branch; findings fixed with regression tests
 - [x] FR/AR dictionaries with type-enforced parity, RTL logical classes, native dialogs, reduced motion, image optimization
-- [ ] Apply migrations to the TEST project and run `test:integration` + `test:e2e` (needs `.env.local` / `.env.test.local`)
+- [x] Migrations applied to the TEST project; `test:integration` 5/5, `test:e2e` 34/34, Supabase advisors clean (2026-10-06)
 - [ ] Vercel Preview env → TEST project; Supabase Auth URLs and templates; verify Preview
 - [ ] Production project, SMTP, first admin, approved catalogue → merge and verify production
 
