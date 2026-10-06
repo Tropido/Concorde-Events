@@ -96,6 +96,7 @@ The capacity invariant is one deferred constraint trigger with a per-country adv
 - [x] Public site on real data: availability, draft lines, persisted requests, contact
 - [x] Client area, quote documents (escaped rendering test)
 - [x] Admin back office, FX cron
+- [x] Security review of the full branch; findings fixed with regression tests
 - [x] FR/AR dictionaries with type-enforced parity, RTL logical classes, native dialogs, reduced motion, image optimization
 - [ ] Apply migrations to the TEST project and run `test:integration` + `test:e2e` (needs `.env.local` / `.env.test.local`)
 - [ ] Vercel Preview env → TEST project; Supabase Auth URLs and templates; verify Preview
