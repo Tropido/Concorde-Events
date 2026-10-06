@@ -60,6 +60,7 @@ export const fr: Translations = {
     unavailableTitle: "Service momentanément indisponible",
     unavailableText: "Nous ne pouvons pas charger ces informations pour le moment. Vos données sont intactes ; merci de réessayer plus tard ou de nous écrire sur WhatsApp.",
     noData: "Aucune donnée pour le moment.",
+    skipToContent: "Aller au contenu",
   },
   requestStatus: {
     submitted: "Envoyée",

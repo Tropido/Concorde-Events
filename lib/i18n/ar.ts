@@ -62,6 +62,7 @@ export const ar: Translations = {
     unavailableTitle: "الخدمة غير متاحة مؤقتاً",
     unavailableText: "تعذر تحميل هذه المعلومات حالياً. بياناتك محفوظة؛ يرجى المحاولة لاحقاً أو مراسلتنا عبر واتساب.",
     noData: "لا توجد بيانات حالياً.",
+    skipToContent: "الانتقال إلى المحتوى",
   },
   requestStatus: {
     submitted: "مُرسل",

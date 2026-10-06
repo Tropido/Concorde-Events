@@ -20,7 +20,7 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   if (!data) notFound();
 
   return (
-    <main className="flex-1 bg-[#ede0d4] dark:bg-[#120e0b] print:bg-white py-8 px-3 sm:px-6">
+    <main id="main" className="flex-1 bg-[#ede0d4] dark:bg-[#120e0b] print:bg-white py-8 px-3 sm:px-6">
       <div className="max-w-4xl mx-auto space-y-4">
         <div className="flex justify-end print:hidden">
           <PrintButton label={t.quote.print} />

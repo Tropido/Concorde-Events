@@ -29,7 +29,7 @@ export interface Translations {
     priceOnRequest: string; conversionUnavailable: string; ratesBy: string;
     rateAsOf: (date: string) => string; errorGeneric: string; retry: string;
     notFoundTitle: string; notFoundText: string; backHome: string;
-    unavailableTitle: string; unavailableText: string; noData: string;
+    unavailableTitle: string; unavailableText: string; noData: string; skipToContent: string;
   };
   requestStatus: Record<RequestStatus, string>;
   hero: {

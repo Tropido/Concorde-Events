@@ -1,358 +1,109 @@
-# CONCORDE EVENTS — PLATFORM SPECIFICATION & ARCHITECTURE
+# Concorde Events: specification and status
 
-## 1. System Architecture
-Concorde Events is an enterprise-grade digital rental catalogue and event furniture management platform engineered with Next.js 15 App Router, TypeScript, Tailwind CSS, Framer Motion, and Supabase PostgreSQL.
+This file describes the implemented system. It replaces the original prototype spec, which described mock data, a role simulator and a mock fallback. None of those exist any more.
 
-```
-+-----------------------------------------------------------------------------------+
-|                                 CLIENT LAYER                                      |
-|  +-----------------------------------------------------------------------------+  |
-|  | Modern Responsive Web UI (Next.js 15 App Router / Framer Motion / UI UX Pro)  |  |
-|  | - Luxury Catalogue & Quick Preview Modal                                   |  |
-|  | - Airbnb-Style Daily Inventory Availability Calendar                         |  |
-|  | - Role-Based Responsive Dashboards (Customer / Pro / Admin / Manager)      |  |
-|  | - Floating Tinted Glass macOS Dock Navigation & Fluid Menu                  |  |
-|  | - Direct WhatsApp Quotation Generator & PDF Download Engine                 |  |
-|  +-----------------------------------------------------------------------------+  |
-+-----------------------------------------------------------------------------------+
-                                       |
-                                       v
-+-----------------------------------------------------------------------------------+
-|                                APPLICATION LAYER                                  |
-|  +-----------------------+ +-----------------------+ +-------------------------+  |
-|  |   Server Actions &    | |  Middleware & Route   | |   State Management &    |  |
-|  |    API Controllers    | |   Protection Engine   | |   Mock/Live Context     |  |
-|  +-----------------------+ +-----------------------+ +-------------------------+  |
-+-----------------------------------------------------------------------------------+
-                                       |
-                                       v
-+-----------------------------------------------------------------------------------+
-|                                 DATA & PERSISTENCE                                |
-|  +---------------------------------------+ +-----------------------------------+  |
-|  |  Supabase Client & Edge Integration   | | PostgreSQL Schema with RLS        |  |
-|  |  (Tables, Views, RPC, Triggers)       | | (Users, Inventory, Rentals, etc)|  |
-|  +---------------------------------------+ +-----------------------------------+  |
-+-----------------------------------------------------------------------------------+
-```
+## Structure
 
----
+| Area | Routes | Notes |
+|---|---|---|
+| Public | `/`, `/catalogue`, `/catalogue/[slug]`, `/about`, `/contact` | FR/AR, stock-country and currency selectors (cookies, rendered on the server) |
+| Auth | `/login`, `/register`, `/forgot-password`, `/reset-password`, `/auth/confirm` | One Supabase identity for clients and staff |
+| Client | `/account`, `/account/favourites`, `/account/messages`, `/account/tools`, `/account/profile` | Pending, rejected and suspended accounts each get their own screen |
+| Quote | `/quote/[id]` | Frozen snapshot; browser print / save as PDF. It is **not** an invoice. |
+| Admin | `/admin/login`, `/admin`, `/admin/{requests,inbox,inventory,rentals,clients,analytics,cms,settings}` | Own layout. Each page and server action re-checks the role. |
+| Legacy | `/dashboard` | Redirects to `/account` or `/admin` |
 
-## 2. Directory & Folder Structure
+Authorization works in layers:
 
-```
-c:\Users\CEO\Desktop\Concorde Events\
-├── app/
-│   ├── (auth)/
-│   │   ├── login/
-│   │   ├── register/
-│   │   ├── forgot-password/
-│   │   └── layout.tsx
-│   ├── (dashboard)/
-│   │   ├── dashboard/
-│   │   │   ├── admin/
-│   │   │   │   ├── inventory/
-│   │   │   │   ├── users/
-│   │   │   │   ├── requests/
-│   │   │   │   ├── analytics/
-│   │   │   │   ├── rewards/
-│   │   │   │   └── cms/
-│   │   │   ├── professional/
-│   │   │   │   ├── calculator/
-│   │   │   │   ├── quotations/
-│   │   │   │   ├── history/
-│   │   │   │   └── rewards/
-│   │   │   ├── customer/
-│   │   │   │   ├── requests/
-│   │   │   │   └── favorites/
-│   │   │   └── page.tsx
-│   │   └── layout.tsx
-│   ├── (marketing)/
-│   │   ├── catalogue/
-│   │   │   ├── [slug]/
-│   │   │   │   └── page.tsx
-│   │   │   └── page.tsx
-│   │   ├── about/
-│   │   │   └── page.tsx
-│   │   ├── contact/
-│   │   │   └── page.tsx
-│   │   ├── page.tsx
-│   │   └── layout.tsx
-│   ├── api/
-│   │   ├── export-quotation/
-│   │   │   └── route.ts
-│   │   └── whatsapp/
-│   │       └── route.ts
-│   ├── globals.css
-│   ├── layout.tsx
-│   ├── loading.tsx
-│   └── not-found.tsx
-├── components/
-│   ├── ui/
-│   │   ├── container-scroll-animation.tsx
-│   │   ├── fluid-menu.tsx
-│   │   ├── dock.tsx
-│   │   ├── calendar.tsx
-│   │   ├── button.tsx
-│   │   ├── modal.tsx
-│   │   ├── badge.tsx
-│   │   └── card.tsx
-│   ├── navigation/
-│   │   ├── navbar.tsx
-│   │   ├── floating-dock.tsx
-│   │   └── footer.tsx
-│   ├── catalogue/
-│   │   ├── product-card.tsx
-│   │   ├── product-grid.tsx
-│   │   ├── product-filters.tsx
-│   │   ├── quick-preview-modal.tsx
-│   │   └── availability-calendar.tsx
-│   ├── dashboard/
-│   │   ├── sidebar.tsx
-│   │   ├── stats-card.tsx
-│   │   ├── inventory-table.tsx
-│   │   ├── requests-table.tsx
-│   │   ├── user-approvals-table.tsx
-│   │   └── analytics-charts.tsx
-│   ├── professional/
-│   │   ├── rental-calculator.tsx
-│   │   ├── quotation-builder.tsx
-│   │   └── reward-progress.tsx
-│   └── providers/
-│       ├── auth-provider.tsx
-│       ├── theme-provider.tsx
-│       └── app-provider.tsx
-├── lib/
-│   ├── supabase/
-│   │   ├── client.ts
-│   │   ├── server.ts
-│   │   └── schema.sql
-│   ├── data/
-│   │   ├── mock-db.ts
-│   │   └── sample-furniture.ts
-│   ├── utils/
-│   │   ├── availability.ts
-│   │   ├── formatters.ts
-│   │   ├── whatsapp.ts
-│   │   └── pdf.ts
-│   ├── validators/
-│   │   ├── auth.ts
-│   │   ├── furniture.ts
-│   │   └── rental-request.ts
-│   └── types/
-│       └── index.ts
-├── public/
-│   └── assets/
-└── middleware.ts
-```
+1. Postgres RLS and grants. The final grants migration is fail-closed.
+2. Database guard triggers on profiles, requests, lines and quotes.
+3. Server checks (`requireStaff` / `assertStaff`).
 
----
+The middleware only refreshes sessions and redirects anonymous visitors.
 
-## 3. PostgreSQL Database Schema
+## Permission matrix
 
-```sql
--- ENUMS
-CREATE TYPE user_role AS ENUM ('visitor', 'customer', 'professional', 'editor', 'manager', 'admin', 'super_admin');
-CREATE TYPE account_status AS ENUM ('pending', 'approved', 'rejected', 'suspended');
-CREATE TYPE request_status AS ENUM ('submitted', 'under_review', 'validated', 'confirmed', 'completed', 'cancelled');
-CREATE TYPE pro_tier AS ENUM ('bronze', 'silver', 'gold', 'diamond', 'elite');
+| Capability | Visitor | Customer | Pending pro | Approved pro | Editor | Manager | Admin |
+|---|---|---|---|---|---|---|---|
+| Browse catalogue, retail prices | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Pro prices, margin calculator | | | | ✓ | | ✓ (prices) | ✓ (prices) |
+| Submit request / contact form | ✓ | ✓ | ✓ (retail tier) | ✓ (pro tier) | ✓ | ✓ | ✓ |
+| Own requests, quotes, messages, favourites | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| CMS (homepage content) | | | | | ✓ | ✓ | ✓ |
+| Requests, quotes, rentals, inbox, stock, products | | | | | | ✓ | ✓ |
+| Approve / reject / suspend clients | | | | | | ✓ (not staff accounts) | ✓ |
+| Prices, roles, FX override | | | | | | | ✓ |
 
--- USERS & PROFILES TABLE
-CREATE TABLE profiles (
-  id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-  email TEXT NOT NULL UNIQUE,
-  full_name TEXT NOT NULL,
-  company_name TEXT,
-  phone_number TEXT NOT NULL,
-  vat_number TEXT,
-  role user_role NOT NULL DEFAULT 'customer',
-  status account_status NOT NULL DEFAULT 'pending',
-  reward_points INTEGER DEFAULT 0,
-  pro_tier pro_tier DEFAULT 'bronze',
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+Staff notes (`client_notes`) are never readable by the client they describe. The last approved admin cannot be demoted.
 
--- CATEGORIES TABLE
-CREATE TABLE categories (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT,
-  image_url TEXT,
-  display_order INTEGER DEFAULT 0,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+## Business rules
 
--- FURNITURE INVENTORY TABLE
-CREATE TABLE furniture (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  category_id UUID REFERENCES categories(id) ON DELETE SET NULL,
-  title TEXT NOT NULL,
-  slug TEXT NOT NULL UNIQUE,
-  description TEXT NOT NULL,
-  dimensions JSONB NOT NULL, -- { width: 120, height: 80, depth: 60, unit: "cm" }
-  color TEXT NOT NULL,
-  material TEXT NOT NULL,
-  tags TEXT[] DEFAULT '{}',
-  rental_price NUMERIC(10, 2) NOT NULL, -- Visible only to Pro / Admin
-  professional_price NUMERIC(10, 2) NOT NULL, -- Pro tier discount price
-  quantity_owned INTEGER NOT NULL DEFAULT 1,
-  quantity_reserved INTEGER NOT NULL DEFAULT 0,
-  minimum_rental_days INTEGER NOT NULL DEFAULT 1,
-  featured BOOLEAN DEFAULT FALSE,
-  status TEXT NOT NULL DEFAULT 'active', -- active, maintenance, retired
-  images TEXT[] NOT NULL DEFAULT '{}',
-  meta_title TEXT,
-  meta_description TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+### Confirmed by the owner
 
--- DAILY INVENTORY AVAILABILITY OVERRIDES
-CREATE TABLE daily_availability (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  furniture_id UUID NOT NULL REFERENCES furniture(id) ON DELETE CASCADE,
-  date DATE NOT NULL,
-  quantity_booked INTEGER NOT NULL DEFAULT 0,
-  quantity_blocked INTEGER NOT NULL DEFAULT 0,
-  notes TEXT,
-  UNIQUE(furniture_id, date)
-);
+- France and Tunisia have **separate stock**. The stock country selects the stock and the base price; the currency only changes how that price is displayed.
+- Rentals are billed in **nights**: calendar-date difference, so 15 → 18 is 3 nights.
+- **No same-day rentals.** Stock is occupied from the start date **through the end date** (the return day is blocked).
+- Base prices are fixed: **TND for Tunisia, EUR for France**. The other currency is derived from the EUR→TND rate: EUR→TND multiplies, TND→EUR divides. The source price is never overwritten.
+- Issued quotes freeze the country, tier, source and converted prices, rate and provenance, dates, line totals and total.
+- Stock is held from **quote validation** (`validated`, while the quote is valid), then while `confirmed` and `dispatched`.
+- **Retail prices are public.** Pro prices are visible only to approved pros and staff, enforced by RLS on separate price rows.
+- Customers are active once their email is confirmed. Professionals stay pending until staff approve them.
+- WhatsApp: `wa.me/21623040424`. There is no Cloud API. The app records "client opened the link" separately from "staff confirmed contact".
 
--- RENTAL REQUESTS TABLE
-CREATE TABLE rental_requests (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  reference_code TEXT UNIQUE NOT NULL,
-  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
-  customer_name TEXT NOT NULL,
-  customer_phone TEXT NOT NULL,
-  customer_email TEXT NOT NULL,
-  company_name TEXT,
-  start_date DATE NOT NULL,
-  end_date DATE NOT NULL,
-  total_days INTEGER NOT NULL,
-  status request_status NOT NULL DEFAULT 'submitted',
-  items JSONB NOT NULL, -- Array of { furniture_id, quantity, unit_price }
-  estimated_subtotal NUMERIC(10, 2) DEFAULT 0.00,
-  notes TEXT,
-  whatsapp_sent BOOLEAN DEFAULT FALSE,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+### Provisional (to confirm with the client)
 
--- REWARDS & BADGES
-CREATE TABLE reward_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
-  points_earned INTEGER NOT NULL,
-  reason TEXT NOT NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+Each value is a constant in SQL or TypeScript.
 
--- SITE CMS SETTINGS
-CREATE TABLE cms_content (
-  id TEXT PRIMARY KEY, -- 'homepage', 'faq', 'testimonials'
-  content JSONB NOT NULL,
-  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
+| Rule | Current value | Where |
+|---|---|---|
+| Quote validity | 14 days (staff can choose 1–90) | `issue_quote` default |
+| FX provider | open.er-api.com, daily, with attribution | `lib/fx.ts` |
+| FX staleness | 72 h, measured from the provider's own timestamp | `private.current_rate()` |
+| Manual FX override | Admin only, with an expiry, audited | `fx_rates` |
+| FX safety | Refuse a jump of more than 10%; rate must be between 1 and 10 | `lib/fx.ts`, `fx_rates` check |
+| Rounding | Convert the unit price, round it (EUR 2 dp, TND 3 dp), then multiply by quantity × nights; total = Σ lines | `private.convert()`, `issue_quote` |
+| Guest requests | Allowed; 5 per email per hour, plus a honeypot | `submit_request` |
+| Turnaround buffer | None beyond the blocked return day | capacity trigger |
 
--- AUDIT LOGS
-CREATE TABLE audit_logs (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
-  action TEXT NOT NULL,
-  details JSONB,
-  ip_address TEXT,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
-);
-```
+### Not in scope or deferred
 
----
+- **Invoices:** quotes are explicitly labelled as not invoices. Issuing invoices needs the legal identity, tax, numbering and deposit rules.
+- Reward points, benefits and pro tiers. The prototype UI had them, but there is no business rule.
+- WhatsApp Cloud API.
+- URL-based locale (`/ar/...`) for SEO.
+- Per-IP throttling or bot detection.
 
-## 4. Entity Relationship Diagram (Text Schema)
+## Request status machine
 
-```
-[ PROFILES ]
-    | 1
-    | 
-    +---> < RENTAL_REQUESTS > (1:N) --- contains JSONB ---> [ FURNITURE ]
-    | 
-    +---> < REWARD_LOGS > (1:N)
-    | 
-    +---> < AUDIT_LOGS > (1:N)
+`submitted → validated → confirmed → dispatched → completed`
 
-[ CATEGORIES ]
-    | 1
-    | N
-[ FURNITURE ] <1---N> [ DAILY_AVAILABILITY ]
+Exits: `rejected`, and `cancelled` from submitted, validated or confirmed.
 
-[ CMS_CONTENT ] (Standalone Config)
-```
+- `validated` is set only by `issue_quote`.
+- `completed` is set only by `return_request`, which is idempotent and sends damaged units to maintenance.
+- Rescheduling a validated request returns it to `submitted`; the quote must be re-issued.
+- Confirming requires an unexpired quote.
+- A client can cancel their own submitted or validated request.
 
----
+The capacity invariant is one deferred constraint trigger with a per-country advisory lock. For every day, committed units ≤ owned − maintenance. Damage is always recorded, and resulting conflicts are listed on `/admin`.
 
-## 5. User Flows
+## Progress checklist
 
-### Visitor Flow
-1. Landing Page -> High impact visual showcase -> Catalogue.
-2. Filter/Search items by Category, Material, Color, Dates.
-3. Open Item Detail or Quick Preview Modal -> Select Dates -> Airbnb Availability Calendar checks daily inventory.
-4. Add to Rental Request Draft -> Click "Request Quotation".
-5. Enter Contact details -> Redirected to WhatsApp with formatted prefilled text OR prompted to register/login.
+- [x] Tooling: Next 15.5.27 (security backport), ESLint, Vitest, Playwright, Supabase CLI
+- [x] Schema, RLS, grants, triggers and RPCs (5 migrations) and dev seed
+- [x] DB logic tests (PGlite): permissions, capacity, status machine, returns, pricing/FX
+- [x] Auth (signup / confirm / login / reset / logout), middleware, server guards
+- [x] Public site on real data: availability, draft lines, persisted requests, contact
+- [x] Client area, quote documents (escaped rendering test)
+- [x] Admin back office, FX cron
+- [x] FR/AR dictionaries with type-enforced parity, RTL logical classes, native dialogs, reduced motion, image optimization
+- [ ] Apply migrations to the TEST project and run `test:integration` + `test:e2e` (needs `.env.local` / `.env.test.local`)
+- [ ] Vercel Preview env → TEST project; Supabase Auth URLs and templates; verify Preview
+- [ ] Production project, SMTP, first admin, approved catalogue → merge and verify production
 
-### Professional User Flow
-1. Login with credentials -> System validates account status = `approved` & role = `professional`.
-2. Access Professional Portal: view wholesale prices, Pro tier discount badge (e.g. Gold Tier - 15% off).
-3. Rental Calculator: Batch select multiple furniture items, calculate event duration & multi-item availability.
-4. Generate & Download formal PDF Quotation instantly.
-5. Track earned reward points and progress towards next tier (e.g., Gold to Diamond).
+## Known limitations
 
-### Admin / Manager Flow
-1. Login -> System validates role (`admin`, `manager`, `super_admin`).
-2. Dashboard Overview: Metrics (Today rented, expected returns, total available, revenue forecast).
-3. User Approval Queue: Review pending Pro/Customer registrations -> Approve/Reject with 1-click.
-4. Inventory Management: Add/edit furniture items, daily stock overrides, maintenance blocks.
-5. CMS Management: Live update Homepage hero text, testimonials, featured items without deployment.
-
----
-
-## 6. State Management & Hybrid Fallback Strategy
-- **Zustand / React Context**: Unified local application state for:
-  - Active Rental Basket (items, quantities, selected date ranges).
-  - Selected User Role Switcher for instant sandbox live testing across all 7 user roles!
-  - Theme (Dark/Light luxury aesthetic).
-- **Hybrid Data Layer**:
-  - Primary: Real Supabase API calls when env credentials are provided.
-  - Fallback: Pre-hydrated, rich, mock repository initialized with luxury event furniture, live daily availability calculations, and sample user profiles so the app works 100% out of the box anywhere.
-
----
-
-## 7. Authentication & Security Strategy
-- **Supabase Auth / JWT Validation**: Role and Account Status enforced on API Server Actions and Middleware.
-- **Pending Account Lockout**: Middleware automatically traps users whose status is `pending` or `rejected` or `suspended` and displays the "Account Awaiting Approval" screen.
-- **Row Level Security (RLS)**:
-  - Furniture `rental_price` and `professional_price` columns scrubbed from customer API responses.
-  - Rental request write policies strictly check valid email/phone or authenticated session.
-- **Input Sanitization & Protection**: Zod schema validation on all inputs, XSS header protection, SQL injection prevention via parameterized query builders.
-
----
-
-## 8. Deployment & Performance Optimization Plan
-- **Vercel Zero-Config Deployment**: Optimized build pipeline using Next.js 15 App Router.
-- **Performance**:
-  - Next/Image optimization for high-resolution furniture imagery.
-  - Lazy loading for quick-preview modals and calendar popovers.
-  - Dynamic route segment config (`export const dynamic = 'force-dynamic'`).
-- **SEO & Metadata**: Dynamic OpenGraph images, structured Schema.org `Product` JSON-LD data, `sitemap.ts`, `robots.ts`.
-
----
-
-## 9. Implementation Roadmap
-- **Phase 1**: Project Initialization & Base Architecture (Next.js 15, Tailwind, Animations, UI UX Pro Max styling).
-- **Phase 2**: UI Components Integration (`container-scroll-animation`, `fluid-menu`, `dock`, `availability-calendar`).
-- **Phase 3**: Core Catalogue & Luxury Product Detail pages with Airbnb-style Daily Availability calendar.
-- **Phase 4**: Rental Request Workflow & Automated WhatsApp Generator & PDF Export Engine.
-- **Phase 5**: Multi-Role Authentication System & Approval Gatekeepers.
-- **Phase 6**: Professional Portal (Rental Calculator, Wholesale Prices, Reward System & Ranking).
-- **Phase 7**: Comprehensive Admin Panel & CMS Management.
-- **Phase 8**: Full End-to-End Verification & Vercel Build Validation.
+- The Arabic copy was written by the developer and should be reviewed by a native speaker. Product and CMS text in Arabic is entered by staff; when it is missing, French is shown.
+- Locale is cookie-based, so search engines index the French version only.
+- Browser print is the PDF mechanism. There is no server-side PDF generation.
+- `npm audit` flags dev-only tooling packages. Production dependencies report 0 vulnerabilities.

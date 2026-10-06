@@ -3,6 +3,7 @@ import { Inter, Playfair_Display, Tajawal } from "next/font/google";
 import "./globals.css";
 import { AppProvider } from "@/lib/context/app-context";
 import { getPrefs } from "@/lib/i18n/server";
+import { translations } from "@/lib/i18n/translations";
 import { getViewer } from "@/lib/auth";
 
 // Self-hosted by next/font (no third-party request at runtime).
@@ -28,6 +29,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html lang={prefs.lang} dir={prefs.dir} className={`dark font-sans ${inter.variable} ${playfair.variable} ${tajawal.variable}`}>
       <body className="min-h-screen flex flex-col bg-[#fcf8f4] dark:bg-[#120e0b] text-coffeeBean dark:text-almondCream antialiased selection:bg-toffeeBrown selection:text-white relative">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-[10000] focus:px-4 focus:py-2 focus:rounded-full focus:bg-toffeeBrown focus:text-white">
+          {translations[prefs.lang].common.skipToContent}
+        </a>
         <AppProvider prefs={prefs} viewer={viewer}>
           {children}
         </AppProvider>
