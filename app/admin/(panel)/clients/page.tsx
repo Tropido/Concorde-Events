@@ -23,7 +23,9 @@ export default async function AdminClientsPage({ searchParams }: { searchParams:
     .select("id, email, full_name, company_name, phone, vat_number, country, role, status, created_at, client_notes(notes, flags, level)")
     .order("created_at", { ascending: false }).limit(200);
   if (pendingOnly) q = q.eq("status", "pending");
-  if (sp.q) q = q.or(`email.ilike.%${sp.q.replace(/[%,()]/g, "")}%,full_name.ilike.%${sp.q.replace(/[%,()]/g, "")}%`);
+  // Keep only characters that cannot alter the PostgREST filter syntax.
+  const needle = (sp.q ?? "").replace(/[^\p{L}\p{N}@._+\- ]/gu, "").trim().slice(0, 80);
+  if (needle) q = q.or(`email.ilike."*${needle}*",full_name.ilike."*${needle}*"`);
   const { data, error } = await q;
   if (error) throw error;
   const rows = (data ?? []) as unknown as Row[];

@@ -158,6 +158,24 @@ create trigger touch_products before update on public.products
   for each row execute function private.touch_updated_at();
 create trigger touch_product_stock before update on public.product_stock
   for each row execute function private.touch_updated_at();
+
+-- A stock row IS the (product, country) pool: quantities change, identity never does
+-- (moving or deleting it would bypass the capacity check; set owned to 0 instead).
+create function private.guard_stock()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  if new.product_id <> old.product_id or new.country <> old.country then
+    raise exception 'stock rows cannot change product or country' using errcode = '42501';
+  end if;
+  return new;
+end;
+$$;
+
+create trigger guard_stock before update on public.product_stock
+  for each row execute function private.guard_stock();
 create trigger touch_product_prices before update on public.product_prices
   for each row execute function private.touch_updated_at();
 

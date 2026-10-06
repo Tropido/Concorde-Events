@@ -23,8 +23,8 @@ grant select on public.catalogue_prices, public.current_fx to anon, authenticate
 -- Signed-in users (rows limited by RLS).
 grant select, update on public.profiles to authenticated;
 grant select, insert, update, delete on public.client_notes to authenticated;
-grant insert, update, delete on public.categories, public.products, public.product_stock,
-  public.product_prices to authenticated;
+grant insert, update, delete on public.categories, public.products, public.product_prices to authenticated;
+grant insert, update on public.product_stock to authenticated; -- no delete: see private.guard_stock
 grant insert on public.fx_rates to authenticated;
 grant select, update on public.rental_requests to authenticated;
 grant select, update on public.request_lines to authenticated;
@@ -40,6 +40,7 @@ grant all on all sequences in schema public to service_role;
 
 -- Helpers evaluated inside policies, views and invoker functions.
 grant execute on function private.has_role(public.app_role[]) to anon, authenticated, service_role;
+grant execute on function private.is_active() to authenticated, service_role;
 grant execute on function private.currency_of(public.country_code) to anon, authenticated, service_role;
 grant execute on function private.current_rate() to anon, authenticated, service_role;
 grant execute on function private.convert(numeric, public.currency_code, public.currency_code, numeric)

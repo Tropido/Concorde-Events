@@ -29,8 +29,10 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   };
 });
 
+/** Same-site path only. Rejects "//host" and "/\host" (browsers treat both as another
+ *  origin) and anything with control characters. */
 export function safeNext(next: unknown, fallback = "/account") {
-  return typeof next === "string" && /^\/(?!\/)/.test(next) ? next : fallback;
+  return typeof next === "string" && /^\/(?![/\\])[^\\\u0000-\u001f]*$/.test(next) ? next : fallback;
 }
 
 export async function requireViewer(next = "/account") {

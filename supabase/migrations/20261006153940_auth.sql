@@ -49,6 +49,20 @@ as $$
   );
 $$;
 
+-- Owner-side writes (messages, replies, favourites) stay closed to rejected/suspended accounts.
+create function private.is_active()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $$
+  select exists (
+    select 1 from public.profiles p
+    where p.id = (select auth.uid()) and p.status in ('pending', 'approved')
+  );
+$$;
+
 create function private.touch_updated_at()
 returns trigger
 language plpgsql

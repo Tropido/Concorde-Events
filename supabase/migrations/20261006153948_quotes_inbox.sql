@@ -255,6 +255,7 @@ create policy "messages: client sends own site message" on public.messages
   for insert to authenticated
   with check (
     channel = 'site' and profile_id = (select auth.uid()) and status = 'open' and assignee_id is null
+    and (select private.is_active())
     and (request_id is null or exists (
       select 1 from public.rental_requests r where r.id = request_id and r.user_id = (select auth.uid())))
   );
@@ -283,14 +284,14 @@ create policy "replies: staff insert" on public.message_replies
 create policy "replies: owner public reply" on public.message_replies
   for insert to authenticated
   with check (
-    not internal and author_id = (select auth.uid())
+    not internal and author_id = (select auth.uid()) and (select private.is_active())
     and exists (select 1 from public.messages m where m.id = message_id and m.profile_id = (select auth.uid()))
   );
 
 create policy "favourites: owner" on public.favourites
   for all to authenticated
   using (profile_id = (select auth.uid()))
-  with check (profile_id = (select auth.uid()));
+  with check (profile_id = (select auth.uid()) and (select private.is_active()));
 
 create policy "cms: public read" on public.cms_content
   for select to anon, authenticated using (true);

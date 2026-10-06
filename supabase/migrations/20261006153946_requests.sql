@@ -288,8 +288,9 @@ begin
   if v_status in ('dispatched', 'completed', 'cancelled', 'rejected') then
     raise exception 'lines of a % request cannot change', v_status using errcode = '42501';
   end if;
-  if tg_op = 'UPDATE' and (new.request_id <> old.request_id or new.unit_price <> old.unit_price) then
-    raise exception 'line request and price are read-only' using errcode = '42501';
+  if tg_op = 'UPDATE' and (new.request_id <> old.request_id or new.product_id <> old.product_id
+                           or new.unit_price <> old.unit_price) then
+    raise exception 'line request, product and price are read-only' using errcode = '42501';
   end if;
   return coalesce(new, old);
 end;
@@ -533,6 +534,12 @@ begin
   end if;
   if r.status <> 'dispatched' then
     raise exception 'only dispatched rentals can be returned' using errcode = '42501';
+  end if;
+
+  if jsonb_typeof(coalesce(p_damaged, '[]'::jsonb)) <> 'array'
+     or (select count(*) from jsonb_array_elements(coalesce(p_damaged, '[]'::jsonb)))
+        <> (select count(distinct e ->> 'line_id') from jsonb_array_elements(coalesce(p_damaged, '[]'::jsonb)) e) then
+    raise exception 'duplicate_or_invalid_lines' using errcode = '22023';
   end if;
 
   for v_item in select * from jsonb_array_elements(coalesce(p_damaged, '[]'::jsonb)) loop

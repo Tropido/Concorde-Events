@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth";
+import type { Viewer } from "@/lib/types";
+
+/** Rejected/suspended accounts keep read access to their history but cannot write. */
+const active = (v: Viewer | null): v is Viewer => !!v && (v.status === "approved" || v.status === "pending");
 
 export type FormState = { ok?: boolean; error?: boolean } | null;
 const uuid = z.string().uuid();
@@ -11,7 +15,7 @@ const uuid = z.string().uuid();
 export async function toggleFavourite(productId: string, on: boolean) {
   if (!uuid.safeParse(productId).success) return { ok: false };
   const viewer = await getViewer();
-  if (!viewer) return { ok: false };
+  if (!active(viewer)) return { ok: false };
   const supabase = await createClient();
   const { error } = on
     ? await supabase.from("favourites").upsert({ profile_id: viewer.id, product_id: productId }, { ignoreDuplicates: true })
@@ -40,7 +44,7 @@ const MessageInput = z.object({
 export async function sendMessage(_: FormState, form: FormData): Promise<FormState> {
   const viewer = await getViewer();
   const parsed = MessageInput.safeParse(Object.fromEntries(form));
-  if (!viewer || !parsed.success) return { error: true };
+  if (!active(viewer) || !parsed.success) return { error: true };
   const supabase = await createClient();
   const { error } = await supabase.from("messages").insert({
     channel: "site",
@@ -60,7 +64,7 @@ export async function sendMessage(_: FormState, form: FormData): Promise<FormSta
 export async function replyToMessage(_: FormState, form: FormData): Promise<FormState> {
   const viewer = await getViewer();
   const parsed = z.object({ message_id: z.string().uuid(), body: z.string().trim().min(1).max(5000) }).safeParse(Object.fromEntries(form));
-  if (!viewer || !parsed.success) return { error: true };
+  if (!active(viewer) || !parsed.success) return { error: true };
   const supabase = await createClient();
   const { error } = await supabase.from("message_replies").insert({ ...parsed.data, author_id: viewer.id, internal: false });
   if (error) return { error: true };
