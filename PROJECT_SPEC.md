@@ -106,4 +106,7 @@ The capacity invariant is one deferred constraint trigger with a per-country adv
 - The Arabic copy was written by the developer and should be reviewed by a native speaker. Product and CMS text in Arabic is entered by staff; when it is missing, French is shown.
 - Locale is cookie-based, so search engines index the French version only.
 - Browser print is the PDF mechanism. There is no server-side PDF generation.
-- `npm audit` flags dev-only tooling packages. Production dependencies report 0 vulnerabilities.
+- `npm audit --omit=dev` reports 0 vulnerabilities.
+- The full audit reports 9 findings, all in build and lint tooling that only processes this repository's own files:
+  - Tailwind 3, via chokidar/braces and postcss-selector-parser;
+  - eslint-config-next, via micromatch.
