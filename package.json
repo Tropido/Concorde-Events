@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e": "playwright test",
-    "db:push": "supabase db push --db-url \"$SUPABASE_DB_URL\""
+    "db:push": "node scripts/db-push.mjs",
+    "test:integration": "vitest run -c vitest.integration.mts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -30,6 +31,7 @@
     "zod": "^3.24.0"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "0.5.8",
     "@eslint/eslintrc": "3.3.7",
     "@playwright/test": "1.63.0",
     "@types/node": "24.19.1",
