@@ -5,10 +5,10 @@
 -- again updates the same rows. Prices, stock and photos are provisional (see
 -- product_internal.internal_notes), to be confirmed by Fatma. Photos: verified Unsplash
 -- images (free Unsplash License), temporary.
-
-begin;
+-- One statement (data-modifying CTEs): atomic, and "supabase db query" runs a single command.
 
 -- Categories (existing slugs renamed, three new ones).
+with cats as (
 insert into public.categories (slug, name_fr, name_ar, display_order) values
   ('seating-lounges', 'Salons & assises', 'الصالونات والمقاعد', 1),
   ('reception-chairs', 'Chaises de réception', 'كراسي الاستقبال', 2),
@@ -19,9 +19,12 @@ insert into public.categories (slug, name_fr, name_ar, display_order) values
   ('bars-consoles', 'Bars & réception', 'البارات والاستقبال', 7),
   ('outdoor-luxury', 'Extérieur & lounge', 'الفضاء الخارجي واللاونج', 8),
   ('rugs-textiles', 'Tapis & textiles', 'الزرابي والمنسوجات', 9)
-on conflict (slug) do update set name_fr = excluded.name_fr, name_ar = excluded.name_ar, display_order = excluded.display_order;
+on conflict (slug) do update set name_fr = excluded.name_fr, name_ar = excluded.name_ar, display_order = excluded.display_order
+returning id, slug
+),
 
 -- Pieces.
+prods as (
 insert into public.products (
   slug, category_id, sku, title_fr, title_ar, description_fr, description_ar, badge, tone, color, color_hex,
   material, finish, style, width, height, depth, dimension_unit, weight_kg, seating_capacity, setup_minutes,
@@ -65,7 +68,7 @@ from (values
 ) as v(slug, cat, sku, title_fr, title_ar, description_fr, description_ar, badge, tone, color, color_hex,
   material, finish, style, width, height, depth, dimension_unit, weight_kg, seating_capacity, setup_minutes,
   deposit_amount, highlights_fr, highlights_ar, care_fr, care_ar, tags, featured, images, image_fit)
-join public.categories c on c.slug = v.cat
+join cats c on c.slug = v.cat
 on conflict (slug) do update set
   category_id = excluded.category_id, sku = excluded.sku, title_fr = excluded.title_fr, title_ar = excluded.title_ar,
   description_fr = excluded.description_fr, description_ar = excluded.description_ar, badge = excluded.badge, tone = excluded.tone,
@@ -74,9 +77,12 @@ on conflict (slug) do update set
   weight_kg = excluded.weight_kg, seating_capacity = excluded.seating_capacity, setup_minutes = excluded.setup_minutes,
   deposit_amount = excluded.deposit_amount, highlights_fr = excluded.highlights_fr, highlights_ar = excluded.highlights_ar,
   care_fr = excluded.care_fr, care_ar = excluded.care_ar, tags = excluded.tags, featured = excluded.featured,
-  status = 'active', images = excluded.images, image_fit = excluded.image_fit;
+  status = 'active', images = excluded.images, image_fit = excluded.image_fit
+returning id, slug
+),
 
 -- Tunisian stock, TND retail and pro prices (pro about 15-20 % under retail).
+stock as (
 insert into public.product_stock (product_id, country, quantity_owned)
 select p.id, 'TN', v.qty from (values
   ('fauteuil-boucle-ivoire', 8),
@@ -110,9 +116,11 @@ select p.id, 'TN', v.qty from (values
   ('tapis-berbere', 10),
   ('tapis-rond-jute', 12),
   ('coussins-brodes', 40)
-) as v(slug, qty) join public.products p on p.slug = v.slug
-on conflict (product_id, country) do update set quantity_owned = excluded.quantity_owned;
-
+) as v(slug, qty) join prods p on p.slug = v.slug
+on conflict (product_id, country) do update set quantity_owned = excluded.quantity_owned
+returning 1
+),
+prices as (
 insert into public.product_prices (product_id, country, tier, amount)
 select p.id, 'TN', v.tier::public.price_tier, v.amount from (values
   ('fauteuil-boucle-ivoire', 'retail', 85),
@@ -177,10 +185,13 @@ select p.id, 'TN', v.tier::public.price_tier, v.amount from (values
   ('tapis-rond-jute', 'pro', 33),
   ('coussins-brodes', 'retail', 20),
   ('coussins-brodes', 'pro', 16)
-) as v(slug, tier, amount) join public.products p on p.slug = v.slug
-on conflict (product_id, country, tier) do update set amount = excluded.amount;
+) as v(slug, tier, amount) join prods p on p.slug = v.slug
+on conflict (product_id, country, tier) do update set amount = excluded.amount
+returning 1
+),
 
 -- Staff-only notes: everything here is provisional.
+notes as (
 insert into public.product_internal (product_id, internal_notes)
 select p.id, v.notes from (values
   ('fauteuil-boucle-ivoire', 'Prix et stock provisoires, à valider par Fatma. Photo temporaire Unsplash, à remplacer.'),
@@ -214,7 +225,9 @@ select p.id, v.notes from (values
   ('tapis-berbere', 'Prix et stock provisoires, à valider par Fatma. Photo temporaire Unsplash, à remplacer.'),
   ('tapis-rond-jute', 'Prix et stock provisoires, à valider par Fatma. Photo temporaire Unsplash, à remplacer.'),
   ('coussins-brodes', 'Prix et stock provisoires, à valider par Fatma. Photo temporaire Unsplash, à remplacer.')
-) as v(slug, notes) join public.products p on p.slug = v.slug
-on conflict (product_id) do update set internal_notes = excluded.internal_notes;
-
-commit;
+) as v(slug, notes) join prods p on p.slug = v.slug
+on conflict (product_id) do update set internal_notes = excluded.internal_notes
+returning 1
+)
+select (select count(*) from prods) as pieces, (select count(*) from prices) as prices,
+  (select count(*) from stock) as stock_rows, (select count(*) from notes) as notes;
