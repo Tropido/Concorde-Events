@@ -11,24 +11,24 @@ import type { Language } from "@/lib/i18n/translations";
 const selectClass =
   "py-1.5 ps-2.5 pe-7 rounded-full bg-desertSand/40 dark:bg-darkSurface border border-tan/40 text-xs font-bold text-coffeeBean dark:text-almondCream focus:outline-none focus-visible:ring-2 focus-visible:ring-toffeeBrown";
 
-function Preferences({ idPrefix }: { idPrefix: string }) {
+function Preferences({ idPrefix, compact = false }: { idPrefix: string; compact?: boolean }) {
   const { t, country, setCountry, currency, setCurrency, language, setLanguage } = useApp();
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className={compact ? "flex flex-nowrap items-center gap-1.5" : "flex flex-wrap items-center gap-2"}>
       <label htmlFor={`${idPrefix}-country`} className="sr-only">{t.nav.stockCountry}</label>
       <select id={`${idPrefix}-country`} value={country} onChange={(e) => setCountry(e.target.value as Country)} className={selectClass} title={t.nav.stockCountry}>
-        <option value="FR">🇫🇷 {t.common.france}</option>
-        <option value="TN">🇹🇳 {t.common.tunisia}</option>
+        <option value="FR">{compact ? "FR" : `🇫🇷 ${t.common.france}`}</option>
+        <option value="TN">{compact ? "TN" : `🇹🇳 ${t.common.tunisia}`}</option>
       </select>
       <label htmlFor={`${idPrefix}-currency`} className="sr-only">{t.nav.displayCurrency}</label>
       <select id={`${idPrefix}-currency`} value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className={selectClass} title={t.nav.displayCurrency}>
-        <option value="EUR">EUR €</option>
-        <option value="TND">TND DT</option>
+        <option value="EUR">{compact ? "€" : "EUR €"}</option>
+        <option value="TND">{compact ? "DT" : "TND DT"}</option>
       </select>
       <label htmlFor={`${idPrefix}-lang`} className="sr-only">{t.nav.language}</label>
       <select id={`${idPrefix}-lang`} value={language} onChange={(e) => setLanguage(e.target.value as Language)} className={selectClass} title={t.nav.language}>
-        <option value="fr">Français</option>
-        <option value="ar">العربية</option>
+        <option value="fr">{compact ? "FR" : "Français"}</option>
+        <option value="ar">{compact ? "ع" : "العربية"}</option>
       </select>
     </div>
   );
@@ -72,8 +72,8 @@ export function Navbar() {
             ))}
           </nav>
 
-          <div className="ms-auto flex items-center gap-2">
-            <div className="hidden lg:block"><Preferences idPrefix="nav" /></div>
+          <div className="ms-auto flex items-center gap-2 shrink-0">
+            <div className="hidden lg:flex shrink-0"><Preferences idPrefix="nav" compact /></div>
 
             <button type="button" onClick={toggleTheme} aria-label={t.nav.theme}
               className="hidden sm:inline-flex p-2.5 rounded-2xl bg-desertSand/30 dark:bg-darkSurface border border-tan/25 apple-press">
@@ -83,7 +83,7 @@ export function Navbar() {
             <Link href="/catalogue#draft" aria-label={`${t.nav.requestDraft} (${draftCount})`}
               className="relative px-3 py-2.5 rounded-2xl bg-toffeeBrown text-white font-bold hover:bg-coffeeBean shadow-md flex items-center gap-2 apple-press">
               <ShoppingBag className="w-4 h-4" aria-hidden />
-              <span className="hidden xl:inline text-xs font-extrabold uppercase tracking-wider">{t.nav.requestDraft}</span>
+              <span className="hidden 2xl:inline text-xs font-extrabold uppercase tracking-wider whitespace-nowrap">{t.nav.requestDraft}</span>
               {draftCount > 0 && <span className="px-1.5 py-0.5 rounded-full bg-coffeeBean text-[11px] font-black">{draftCount}</span>}
             </Link>
 
@@ -106,7 +106,7 @@ export function Navbar() {
                   <Link href="/login" className="px-3 py-2 rounded-full bg-desertSand/30 dark:bg-darkSurface text-xs font-bold border border-tan/30 flex items-center gap-1.5 whitespace-nowrap apple-press">
                     <LogIn className="w-3.5 h-3.5 text-fadedCopper" aria-hidden />{t.nav.logIn}
                   </Link>
-                  <Link href="/register" className="hidden xl:flex px-3 py-2 rounded-full bg-coffeeBean text-almondCream text-xs font-extrabold uppercase tracking-wider items-center gap-1.5 whitespace-nowrap apple-press">
+                  <Link href="/register" className="hidden 2xl:flex px-3 py-2 rounded-full bg-coffeeBean text-almondCream text-xs font-extrabold uppercase tracking-wider items-center gap-1.5 whitespace-nowrap apple-press">
                     <UserPlus className="w-3.5 h-3.5 text-tan" aria-hidden />{t.nav.signUp}
                   </Link>
                 </>
