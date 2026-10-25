@@ -1,54 +1,8 @@
-import { RequestItem } from "../types";
+// The only business WhatsApp number (owner-confirmed). wa.me links open a chat; they do
+// not prove anything was sent, delivered or read.
+export const BUSINESS_WHATSAPP = "21623040424";
+export const BUSINESS_WHATSAPP_DISPLAY = "+216 23 040 424";
 
-export interface WhatsAppData {
-  customerName: string;
-  phone: string;
-  companyName?: string;
-  startDate: string;
-  endDate: string;
-  items: RequestItem[];
-  notes?: string;
-  targetPhone?: string; // Business WhatsApp Number
-}
-
-export function generateWhatsAppMessage(data: WhatsAppData): string {
-  const itemsList = data.items
-    .map(
-      (item) =>
-        `• ${item.quantity}x ${item.title} (${item.startDate || data.startDate} to ${item.endDate || data.endDate}, ${item.totalDays || 1} days)`
-    )
-    .join("\n");
-
-  const text = `Hello Concorde Events,
-
-I would like a quotation for an upcoming event rental.
-
-🛋 *FURNITURE & DATES REQUESTED:*
-${itemsList}
-
-🗓 *OVERALL RENTAL WINDOW:*
-${data.startDate} to ${data.endDate}
-
-👤 *CONTACT DETAILS:*
-• Name: ${data.customerName}
-• Phone: ${data.phone}
-${data.companyName ? `• Company: ${data.companyName}\n` : ""}${
-    data.notes ? `\n📝 *SPECIAL NOTES:* ${data.notes}` : ""
-  }
-
-Please review availability and provide a quotation. Thank you!`;
-
-  return text;
-}
-
-export function openWhatsAppQuotation(data: WhatsAppData) {
-  const message = generateWhatsAppMessage(data);
-  const encoded = encodeURIComponent(message);
-  const phone = data.targetPhone || "447700900999";
-  const url = `https://wa.me/${phone}?text=${encoded}`;
-
-  if (typeof window !== "undefined") {
-    window.open(url, "_blank");
-  }
-  return url;
+export function waLink(text?: string) {
+  return `https://wa.me/${BUSINESS_WHATSAPP}${text ? `?text=${encodeURIComponent(text)}` : ""}`;
 }

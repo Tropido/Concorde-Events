@@ -3,185 +3,169 @@
 @import "tailwindcss/utilities";
 
 :root {
-  --background: #fcf8f4;
-  --foreground: #2d1f16;
-  --almond-cream: #ede0d4;
-  --desert-sand: #e6ccb2;
-  --tan: #ddb892;
-  --faded-copper: #b08968;
-  --coffee-bean: #7f5539;
-  --toffee-brown: #9c6644;
+  --font-sans: "Inter Tight Variable", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Inter Tight Variable", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  color-scheme: light;
 }
 
-.dark {
-  --background: #120e0b;
-  --foreground: #ede0d4;
-  --almond-cream: #ede0d4;
-  --desert-sand: #e6ccb2;
-  --tan: #ddb892;
-  --faded-copper: #b08968;
-  --coffee-bean: #7f5539;
-  --toffee-brown: #9c6644;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Inter", "Tajawal", "Cairo", system-ui, sans-serif;
-  overflow-x: hidden;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-
-/* RTL Layout Enhancements */
 [dir="rtl"] {
-  font-family: "Tajawal", "Cairo", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  --font-sans: "IBM Plex Sans Arabic", "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "IBM Plex Sans Arabic", "Inter Tight Variable", ui-sans-serif, system-ui, sans-serif;
 }
 
-[dir="rtl"] .space-x-reverse > :not([hidden]) ~ :not([hidden]) {
-  --tw-space-x-reverse: 1;
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-behavior: smooth;
+  }
+  body {
+    @apply bg-paper text-ink font-sans antialiased;
+    font-feature-settings: "ss01", "cv11";
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+  /* Arabic display text cannot take negative tracking. */
+  [dir="rtl"] .tracking-display,
+  [dir="rtl"] .tracking-tightest,
+  [dir="rtl"] .tracking-tight {
+    letter-spacing: 0;
+  }
+  [dir="rtl"] .font-mono {
+    letter-spacing: 0;
+  }
+  ::selection {
+    background: #ddb892;
+    color: #2b1d13;
+  }
+  :focus-visible {
+    outline: 2px solid #9c6644;
+    outline-offset: 2px;
+  }
+  input[type="number"]::-webkit-inner-spin-button {
+    opacity: 0.5;
+  }
 }
 
-/* Apple HIG Frosted Glass Material */
-.apple-glass {
-  background: rgba(252, 248, 244, 0.72);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(221, 184, 146, 0.35);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.6), 0 8px 32px 0 rgba(127, 85, 57, 0.06);
+@layer components {
+  /* Page width used by the storefront: near edge-to-edge like an editorial grid. */
+  .shell {
+    @apply mx-auto w-full max-w-[1360px] px-3 sm:px-4 lg:px-5;
+  }
+  .card {
+    @apply rounded-[1.75rem] bg-card;
+  }
+  .card-line {
+    @apply rounded-[1.75rem] bg-card ring-1 ring-line;
+  }
+  /* Small data labels (category, reference, unit). */
+  .label {
+    @apply font-mono text-[10.5px] font-medium uppercase tracking-label text-ink/55;
+  }
+  .display {
+    @apply font-display font-bold tracking-display leading-[0.95];
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-semibold transition-[transform,background-color,color,box-shadow] duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45;
+  }
+  .btn-ink {
+    @apply btn bg-ink text-card hover:bg-ink-soft;
+  }
+  .btn-light {
+    @apply btn bg-card text-ink ring-1 ring-line hover:ring-ink/30;
+  }
+  .btn-toffee {
+    @apply btn bg-toffeeBrown text-card hover:bg-coffeeBean;
+  }
+  .btn-sm {
+    @apply px-3.5 py-2 text-xs;
+  }
+  .pill {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-card px-3 py-1.5 text-xs font-medium ring-1 ring-line;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-paper px-3 py-1.5 text-xs text-ink/75;
+  }
+  .field {
+    @apply w-full rounded-2xl bg-paper px-4 py-3 text-sm text-ink ring-1 ring-transparent placeholder:text-ink/35 transition focus:bg-card focus:outline-none focus:ring-ink/40;
+  }
+  .field-label {
+    @apply mb-1.5 block text-xs font-medium text-ink/70;
+  }
+  .tone-almond { @apply bg-tone-almond; }
+  .tone-sand { @apply bg-tone-sand; }
+  .tone-tan { @apply bg-tone-tan; }
+  .tone-copper { @apply bg-tone-copper; }
+  .tone-cream { @apply bg-tone-cream; }
+  .tone-stone { @apply bg-tone-stone; }
+
+  /* Legacy surface names still used by a few screens. */
+  .apple-card {
+    @apply card-line;
+  }
+  .apple-press {
+    @apply transition-transform active:scale-[0.97];
+  }
 }
 
-.dark .apple-glass {
-  background: rgba(26, 21, 17, 0.75);
-  backdrop-filter: blur(28px) saturate(180%);
-  -webkit-backdrop-filter: blur(28px) saturate(180%);
-  border: 1px solid rgba(176, 137, 104, 0.2);
-  box-shadow: inset 0 1px 0 0 rgba(255, 255, 255, 0.08), 0 12px 40px 0 rgba(0, 0, 0, 0.6);
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .text-balance {
+    text-wrap: balance;
+  }
+  .text-pretty {
+    text-wrap: pretty;
+  }
 }
 
-/* Apple Card Surface */
-.apple-card {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(230, 204, 178, 0.6);
-  box-shadow: 0 10px 30px -10px rgba(127, 85, 57, 0.08);
+/* Soft grain on product tiles, so flat tones read as material rather than UI. */
+@layer components {
+  /* In the components layer so positioning utilities (absolute, …) on a tile still win. */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+}
+.grain::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.17  0 0 0 0 0.11  0 0 0 0 0.07  0 0 0 .06 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  pointer-events: none;
 }
 
-.dark .apple-card {
-  background: rgba(26, 21, 17, 0.85);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(176, 137, 104, 0.2);
-  box-shadow: 0 12px 40px -10px rgba(0, 0, 0, 0.7);
-}
-
-/* Glass Panel Legacy Support */
-.glass-panel {
-  background: rgba(237, 224, 212, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(221, 184, 146, 0.35);
-}
-
-.dark .glass-panel {
-  background: rgba(26, 21, 17, 0.75);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(176, 137, 104, 0.2);
-}
-
-/* Tactile Micro-Press Physics */
-.apple-press {
-  transition: transform 0.15s cubic-bezier(0.2, 0, 0.1, 1), opacity 0.15s ease;
-}
-.apple-press:active {
-  transform: scale(0.97);
-}
-
-/* Custom Artisan Scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(176, 137, 104, 0.35);
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(156, 102, 68, 0.6);
-}
-
-/* Site Layout Standard Container (1140px - 1200px) */
-.site-container {
-  width: 100%;
-  max-width: 1200px;
-  margin-left: auto;
-  margin-right: auto;
-  padding-left: 1rem;
-  padding-right: 1rem;
+  background: rgba(127, 85, 57, 0.25);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
 }
 
-@media (min-width: 640px) {
-  .site-container {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
+@media print {
+  body {
+    background: white;
   }
 }
 
-@media (min-width: 1024px) {
-  .site-container {
-    padding-left: 2rem;
-    padding-right: 2rem;
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
-}
-
-/* Background Ambient Lighting Glow Orbs Animation */
-@keyframes ambientDrift1 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1);
-    opacity: 0.45;
-  }
-  50% {
-    transform: translate(60px, -40px) scale(1.15);
-    opacity: 0.65;
-  }
-}
-
-@keyframes ambientDrift2 {
-  0%, 100% {
-    transform: translate(0, 0) scale(1.1);
-    opacity: 0.4;
-  }
-  50% {
-    transform: translate(-50px, 35px) scale(0.92);
-    opacity: 0.6;
-  }
-}
-
-@keyframes ambientPulse {
-  0%, 100% {
-    opacity: 0.3;
-    filter: blur(80px);
-  }
-  50% {
-    opacity: 0.55;
-    filter: blur(100px);
-  }
-}
-
-.ambient-orb-1 {
-  animation: ambientDrift1 18s ease-in-out infinite;
-}
-
-.ambient-orb-2 {
-  animation: ambientDrift2 22s ease-in-out infinite reverse;
-}
-
-.ambient-orb-pulse {
-  animation: ambientPulse 12s ease-in-out infinite;
 }
