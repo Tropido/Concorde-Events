@@ -59,13 +59,16 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
       company_name: opt(120),
       vat_number: opt(40),
       account_type: z.enum(["customer", "professional"]),
-      country: z.enum(["FR", "TN"]),
+      activity: opt(80),
+      city: opt(80),
+      website: opt(200),
     })
     .safeParse(Object.fromEntries(form));
   if (!parsed.success) {
     return { error: parsed.error.issues.some((i) => i.path[0] === "password") ? "weakPassword" : "generic" };
   }
   const { email: e, password, ...profile } = parsed.data;
+  if (profile.account_type === "professional" && (!profile.company_name || !profile.activity)) return { error: "proFields" };
   const supabase = await createClient();
   // Metadata only requests an account type; the database trigger decides the actual role.
   const { error } = await supabase.auth.signUp({

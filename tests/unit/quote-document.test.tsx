@@ -28,7 +28,35 @@ const snapshot: QuoteSnapshot = {
   total: 7064.85,
 };
 
-describe("QuoteDocument", () => {
+const tndSnapshot: QuoteSnapshot = {
+  ...snapshot,
+  reference: "CE-2026-00002",
+  country: "TN",
+  tier: "pro",
+  source_currency: "TND",
+  fx: null,
+  discount_percent: 5,
+  event: { type: "wedding", venue: "Gammarth", guests: 180, delivery_mode: "delivery" },
+  lines: [{ ...snapshot.lines[0], source_unit_price: 380, unit_price: 361, line_total: 2166 }],
+  total: 2166,
+};
+
+describe("QuoteDocument (TND only)", () => {
+  const html = renderToStaticMarkup(<QuoteDocument snapshot={tndSnapshot} lang="fr" t={translations.fr} />).replace(/\s/g, " ");
+
+  it("shows dinar amounts and no exchange-rate note", () => {
+    expect(html).toMatch(/2 166 DT/);
+    expect(html).not.toContain("EUR");
+    expect(html).not.toContain("€");
+  });
+
+  it("shows the event and the pro discount", () => {
+    expect(html).toContain("Gammarth");
+    expect(html).toMatch(/5\s?%/);
+  });
+});
+
+describe("QuoteDocument (legacy EUR-converted snapshot)", () => {
   const html = renderToStaticMarkup(<QuoteDocument snapshot={snapshot} lang="fr" t={translations.fr} />);
 
   it("renders untrusted fields as text, never as markup", () => {

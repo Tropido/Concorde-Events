@@ -2,149 +2,109 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { LogIn, LogOut, Menu as MenuIcon, Moon, ShoppingBag, Sparkles, Sun, User, UserPlus, X } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { LayoutGrid, Menu, ShoppingBag, UserRound } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
-import { signOut } from "@/lib/actions/auth";
-import { isStaff, type Country, type Currency } from "@/lib/types";
+import { isStaff } from "@/lib/types";
+import { cn, initials } from "@/lib/utils/formatters";
+import { CloseButton, Drawer, Logo } from "@/components/ui/kit";
 import type { Language } from "@/lib/i18n/translations";
 
-const selectClass =
-  "py-1.5 ps-2.5 pe-7 rounded-full bg-desertSand/40 dark:bg-darkSurface border border-tan/40 text-xs font-bold text-coffeeBean dark:text-almondCream focus:outline-none focus-visible:ring-2 focus-visible:ring-toffeeBrown";
-
-function Preferences({ idPrefix, compact = false }: { idPrefix: string; compact?: boolean }) {
-  const { t, country, setCountry, currency, setCurrency, language, setLanguage } = useApp();
+export function LanguageSwitch({ className }: { className?: string }) {
+  const { t, language, setLanguage } = useApp();
   return (
-    <div className={compact ? "flex flex-nowrap items-center gap-1.5" : "flex flex-wrap items-center gap-2"}>
-      <label htmlFor={`${idPrefix}-country`} className="sr-only">{t.nav.stockCountry}</label>
-      <select id={`${idPrefix}-country`} value={country} onChange={(e) => setCountry(e.target.value as Country)} className={selectClass} title={t.nav.stockCountry}>
-        <option value="FR">{compact ? "FR" : `🇫🇷 ${t.common.france}`}</option>
-        <option value="TN">{compact ? "TN" : `🇹🇳 ${t.common.tunisia}`}</option>
-      </select>
-      <label htmlFor={`${idPrefix}-currency`} className="sr-only">{t.nav.displayCurrency}</label>
-      <select id={`${idPrefix}-currency`} value={currency} onChange={(e) => setCurrency(e.target.value as Currency)} className={selectClass} title={t.nav.displayCurrency}>
-        <option value="EUR">{compact ? "€" : "EUR €"}</option>
-        <option value="TND">{compact ? "DT" : "TND DT"}</option>
-      </select>
-      <label htmlFor={`${idPrefix}-lang`} className="sr-only">{t.nav.language}</label>
-      <select id={`${idPrefix}-lang`} value={language} onChange={(e) => setLanguage(e.target.value as Language)} className={selectClass} title={t.nav.language}>
-        <option value="fr">{compact ? "FR" : "Français"}</option>
-        <option value="ar">{compact ? "ع" : "العربية"}</option>
-      </select>
+    <div role="group" aria-label={t.nav.language} className={cn("flex rounded-full bg-paper p-0.5 text-xs font-semibold", className)}>
+      {(["fr", "ar"] as Language[]).map((l) => (
+        <button key={l} type="button" lang={l} aria-pressed={language === l} onClick={() => language !== l && setLanguage(l)}
+          className={cn("h-7 min-w-8 rounded-full px-2 transition-colors", language === l ? "bg-card text-ink shadow-inset" : "text-ink/50 hover:text-ink")}>
+          {l === "fr" ? "FR" : "ع"}
+        </button>
+      ))}
     </div>
   );
 }
 
 export function Navbar() {
-  const { t, viewer, draft, isDarkMode, toggleTheme, country } = useApp();
-  const [open, setOpen] = useState(false);
-  const draftCount = draft.reduce((n, l) => n + l.quantity, 0);
+  const { t, viewer, draft, setBagOpen, bagPulse } = useApp();
+  const path = usePathname();
+  const [menu, setMenu] = useState(false);
+  // Distinct lines, not units: 120 chairs is one line in the selection.
+  const count = draft.length;
   const staff = isStaff(viewer);
   const links = [
-    { href: "/", label: t.nav.home },
     { href: "/catalogue", label: t.nav.catalogue },
+    { href: "/catalogue?cat=decoration", label: t.nav.decoration },
+    { href: "/professionnels", label: t.nav.pros },
     { href: "/about", label: t.nav.about },
     { href: "/contact", label: t.nav.contact },
   ];
-  const accountHref = staff ? "/admin" : "/account";
-  const accountLabel = staff ? t.nav.admin : t.nav.account;
+  const active = (href: string) => (href === "/catalogue" ? path === "/catalogue" : path === href.split("?")[0] && href.indexOf("?") < 0);
 
   return (
-    <header className="sticky top-0 z-40 w-full">
-      <div className="w-full bg-gradient-to-r from-coffeeBean via-toffeeBrown to-coffeeBean text-almondCream text-[11px] sm:text-xs font-semibold py-2 px-4 text-center tracking-wider flex items-center justify-center gap-2">
-        <Sparkles className="w-3.5 h-3.5 text-tan shrink-0" aria-hidden />
-        <span className="truncate">{t.announcement}</span>
-        <span className="hidden md:inline text-tan/90">• {country === "TN" ? t.common.tunisia : t.common.france}</span>
-      </div>
+    <header className="sticky top-0 z-50 pt-2">
+      <div className="shell">
+        <div className="flex h-14 items-center gap-3 rounded-full bg-card/85 ps-3 pe-2 shadow-lift ring-1 ring-line backdrop-blur-xl">
+          <Link href="/" aria-label="Concorde Events" className="shrink-0"><Logo /></Link>
 
-      <div className="w-full backdrop-blur-2xl bg-[#fcf8f4]/90 dark:bg-[#120e0b]/90 border-b border-tan/30 dark:border-fadedCopper/25 shadow-sm">
-        <div className="max-w-[1200px] mx-auto px-4 sm:px-6 h-16 lg:h-20 flex items-center gap-3">
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <span className="w-10 h-10 rounded-2xl bg-gradient-to-br from-coffeeBean to-toffeeBrown flex items-center justify-center text-almondCream font-black text-xl shadow-md border border-tan/40">C</span>
-            <span className="flex flex-col leading-tight">
-              <span className="font-black text-base tracking-[0.2em] uppercase font-serif">CONCORDE</span>
-              <span className="hidden sm:block text-[9px] tracking-[0.3em] text-fadedCopper dark:text-tan uppercase font-semibold">EVENTS</span>
-            </span>
-          </Link>
-
-          <nav aria-label={t.nav.menu} className="hidden lg:flex items-center gap-5 xl:gap-7 ms-4 text-sm font-semibold text-coffeeBean/80 dark:text-almondCream/80">
+          <nav aria-label={t.nav.menu} className="mx-auto hidden items-center gap-1 lg:flex">
             {links.map((l) => (
-              <Link key={l.href} href={l.href} className="hover:text-toffeeBrown dark:hover:text-tan whitespace-nowrap">{l.label}</Link>
+              <Link key={l.href} href={l.href} aria-current={active(l.href) ? "page" : undefined}
+                className="rounded-full px-3 py-1.5 text-[13px] text-ink/70 transition-colors hover:text-ink aria-[current=page]:bg-paper aria-[current=page]:text-ink">
+                {l.label}
+              </Link>
             ))}
           </nav>
 
-          <div className="ms-auto flex items-center gap-2 shrink-0">
-            <div className="hidden lg:flex shrink-0"><Preferences idPrefix="nav" compact /></div>
-
-            <button type="button" onClick={toggleTheme} aria-label={t.nav.theme}
-              className="hidden sm:inline-flex p-2.5 rounded-2xl bg-desertSand/30 dark:bg-darkSurface border border-tan/25 apple-press">
-              {isDarkMode ? <Sun className="w-4 h-4 text-tan" /> : <Moon className="w-4 h-4" />}
+          <div className="ms-auto flex items-center gap-1.5 lg:ms-0">
+            <LanguageSwitch className="hidden sm:flex" />
+            {viewer ? (
+              <Link href={staff ? "/admin" : "/account"} className="hidden items-center gap-2 rounded-full py-1 ps-1 pe-3 text-[13px] hover:bg-paper sm:flex">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-tone-sand text-[11px] font-semibold">{initials(viewer.fullName ?? viewer.email)}</span>
+                {staff ? <><LayoutGrid className="h-3.5 w-3.5" aria-hidden />{t.nav.admin}</> : t.nav.account}
+              </Link>
+            ) : (
+              <Link href="/login" className="hidden items-center gap-1.5 rounded-full px-3 py-2 text-[13px] hover:bg-paper sm:flex">
+                <UserRound className="h-4 w-4" aria-hidden />{t.nav.logIn}
+              </Link>
+            )}
+            <button type="button" onClick={() => setBagOpen(true)} aria-label={`${t.bag.title} (${count})`}
+              className="flex h-10 items-center gap-2 rounded-full bg-ink ps-3.5 pe-1.5 text-[13px] font-medium text-card">
+              <ShoppingBag className="h-4 w-4" aria-hidden />
+              <span className="hidden sm:inline">{t.bag.short}</span>
+              <span key={bagPulse} className={cn("flex h-7 min-w-7 items-center justify-center rounded-full bg-card px-1.5 text-xs font-semibold text-ink tabular-nums", bagPulse > 0 && "animate-bump")}>{count}</span>
             </button>
-
-            <Link href="/catalogue#draft" aria-label={`${t.nav.requestDraft} (${draftCount})`}
-              className="relative px-3 py-2.5 rounded-2xl bg-toffeeBrown text-white font-bold hover:bg-coffeeBean shadow-md flex items-center gap-2 apple-press">
-              <ShoppingBag className="w-4 h-4" aria-hidden />
-              <span className="hidden 2xl:inline text-xs font-extrabold uppercase tracking-wider whitespace-nowrap">{t.nav.requestDraft}</span>
-              {draftCount > 0 && <span className="px-1.5 py-0.5 rounded-full bg-coffeeBean text-[11px] font-black">{draftCount}</span>}
-            </Link>
-
-            <div className="hidden lg:flex items-center gap-2 border-s border-tan/30 ps-3">
-              {viewer ? (
-                <>
-                  <Link href={accountHref} className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-tan/20 border border-tan/40 text-xs font-bold apple-press">
-                    <User className="w-3.5 h-3.5 text-toffeeBrown" aria-hidden />
-                    <span className="truncate max-w-[110px]">{viewer.fullName || accountLabel}</span>
-                  </Link>
-                  <form action={signOut}>
-                    <button type="submit" aria-label={t.common.signOut} title={t.common.signOut}
-                      className="p-2 rounded-full hover:bg-desertSand/40 dark:hover:bg-darkSurface">
-                      <LogOut className="w-4 h-4" />
-                    </button>
-                  </form>
-                </>
-              ) : (
-                <>
-                  <Link href="/login" className="px-3 py-2 rounded-full bg-desertSand/30 dark:bg-darkSurface text-xs font-bold border border-tan/30 flex items-center gap-1.5 whitespace-nowrap apple-press">
-                    <LogIn className="w-3.5 h-3.5 text-fadedCopper" aria-hidden />{t.nav.logIn}
-                  </Link>
-                  <Link href="/register" className="hidden 2xl:flex px-3 py-2 rounded-full bg-coffeeBean text-almondCream text-xs font-extrabold uppercase tracking-wider items-center gap-1.5 whitespace-nowrap apple-press">
-                    <UserPlus className="w-3.5 h-3.5 text-tan" aria-hidden />{t.nav.signUp}
-                  </Link>
-                </>
-              )}
-            </div>
-
-            <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} aria-controls="mobile-menu" aria-label={t.nav.menu}
-              className="lg:hidden p-2.5 rounded-2xl bg-desertSand/30 dark:bg-darkSurface border border-tan/30 apple-press">
-              {open ? <X className="w-5 h-5" /> : <MenuIcon className="w-5 h-5" />}
+            <button type="button" onClick={() => setMenu(true)} aria-label={t.nav.menu} aria-expanded={menu}
+              className="flex h-10 w-10 items-center justify-center rounded-full hover:bg-paper lg:hidden">
+              <Menu className="h-5 w-5" />
             </button>
           </div>
         </div>
       </div>
 
-      {open && (
-        <div id="mobile-menu" className="lg:hidden bg-[#fcf8f4]/95 dark:bg-[#120e0b]/95 border-b border-tan/30 px-6 py-6 space-y-4 text-base font-semibold backdrop-blur-2xl">
-          {links.map((l) => (
-            <Link key={l.href} href={l.href} onClick={() => setOpen(false)} className="block hover:text-toffeeBrown">{l.label}</Link>
-          ))}
-          <div className="pt-4 border-t border-tan/20 space-y-4">
-            <Preferences idPrefix="mobile" />
-            <button type="button" onClick={toggleTheme} className="sm:hidden flex items-center gap-2 text-sm">
-              {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}{t.nav.theme}
-            </button>
-            {viewer ? (
-              <div className="flex items-center gap-4 text-sm">
-                <Link href={accountHref} onClick={() => setOpen(false)} className="font-bold text-toffeeBrown">{accountLabel}</Link>
-                <form action={signOut}><button type="submit" className="underline">{t.common.signOut}</button></form>
-              </div>
-            ) : (
-              <div className="flex items-center gap-4 text-sm">
-                <Link href="/login" onClick={() => setOpen(false)} className="font-bold">{t.nav.logIn}</Link>
-                <Link href="/register" onClick={() => setOpen(false)} className="font-bold text-toffeeBrown">{t.nav.signUp}</Link>
-              </div>
-            )}
-          </div>
+      <Drawer open={menu} onClose={() => setMenu(false)} labelledBy="menu-title" side="start">
+        <div className="flex items-center justify-between p-5">
+          <span id="menu-title"><Logo /></span>
+          <CloseButton onClick={() => setMenu(false)} label={t.common.close} />
         </div>
-      )}
+        <nav className="flex flex-col px-3">
+          {[{ href: "/", label: t.nav.home }, ...links].map((l) => (
+            <Link key={l.href} href={l.href} onClick={() => setMenu(false)} className="rounded-2xl px-4 py-3 text-2xl font-semibold tracking-tight hover:bg-paper">
+              {l.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="mt-auto space-y-4 p-5">
+          <LanguageSwitch />
+          {viewer ? (
+            <Link href={staff ? "/admin" : "/account"} onClick={() => setMenu(false)} className="btn-light w-full">{staff ? t.nav.admin : t.nav.account}</Link>
+          ) : (
+            <div className="grid grid-cols-2 gap-2">
+              <Link href="/login" onClick={() => setMenu(false)} className="btn-light">{t.nav.logIn}</Link>
+              <Link href="/register" onClick={() => setMenu(false)} className="btn-ink">{t.nav.signUp}</Link>
+            </div>
+          )}
+        </div>
+      </Drawer>
     </header>
   );
 }

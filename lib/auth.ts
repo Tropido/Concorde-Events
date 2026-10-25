@@ -2,6 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getPrefs } from "@/lib/i18n/server";
+import { buildProStatus, TIER_COLUMNS, type ProAccountRow, type TierRow } from "@/lib/pro";
 import { OPS_ROLES, STAFF_ROLES, type AppRole, type Viewer } from "@/lib/types";
 
 /** Verified identity (getClaims checks the JWT) + trusted profile row. Once per request. */
@@ -12,10 +14,20 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   if (!id) return null;
   const { data: p } = await supabase
     .from("profiles")
-    .select("id, email, full_name, company_name, phone, vat_number, country, role, status")
+    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, role, status")
     .eq("id", id)
     .maybeSingle();
   if (!p) return null;
+
+  let pro: Viewer["pro"] = null;
+  if (p.role === "professional") {
+    const [{ data: account }, { data: tiers }, prefs] = await Promise.all([
+      supabase.from("pro_accounts").select("tier_code, tier_locked, points, custom_discount_percent, extra_benefits").eq("profile_id", id).maybeSingle(),
+      supabase.from("pro_tiers").select(TIER_COLUMNS).order("rank"),
+      getPrefs(),
+    ]);
+    if (account && tiers) pro = buildProStatus(account as ProAccountRow, tiers as TierRow[], prefs.lang);
+  }
   return {
     id: p.id,
     email: p.email,
@@ -23,9 +35,12 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     companyName: p.company_name,
     phone: p.phone,
     vatNumber: p.vat_number,
-    country: p.country,
+    activity: p.activity,
+    city: p.city,
+    website: p.website,
     role: p.role,
     status: p.status,
+    pro,
   };
 });
 
@@ -59,3 +74,6 @@ export async function assertStaff(roles: AppRole[] = OPS_ROLES) {
   }
   return viewer;
 }
+
+/** Approved operations staff (manager/admin). */
+export const isStaffViewer = (v: Viewer | null) => !!v && v.status === "approved" && OPS_ROLES.includes(v.role);

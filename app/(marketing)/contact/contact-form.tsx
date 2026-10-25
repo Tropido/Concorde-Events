@@ -1,66 +1,48 @@
 "use client";
 
 import { useActionState } from "react";
-import { MessageCircle } from "lucide-react";
+import { Check, MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { submitContact } from "@/lib/actions/contact";
 import { BUSINESS_WHATSAPP_DISPLAY, waLink } from "@/lib/utils/whatsapp";
-import type { Country } from "@/lib/types";
 
-const input = "w-full p-3 rounded-xl bg-white dark:bg-darkBg border border-tan/40 text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-toffeeBrown";
-
-export function ContactForm({ country, defaults }: { country: Country; defaults: { name: string; email: string; phone: string } }) {
+export function ContactForm({ defaults }: { defaults: { name: string; email: string; phone: string } }) {
   const { t } = useApp();
   const [state, action, pending] = useActionState(submitContact, null);
+  const field = (label: string, input: React.ReactNode, wide = false) => (
+    <label className={wide ? "block sm:col-span-2" : "block"}><span className="field-label">{label}</span>{input}</label>
+  );
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-      <div className="lg:col-span-2 apple-card rounded-3xl border border-tan/30 p-6 sm:p-8">
+    <div className="grid gap-2.5 lg:grid-cols-[2fr_1fr]">
+      <div className="card p-6 sm:p-10">
         {state?.ok ? (
-          <p role="status" className="text-sm font-bold text-emerald-800 dark:text-emerald-300">{t.contact.sent}</p>
+          <p role="status" className="flex items-center gap-3 text-[15px]"><span className="flex h-9 w-9 items-center justify-center rounded-full bg-ok text-card"><Check className="h-4 w-4" /></span>{t.contact.sent}</p>
         ) : (
-          <form action={action} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <input type="hidden" name="country" value={country} />
-            <label className="text-xs font-semibold">
-              {t.contact.name}
-              <input name="name" required maxLength={120} autoComplete="name" defaultValue={defaults.name} className={`${input} mt-1`} />
-            </label>
-            <label className="text-xs font-semibold">
-              {t.contact.email}
-              <input name="email" type="email" required maxLength={254} autoComplete="email" defaultValue={defaults.email} className={`${input} mt-1`} />
-            </label>
-            <label className="text-xs font-semibold">
-              {t.contact.phone} ({t.common.optional})
-              <input name="phone" type="tel" maxLength={40} autoComplete="tel" defaultValue={defaults.phone} className={`${input} mt-1`} />
-            </label>
-            <label className="text-xs font-semibold">
-              {t.contact.subject}
-              <input name="subject" required maxLength={200} className={`${input} mt-1`} />
-            </label>
-            <label className="text-xs font-semibold sm:col-span-2">
-              {t.contact.message}
-              <textarea name="body" required rows={6} maxLength={5000} className={`${input} mt-1`} />
-            </label>
+          <form action={action} className="grid gap-3 sm:grid-cols-2">
+            {field(t.contact.name, <input name="name" required maxLength={120} autoComplete="name" defaultValue={defaults.name} className="field" />)}
+            {field(t.contact.email, <input name="email" type="email" required maxLength={254} autoComplete="email" defaultValue={defaults.email} className="field" dir="ltr" />)}
+            {field(`${t.contact.phone} · ${t.common.optional}`, <input name="phone" type="tel" maxLength={40} autoComplete="tel" defaultValue={defaults.phone} className="field" dir="ltr" />)}
+            {field(t.contact.subject, <input name="subject" required maxLength={200} className="field" />)}
+            {field(t.contact.message, <textarea name="body" required rows={6} maxLength={5000} className="field resize-none" />, true)}
             <input name="website" tabIndex={-1} autoComplete="off" aria-hidden className="hidden" />
-            {state?.error && (
-              <p role="alert" className="sm:col-span-2 text-sm font-semibold text-rose-700 dark:text-rose-300">{t.submitErrors[state.error]}</p>
-            )}
-            <button type="submit" disabled={pending}
-              className="sm:col-span-2 py-4 rounded-full bg-toffeeBrown hover:bg-coffeeBean text-white font-extrabold text-xs uppercase tracking-wider disabled:opacity-60">
-              {pending ? t.contact.sending : t.contact.send}
-            </button>
+            {state?.error && <p role="alert" className="rounded-2xl bg-bad-soft p-3 text-sm text-bad sm:col-span-2">{t.submitErrors[state.error]}</p>}
+            <div className="sm:col-span-2"><button type="submit" disabled={pending} className="btn-ink">{pending ? t.contact.sending : t.contact.send}</button></div>
           </form>
         )}
       </div>
-      <aside className="apple-card rounded-3xl border border-tan/30 p-6 sm:p-8 space-y-4 h-fit">
-        <h2 className="text-xl font-bold font-serif">{t.contact.whatsappTitle}</h2>
-        <p className="text-sm text-coffeeBean/75 dark:text-almondCream/75">{t.contact.whatsappText}</p>
-        <p className="font-bold"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></p>
-        <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs uppercase tracking-wider">
-          <MessageCircle className="w-4 h-4" aria-hidden />{t.contact.whatsappButton}
-        </a>
-        <p className="text-xs text-coffeeBean/60 dark:text-almondCream/60">{t.contact.addressPending}</p>
+      <aside className="flex flex-col justify-between gap-8 rounded-[1.75rem] bg-ink p-6 text-card sm:p-8">
+        <div className="space-y-3">
+          <h2 className="text-2xl font-semibold tracking-tight">{t.contact.whatsappTitle}</h2>
+          <p className="text-sm text-almondCream/70">{t.contact.whatsappText}</p>
+          <p className="text-xl font-semibold"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></p>
+        </div>
+        <div className="space-y-3">
+          <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn w-full bg-card text-ink hover:bg-almondCream">
+            <MessageCircle className="h-4 w-4" aria-hidden />{t.contact.whatsappButton}
+          </a>
+          <p className="text-xs text-almondCream/50">{t.contact.addressPending}</p>
+        </div>
       </aside>
     </div>
   );

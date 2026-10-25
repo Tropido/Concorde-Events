@@ -1,24 +1,28 @@
-import type { Metadata } from "next";
-import { Inter, Playfair_Display, Tajawal } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+// Self-hosted font files (bundled at build time, no third-party request at runtime).
+import "@fontsource-variable/inter-tight";
+import "@fontsource-variable/jetbrains-mono";
+import "@fontsource/ibm-plex-sans-arabic/400.css";
+import "@fontsource/ibm-plex-sans-arabic/500.css";
+import "@fontsource/ibm-plex-sans-arabic/600.css";
+import "@fontsource/ibm-plex-sans-arabic/700.css";
 import "./globals.css";
 import { AppProvider } from "@/lib/context/app-context";
 import { getPrefs } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { getViewer } from "@/lib/auth";
 
-// Self-hosted by next/font (no third-party request at runtime).
-const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
-const playfair = Playfair_Display({ subsets: ["latin"], weight: ["500", "700", "800"], style: ["normal", "italic"], variable: "--font-playfair", display: "swap" });
-const tajawal = Tajawal({ subsets: ["arabic", "latin"], weight: ["400", "500", "700", "800", "900"], variable: "--font-tajawal", display: "swap" });
+export async function generateMetadata(): Promise<Metadata> {
+  const { lang } = await getPrefs();
+  const m = translations[lang].meta;
+  return {
+    title: { default: m.title, template: `%s · Concorde Events` },
+    description: m.description,
+    openGraph: { title: "Concorde Events", description: m.description, locale: lang === "ar" ? "ar_TN" : "fr_TN" },
+  };
+}
 
-export const metadata: Metadata = {
-  title: "Concorde Events | Location de mobilier événementiel",
-  description: "Catalogue de location de mobilier d'événement en France et en Tunisie : disponibilité par dates, demande de devis et suivi en ligne.",
-  openGraph: {
-    title: "Concorde Events",
-    description: "Location de mobilier d'événement haut de gamme en France et en Tunisie.",
-  },
-};
+export const viewport: Viewport = { themeColor: "#f7f1ea" };
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const prefs = await getPrefs();
@@ -27,9 +31,9 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const viewer = await getViewer().catch(() => null);
 
   return (
-    <html lang={prefs.lang} dir={prefs.dir} className={`dark font-sans ${inter.variable} ${playfair.variable} ${tajawal.variable}`}>
-      <body className="min-h-screen flex flex-col bg-[#fcf8f4] dark:bg-[#120e0b] text-coffeeBean dark:text-almondCream antialiased selection:bg-toffeeBrown selection:text-white relative">
-        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-[10000] focus:px-4 focus:py-2 focus:rounded-full focus:bg-toffeeBrown focus:text-white">
+    <html lang={prefs.lang} dir={prefs.dir}>
+      <body className="min-h-screen flex flex-col">
+        <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[100] btn-ink btn-sm">
           {translations[prefs.lang].common.skipToContent}
         </a>
         <AppProvider prefs={prefs} viewer={viewer}>

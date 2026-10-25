@@ -12,13 +12,17 @@ const KNOWN: SubmitErrorCode[] = [
 
 const RequestInput = z.object({
   idempotencyKey: z.string().uuid(),
-  country: z.enum(["FR", "TN"]),
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().min(6).max(40),
   email: z.string().trim().toLowerCase().email().max(254),
   company: z.string().trim().max(120).optional(),
   notes: z.string().trim().max(2000).optional(),
   website: z.string().max(0).optional(), // honeypot: humans never see or fill it
+  eventType: z.enum(["wedding", "engagement", "birthday", "corporate", "gala", "private", "other"]).optional(),
+  venue: z.string().trim().max(200).optional(),
+  guests: z.number().int().min(1).max(100000).optional(),
+  delivery: z.enum(["delivery", "pickup"]).optional(),
+  contact: z.enum(["whatsapp", "phone", "email"]).default("whatsapp"),
   lines: z
     .array(z.object({
       productId: z.string().uuid(),
@@ -38,6 +42,7 @@ export async function submitRequest(input: z.input<typeof RequestInput>): Promis
   const parsed = RequestInput.safeParse(input);
   if (!parsed.success) {
     const field = parsed.error.issues[0]?.path[0];
+    if (field === "website") return { ok: false, error: "generic" };
     return { ok: false, error: field === "lines" ? "invalid_lines" : "invalid_contact" };
   }
   const d = parsed.data;
@@ -45,12 +50,16 @@ export async function submitRequest(input: z.input<typeof RequestInput>): Promis
   const { data, error } = await supabase.rpc("submit_request", {
     idem_key: d.idempotencyKey,
     payload: {
-      country: d.country,
       customer_name: d.name,
       customer_email: d.email,
       customer_phone: d.phone,
       company_name: d.company,
       notes: d.notes,
+      event_type: d.eventType,
+      event_venue: d.venue,
+      guest_count: d.guests,
+      delivery_mode: d.delivery,
+      preferred_contact: d.contact,
       lines: d.lines.map((l) => ({ product_id: l.productId, quantity: l.quantity, start_date: l.startDate, end_date: l.endDate })),
     },
   });

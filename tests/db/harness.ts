@@ -57,14 +57,14 @@ export async function submit(
   uid: string | null,
   lines: { product_id: string; quantity: number | string; start_date: string; end_date: string }[],
   extra: Record<string, unknown> = {},
-  country: "FR" | "TN" = "FR",
+  country: "FR" | "TN" = "TN",
 ) {
   const key = crypto.randomUUID();
   const payload = {
     country,
     customer_name: "Test Client",
     customer_email: `client-${key.slice(0, 8)}@example.com`,
-    customer_phone: "+33 6 00 00 00 00",
+    customer_phone: "+216 23 000 000",
     lines,
     ...extra,
   };
@@ -75,7 +75,7 @@ export async function submit(
   return { id: rows[0].id, reference: ref, key };
 }
 
-export async function issueQuote(db: PGlite, staff: string, requestId: string, currency: "EUR" | "TND" = "EUR") {
+export async function issueQuote(db: PGlite, staff: string, requestId: string, currency: "EUR" | "TND" = "TND") {
   return as(db, staff, async (tx) =>
     (await tx.query<{ id: string }>("select public.issue_quote($1, $2) as id", [requestId, currency])).rows[0].id,
   );

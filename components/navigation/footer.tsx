@@ -1,60 +1,51 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, MessageCircle } from "lucide-react";
+import { MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { BUSINESS_WHATSAPP_DISPLAY, waLink } from "@/lib/utils/whatsapp";
+import { Logo } from "@/components/ui/kit";
 
 export function Footer() {
   const { t } = useApp();
-  const linkClass = "hover:text-white transition-colors";
-
+  const col = "space-y-3";
+  const head = "font-mono text-[10.5px] uppercase tracking-label text-almondCream/45";
+  const link = "block text-sm text-almondCream/80 hover:text-card";
   return (
-    <footer className="bg-[#120e0b] text-almondCream border-t border-fadedCopper/25 pt-16 pb-28 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
-        <div className="space-y-4">
-          <div className="flex items-center gap-3">
-            <span className="w-9 h-9 rounded-xl bg-toffeeBrown flex items-center justify-center text-white font-black text-lg border border-tan/30">C</span>
-            <span className="font-black text-xl tracking-[0.2em] uppercase font-serif text-white">CONCORDE</span>
+    <footer className="shell mt-24 pb-3">
+      <div className="rounded-[1.75rem] bg-ink px-6 py-12 text-almondCream sm:px-10">
+        <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
+          <div className="space-y-5">
+            <span className="text-card [&_.text-ink\/50]:text-almondCream/50"><Logo /></span>
+            <p className="max-w-sm text-2xl font-semibold leading-tight tracking-tight text-card text-balance">{t.footer.statement}</p>
+            <p className="max-w-sm text-sm text-almondCream/65">{t.footer.aboutText}</p>
           </div>
-          <p className="text-xs text-almondCream/70 leading-relaxed">{t.footer.aboutText}</p>
+          <nav aria-label={t.footer.shop} className={col}>
+            <h2 className={head}>{t.footer.shop}</h2>
+            <Link href="/catalogue" className={link}>{t.nav.catalogue}</Link>
+            <Link href="/professionnels" className={link}>{t.nav.pros}</Link>
+            <Link href="/about" className={link}>{t.nav.about}</Link>
+            <Link href="/contact" className={link}>{t.nav.contact}</Link>
+          </nav>
+          <nav aria-label={t.footer.account} className={col}>
+            <h2 className={head}>{t.footer.account}</h2>
+            <Link href="/login" className={link}>{t.nav.logIn}</Link>
+            <Link href="/register" className={link}>{t.nav.signUp}</Link>
+            <Link href="/register?type=professional" className={link}>{t.footer.proRegister}</Link>
+            <Link href="/account" className={link}>{t.footer.myRequests}</Link>
+          </nav>
+          <div className={col}>
+            <h2 className={head}>{t.footer.whatsapp}</h2>
+            <p className="text-sm text-almondCream/80"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></p>
+            <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn btn-sm bg-card text-ink hover:bg-almondCream">
+              <MessageCircle className="h-4 w-4" aria-hidden />{t.footer.whatsappCta}
+            </a>
+          </div>
         </div>
-
-        <nav aria-label={t.footer.quickLinks} className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-tan">{t.footer.quickLinks}</h2>
-          <ul className="space-y-2 text-sm text-almondCream/70">
-            <li><Link href="/catalogue" className={linkClass}>{t.nav.catalogue}</Link></li>
-            <li><Link href="/about" className={linkClass}>{t.nav.about}</Link></li>
-            <li><Link href="/contact" className={linkClass}>{t.nav.contact}</Link></li>
-          </ul>
-        </nav>
-
-        <nav aria-label={t.footer.proSpace} className="space-y-3">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-tan">{t.footer.proSpace}</h2>
-          <ul className="space-y-2 text-sm text-almondCream/70">
-            <li>
-              <Link href="/login" className={`${linkClass} flex items-center gap-1`}>
-                {t.footer.proLogin}<ArrowUpRight className="w-3.5 h-3.5 text-tan rtl:-scale-x-100" aria-hidden />
-              </Link>
-            </li>
-            <li><Link href="/register?type=professional" className={linkClass}>{t.footer.proRegister}</Link></li>
-            <li><Link href="/account/tools" className={linkClass}>{t.footer.proTools}</Link></li>
-          </ul>
-        </nav>
-
-        <div className="space-y-4">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-tan">{t.footer.whatsapp}</h2>
-          <p className="text-sm text-almondCream/70"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></p>
-          <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 px-5 py-3 rounded-full bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider hover:bg-emerald-600 apple-press">
-            <MessageCircle className="w-4 h-4" aria-hidden />{t.footer.whatsapp}
-          </a>
+        <div className="mt-12 flex flex-col gap-2 border-t border-almondCream/10 pt-6 text-xs text-almondCream/45 sm:flex-row sm:justify-between">
+          <p>© {new Date().getFullYear()} Concorde Events · {t.footer.rights}</p>
+          <p>{t.footer.tagline}</p>
         </div>
-      </div>
-
-      <div className="max-w-[1200px] mx-auto mt-12 pt-8 border-t border-fadedCopper/20 text-xs text-almondCream/60 flex flex-col sm:flex-row items-center justify-between gap-4">
-        <p>© {new Date().getFullYear()} Concorde Events. {t.footer.rights}</p>
-        <p>{t.footer.tagline}</p>
       </div>
     </footer>
   );

@@ -27,13 +27,13 @@ function monthInfo(year: number, month: number) {
 }
 
 export function AvailabilityCalendar({ productId, stock, startDate, endDate, onSelectDates }: Props) {
-  const { t, language, country } = useApp();
-  const locale = language === "ar" ? "ar-TN" : "fr-FR";
-  const today = dayNumber(todayIn(country))!;
+  const { t, language } = useApp();
+  const locale = language === "ar" ? "ar-TN-u-nu-latn" : "fr-FR";
+  const today = dayNumber(todayIn("TN"))!;
   const initial = new Date((dayNumber(startDate) ?? today) * 86_400_000);
   const [view, setView] = useState({ y: initial.getUTCFullYear(), m: initial.getUTCMonth() });
   const { first, last, offset } = monthInfo(view.y, view.m);
-  const { days, error } = useAvailability(productId, country, fromDayNumber(first), fromDayNumber(last));
+  const { days, error } = useAvailability(productId, fromDayNumber(first), fromDayNumber(last));
 
   const s = dayNumber(startDate);
   const e = dayNumber(endDate);
@@ -57,25 +57,25 @@ export function AvailabilityCalendar({ productId, stock, startDate, endDate, onS
     setView(({ y, m }) => ({ y: m + delta < 0 ? y - 1 : m + delta > 11 ? y + 1 : y, m: (m + delta + 12) % 12 }));
 
   return (
-    <div className="space-y-4 text-coffeeBean dark:text-almondCream">
+    <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <button type="button" onClick={() => shift(-1)} aria-label={t.calendar.prev}
-          className="p-2 rounded-xl bg-desertSand/30 dark:bg-darkSurface hover:bg-desertSand/50 apple-press">
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-card hover:bg-line">
           <ChevronLeft className="w-4 h-4 rtl:rotate-180" />
         </button>
-        <span className="text-sm font-bold capitalize" aria-live="polite">{monthLabel}</span>
+        <span className="text-sm font-semibold capitalize tracking-tight" aria-live="polite">{monthLabel}</span>
         <button type="button" onClick={() => shift(1)} aria-label={t.calendar.next}
-          className="p-2 rounded-xl bg-desertSand/30 dark:bg-darkSurface hover:bg-desertSand/50 apple-press">
+          className="flex h-9 w-9 items-center justify-center rounded-full bg-card hover:bg-line">
           <ChevronRight className="w-4 h-4 rtl:rotate-180" />
         </button>
       </div>
 
-      <p className="text-[11px] text-coffeeBean/70 dark:text-almondCream/70">{t.calendar.hint}</p>
-      {error && <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">{t.common.errorGeneric}</p>}
+      
+      {error && <p role="alert" className="text-xs text-bad">{t.common.errorGeneric}</p>}
 
-      <div className="grid grid-cols-7 gap-1.5 text-center" role="grid">
+      <div className="grid grid-cols-7 gap-1 text-center" role="grid">
         {weekdays.map((w) => (
-          <div key={w} className="text-[10px] font-bold uppercase text-coffeeBean/60 dark:text-tan/70 py-1">{w}</div>
+          <div key={w} className="py-1 font-mono text-[10px] uppercase text-ink/40">{w}</div>
         ))}
         {Array.from({ length: offset }, (_, i) => <div key={`pad-${i}`} aria-hidden />)}
         {Array.from({ length: last - first + 1 }, (_, i) => {
@@ -95,26 +95,26 @@ export function AvailabilityCalendar({ productId, stock, startDate, endDate, onS
               aria-pressed={selected}
               aria-label={new Intl.DateTimeFormat(locale, { dateStyle: "full", timeZone: "UTC" }).format(new Date(n * 86_400_000))}
               className={cn(
-                "flex flex-col items-center justify-center rounded-xl border min-h-[48px] text-xs transition-colors",
-                "border-tan/30 bg-tan/10 hover:border-toffeeBrown disabled:cursor-not-allowed",
-                limited && "bg-amber-500/10 border-amber-500/40 text-amber-900 dark:text-amber-200",
-                full && "bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-300",
-                past && "opacity-35",
-                selected && "bg-toffeeBrown border-tan text-white font-bold",
+                "flex min-h-[46px] flex-col items-center justify-center rounded-2xl text-xs transition-colors",
+                "bg-card hover:ring-1 hover:ring-ink/30 disabled:cursor-not-allowed",
+                limited && "bg-warn-soft text-warn",
+                full && "bg-transparent text-ink/30 line-through",
+                past && "bg-transparent text-ink/25",
+                selected && "bg-ink text-card hover:ring-0",
               )}
             >
-              <span className="font-bold">{new Intl.DateTimeFormat(locale, { day: "numeric", timeZone: "UTC" }).format(new Date(n * 86_400_000))}</span>
-              <span className="text-[9px] opacity-80">{past || avail === undefined ? " " : avail}</span>
+              <span className="font-semibold tabular-nums">{new Intl.DateTimeFormat(locale, { day: "numeric", timeZone: "UTC" }).format(new Date(n * 86_400_000))}</span>
+              <span className="text-[9px] tabular-nums opacity-60">{past || avail === undefined ? " " : avail}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="flex flex-wrap gap-3 text-[11px]">
-        <Legend className="bg-tan/40" label={t.scheduling.legendAvailable} />
-        <Legend className="bg-amber-500" label={t.scheduling.legendLimited} />
-        <Legend className="bg-rose-500" label={t.scheduling.legendFull} />
-        <Legend className="bg-toffeeBrown" label={t.scheduling.legendSelected} />
+      <div className="flex flex-wrap gap-3 text-[11px] text-ink/60">
+        <Legend className="bg-card ring-1 ring-line" label={t.scheduling.legendAvailable} />
+        <Legend className="bg-warn" label={t.scheduling.legendLimited} />
+        <Legend className="bg-ink/20" label={t.scheduling.legendFull} />
+        <Legend className="bg-ink" label={t.scheduling.legendSelected} />
       </div>
     </div>
   );

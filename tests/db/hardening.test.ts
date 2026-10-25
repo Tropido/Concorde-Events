@@ -17,10 +17,9 @@ beforeAll(async () => {
 
 describe("stock rows cannot be moved or deleted around the capacity check", () => {
   it("refuses changing a stock row's country or product", async () => {
-    // A product stocked only in France, so nothing but the guard can stop the move.
-    const { rows } = await db.query<{ id: string }>("insert into public.products (slug, title_fr) values ('fr-only', 'FR only') returning id");
-    await db.query("insert into public.product_stock (product_id, country, quantity_owned) values ($1, 'FR', 3)", [rows[0].id]);
-    await expect(as(db, manager, (tx) => tx.query("update public.product_stock set country = 'TN' where product_id = $1", [rows[0].id])))
+    const { rows } = await db.query<{ id: string }>("insert into public.products (slug, title_fr) values ('tn-only', 'TN only') returning id");
+    await db.query("insert into public.product_stock (product_id, country, quantity_owned) values ($1, 'TN', 3)", [rows[0].id]);
+    await expect(as(db, manager, (tx) => tx.query("update public.product_stock set country = 'FR' where product_id = $1", [rows[0].id])))
       .rejects.toThrow(/cannot change product or country/);
   });
 
@@ -32,7 +31,7 @@ describe("stock rows cannot be moved or deleted around the capacity check", () =
   it("still lets staff set owned to zero only when nothing is committed", async () => {
     const r = await submit(db, client, [{ product_id: sofa, quantity: 1, start_date: isoDate(40), end_date: isoDate(41) }]);
     await issueQuote(db, manager, r.id);
-    await expect(as(db, manager, (tx) => tx.query("update public.product_stock set quantity_owned = 0 where product_id = $1 and country = 'FR'", [sofa])))
+    await expect(as(db, manager, (tx) => tx.query("update public.product_stock set quantity_owned = 0 where product_id = $1 and country = 'TN'", [sofa])))
       .rejects.toThrow(/capacity_exceeded/);
   });
 });

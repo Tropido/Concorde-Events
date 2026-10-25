@@ -52,7 +52,7 @@ export async function sendMessage(_: FormState, form: FormData): Promise<FormSta
     name: viewer.fullName,
     email: viewer.email,
     phone: viewer.phone,
-    country: viewer.country,
+    country: "TN",
     category: "other",
     ...parsed.data,
   });
@@ -80,7 +80,9 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
     phone: opt(40),
     company_name: opt(120),
     vat_number: opt(40),
-    country: z.enum(["FR", "TN"]).nullable().catch(null),
+    city: opt(80),
+    activity: opt(80),
+    website: opt(200),
   }).safeParse(Object.fromEntries(form));
   if (!viewer || !parsed.success) return { error: true };
   const supabase = await createClient();

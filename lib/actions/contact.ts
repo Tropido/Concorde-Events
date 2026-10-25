@@ -12,7 +12,7 @@ const Contact = z.object({
   phone: z.string().trim().max(40).optional(),
   subject: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(5000),
-  country: z.enum(["FR", "TN"]),
+  country: z.literal("TN").default("TN"),
   website: z.string().max(0).optional(), // honeypot: never shown to people
 });
 

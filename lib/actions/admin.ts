@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { assertStaff } from "@/lib/auth";
-import { recordProviderRate } from "@/lib/fx";
 import { supabaseEnv } from "@/lib/supabase/env";
 import type { AdminErrorCode } from "@/lib/i18n/admin-types";
 import type { AppRole } from "@/lib/types";
@@ -19,7 +18,6 @@ function dbError(e: { message: string; code?: string }): AdminResult {
   const m = e.message;
   const error: AdminErrorCode =
     m.startsWith("capacity_exceeded") ? "capacity_exceeded"
-    : m === "fx_unavailable" ? "fx_unavailable"
     : m.startsWith("quote expired") ? "quote_expired"
     : m.startsWith("invalid status transition") || m.startsWith("use issue_quote") || m.startsWith("cannot quote") ? "invalid_transition"
     : m.includes("last approved admin") ? "last_admin"
@@ -52,10 +50,11 @@ export async function setRequestStatus(id: string, status: "confirmed" | "dispat
   return run(undefined, (db) => db.from("rental_requests").update({ status }).eq("id", id));
 }
 
-export async function issueQuote(id: string, currency: "EUR" | "TND", validDays: number) {
-  const p = z.object({ id: uuid, currency: z.enum(["EUR", "TND"]), validDays: z.number().int().min(1).max(90) }).safeParse({ id, currency, validDays });
+/** Quotes are always issued in TND. */
+export async function issueQuote(id: string, validDays: number) {
+  const p = z.object({ id: uuid, validDays: z.number().int().min(1).max(90) }).safeParse({ id, validDays });
   if (!p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.rpc("issue_quote", { p_request: id, p_currency: currency, p_valid_days: validDays }));
+  return run(undefined, (db) => db.rpc("issue_quote", { p_request: id, p_currency: "TND", p_valid_days: validDays }));
 }
 
 export async function rescheduleRequest(id: string, lines: { id: string; start_date: string; end_date: string }[]) {
@@ -88,7 +87,6 @@ const Ticket = z.object({
   name: z.string().trim().min(1).max(120),
   phone: z.string().trim().max(40).optional(),
   email: z.string().trim().max(254).optional(),
-  country: z.enum(["FR", "TN"]).optional().catch(undefined),
   subject: z.string().trim().min(1).max(200),
   body: z.string().trim().min(1).max(5000),
   reference: z.string().trim().max(40).optional(),
@@ -107,7 +105,7 @@ export async function createTicket(_: AdminResult | null, form: FormData): Promi
       profileId = data?.user_id ?? null;
     }
     return db.from("messages").insert({
-      channel: "whatsapp", ...t, phone: t.phone || null, email: t.email || null,
+      channel: "whatsapp", ...t, country: "TN", phone: t.phone || null, email: t.email || null,
       request_id: requestId, profile_id: profileId, assignee_id: me, status: "in_progress",
     });
   });
@@ -135,26 +133,51 @@ export async function assignMessageToMe(id: string) {
 // ---------- Inventory ----------
 
 const money = z.number().positive().max(1_000_000).nullable();
+const text = (max: number) => z.string().trim().max(max);
+const optText = (max: number) => text(max).nullable();
 const ProductInput = z.object({
   id: uuid.optional(),
   slug: z.string().trim().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(120),
-  title_fr: z.string().trim().min(1).max(200),
-  title_ar: z.string().trim().max(200).nullable(),
-  description_fr: z.string().trim().max(5000),
-  description_ar: z.string().trim().max(5000).nullable(),
+  sku: optText(40),
+  title_fr: text(200).min(1),
+  title_ar: optText(200),
+  description_fr: text(5000),
+  description_ar: optText(5000),
   category_id: uuid.nullable(),
+  badge: z.enum(["new", "bestseller", "limited"]).nullable(),
+  tone: z.enum(["almond", "sand", "tan", "copper", "cream", "stone"]),
+  color: optText(80),
+  color_hex: z.string().regex(/^#[0-9a-fA-F]{6}$/).nullable(),
+  material: optText(80),
+  finish: optText(80),
+  style: optText(80),
   width: z.number().positive().max(100000).nullable(),
   height: z.number().positive().max(100000).nullable(),
   depth: z.number().positive().max(100000).nullable(),
   dimension_unit: z.enum(["cm", "m"]),
-  color: z.string().trim().max(80).nullable(),
-  material: z.string().trim().max(80).nullable(),
-  tags: z.array(z.string().trim().min(1).max(40)).max(20),
+  weight_kg: z.number().positive().max(100000).nullable(),
+  seating_capacity: z.number().int().min(1).max(1000).nullable(),
+  setup_minutes: z.number().int().min(0).max(1440).nullable(),
+  deposit_amount: z.number().min(0).max(1_000_000).nullable(),
+  highlights_fr: z.array(text(60).min(1)).max(8),
+  highlights_ar: z.array(text(60).min(1)).max(8),
+  care_fr: optText(2000),
+  care_ar: optText(2000),
+  tags: z.array(text(40).min(1)).max(20),
   minimum_nights: z.number().int().min(1).max(365),
   featured: z.boolean(),
+  status: z.enum(["active", "retired"]),
   images: z.array(z.string().url().max(1000)).max(12),
-  stock: z.record(z.enum(["FR", "TN"]), z.object({ owned: z.number().int().min(0).max(100000) })),
-  prices: z.record(z.enum(["FR", "TN"]), z.object({ retail: money, pro: money })).optional(),
+  owned: z.number().int().min(0).max(100000),
+  prices: z.object({ retail: money, pro: money }).optional(),
+  internal: z.object({
+    purchase_cost: z.number().min(0).max(10_000_000).nullable(),
+    purchase_date: isoDay.nullable(),
+    supplier: optText(120),
+    storage_location: optText(120),
+    condition: z.enum(["new", "excellent", "good", "fair"]).nullable(),
+    internal_notes: optText(2000),
+  }),
 });
 export type ProductInput = z.infer<typeof ProductInput>;
 
@@ -167,10 +190,10 @@ export async function saveProduct(input: ProductInput): Promise<AdminResult & { 
   } catch {
     return { ok: false, error: "forbidden" };
   }
-  const { id, stock, prices, ...fields } = p.data;
+  const { id, owned, prices, internal, ...fields } = p.data;
   const db = await createClient();
 
-  // New photos must come from our own bucket; previously saved URLs (e.g. seed images) may stay.
+  // New photos must come from our own bucket; previously saved URLs may stay.
   const bucket = `${supabaseEnv().url}/storage/v1/object/public/product-images/`;
   const existing = id ? ((await db.from("products").select("images").eq("id", id).single()).data?.images ?? []) as string[] : [];
   if (fields.images.some((u) => !u.startsWith(bucket) && !existing.includes(u))) return { ok: false, error: "upload_failed" };
@@ -181,25 +204,22 @@ export async function saveProduct(input: ProductInput): Promise<AdminResult & { 
   if (saved.error) return dbError(saved.error);
   const productId = saved.data.id as string;
 
-  const { data: rows } = await db.from("product_stock").select("country").eq("product_id", productId);
-  const stocked = new Set((rows ?? []).map((r) => r.country));
-  for (const [country, s] of Object.entries(stock)) {
-    if (!stocked.has(country) && s.owned === 0) continue;
-    const { error } = await db.from("product_stock")
-      .upsert({ product_id: productId, country, quantity_owned: s.owned }, { onConflict: "product_id,country" });
+  const steps = [
+    db.from("product_stock").upsert({ product_id: productId, country: "TN", quantity_owned: owned }, { onConflict: "product_id,country" }),
+    db.from("product_internal").upsert({ product_id: productId, ...internal, updated_by: viewer.id }, { onConflict: "product_id" }),
+  ];
+  for (const step of steps) {
+    const { error } = await step;
     if (error) return { ...dbError(error), id: productId };
   }
 
   if (prices && viewer.role === "admin") {
-    for (const [country, tiers] of Object.entries(prices)) {
-      for (const tier of ["retail", "pro"] as const) {
-        const amount = tiers[tier];
-        const q = amount === null
-          ? db.from("product_prices").delete().eq("product_id", productId).eq("country", country).eq("tier", tier)
-          : db.from("product_prices").upsert({ product_id: productId, country, tier, amount }, { onConflict: "product_id,country,tier" });
-        const { error } = await q;
-        if (error) return { ...dbError(error), id: productId };
-      }
+    for (const tier of ["retail", "pro"] as const) {
+      const amount = prices[tier];
+      const { error } = amount === null
+        ? await db.from("product_prices").delete().eq("product_id", productId).eq("country", "TN").eq("tier", tier)
+        : await db.from("product_prices").upsert({ product_id: productId, country: "TN", tier, amount }, { onConflict: "product_id,country,tier" });
+      if (error) return { ...dbError(error), id: productId };
     }
   }
   revalidatePath("/admin", "layout");
@@ -213,8 +233,9 @@ export async function setProductStatus(id: string, status: "active" | "retired")
 }
 
 /** Repaired units return to service; written-off units leave the owned stock too. */
-export async function resolveMaintenance(productId: string, country: "FR" | "TN", qty: number, outcome: "repaired" | "written_off") {
-  const p = z.object({ productId: uuid, country: z.enum(["FR", "TN"]), qty: z.number().int().min(1).max(100000), outcome: z.enum(["repaired", "written_off"]) })
+export async function resolveMaintenance(productId: string, qty: number, outcome: "repaired" | "written_off") {
+  const country = "TN";
+  const p = z.object({ productId: uuid, country: z.literal("TN"), qty: z.number().int().min(1).max(100000), outcome: z.enum(["repaired", "written_off"]) })
     .safeParse({ productId, country, qty, outcome });
   if (!p.success) return { ok: false, error: "invalid" } as AdminResult;
   return run(undefined, async (db) => {
@@ -242,23 +263,67 @@ export async function setRole(profileId: string, role: AppRole) {
   return run(["admin"], (db) => db.from("profiles").update({ role: p.data }).eq("id", profileId));
 }
 
-export async function saveClientNotes(_: AdminResult | null, form: FormData): Promise<AdminResult> {
+export async function saveClientNotes(profileId: string, input: { notes: string; flags: string[]; level: string | null }): Promise<AdminResult> {
   const p = z.object({
-    profile_id: uuid,
+    profileId: uuid,
     notes: z.string().max(5000),
-    flags: z.string().max(500),
-    level: z.string().trim().max(40),
-  }).safeParse(Object.fromEntries(form));
+    flags: z.array(z.string().trim().min(1).max(40)).max(20),
+    level: z.string().trim().max(40).nullable(),
+  }).safeParse({ profileId, ...input });
   if (!p.success) return { ok: false, error: "invalid" };
-  const flags = p.data.flags.split(",").map((f) => f.trim()).filter(Boolean).slice(0, 20);
   return run(undefined, (db, me) => db.from("client_notes").upsert({
-    profile_id: p.data.profile_id, notes: p.data.notes, flags, level: p.data.level || null, updated_by: me,
+    profile_id: p.data.profileId, notes: p.data.notes, flags: p.data.flags, level: p.data.level || null, updated_by: me,
   }));
+}
+
+// ---------- Professional programme ----------
+
+export async function saveProProgramme(profileId: string, input: { tier: string; locked: boolean; customDiscount: number | null; benefits: string[] }): Promise<AdminResult> {
+  const p = z.object({
+    profileId: uuid,
+    tier: z.string().regex(/^[a-z0-9_]{2,30}$/),
+    locked: z.boolean(),
+    customDiscount: z.number().min(0).max(50).nullable(),
+    benefits: z.array(z.string().trim().min(1).max(120)).max(12),
+  }).safeParse({ profileId, ...input });
+  if (!p.success) return { ok: false, error: "invalid" };
+  return run(undefined, (db, me) => db.from("pro_accounts").update({
+    tier_code: p.data.tier, tier_locked: p.data.locked, custom_discount_percent: p.data.customDiscount,
+    extra_benefits: p.data.benefits, updated_by: me,
+  }).eq("profile_id", p.data.profileId));
+}
+
+/** Manual points movement (gesture, correction). Audited in reward_events; the balance follows. */
+export async function adjustPoints(profileId: string, points: number, reason: string): Promise<AdminResult> {
+  const p = z.object({ profileId: uuid, points: z.number().int().min(-1_000_000).max(1_000_000).refine((v) => v !== 0), reason: z.string().trim().min(1).max(200) })
+    .safeParse({ profileId, points, reason });
+  if (!p.success) return { ok: false, error: "invalid" };
+  return run(undefined, (db, me) => db.from("reward_events").insert({ profile_id: p.data.profileId, points: p.data.points, reason: p.data.reason, created_by: me }));
+}
+
+const TierInput = z.object({
+  code: z.string().regex(/^[a-z0-9_]{2,30}$/),
+  name_fr: z.string().trim().min(1).max(60),
+  name_ar: z.string().trim().max(60).nullable(),
+  min_points: z.number().int().min(0).max(10_000_000),
+  discount_percent: z.number().min(0).max(50),
+  benefits_fr: z.array(z.string().trim().min(1).max(120)).max(12),
+  benefits_ar: z.array(z.string().trim().min(1).max(120)).max(12),
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
+});
+export type TierInput = z.infer<typeof TierInput>;
+
+export async function saveTier(input: TierInput): Promise<AdminResult> {
+  const p = TierInput.safeParse(input);
+  if (!p.success) return { ok: false, error: "invalid" };
+  const { code, ...fields } = p.data;
+  const result = await run(["admin"], (db) => db.from("pro_tiers").update(fields).eq("code", code));
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
 }
 
 // ---------- CMS ----------
 
-const text = (max: number) => z.string().trim().max(max);
 const CmsInput = z.object({
   hero: z.object({ badge: text(120), title: text(160), titleAccent: text(160), subtitle: text(600) }),
   faqs: z.array(z.object({ question: text(300).min(1), answer: text(2000).min(1) })).max(30),
@@ -272,38 +337,5 @@ export async function publishCms(locale: "fr" | "ar", content: CmsInput): Promis
   const result = await run(["editor", "manager", "admin"], (db, me) =>
     db.from("cms_content").upsert({ locale, content: p.data, updated_by: me }));
   if (result.ok) revalidatePath("/");
-  return result;
-}
-
-// ---------- FX ----------
-
-export async function refreshFx(): Promise<AdminResult> {
-  try {
-    await assertStaff(["admin"]);
-  } catch {
-    return { ok: false, error: "forbidden" };
-  }
-  const res = await recordProviderRate(await createClient());
-  if (!res.ok) return { ok: false, error: res.reason === "jump_too_large" ? "jump_too_large" : "provider" };
-  revalidatePath("/", "layout");
-  return ok;
-}
-
-export async function setFxOverride(_: AdminResult | null, form: FormData): Promise<AdminResult> {
-  const p = z.object({
-    rate: z.coerce.number().min(1).max(10),
-    hours: z.coerce.number().int().min(1).max(24 * 30),
-    note: z.string().trim().min(1).max(500),
-  }).safeParse(Object.fromEntries(form));
-  if (!p.success) return { ok: false, error: "invalid" };
-  const result = await run(["admin"], (db, me) => db.from("fx_rates").insert({
-    rate_eur_tnd: p.data.rate,
-    source: "manual",
-    provider_time: new Date().toISOString(),
-    effective_until: new Date(Date.now() + p.data.hours * 3_600_000).toISOString(),
-    note: p.data.note,
-    created_by: me,
-  }));
-  if (result.ok) revalidatePath("/", "layout");
   return result;
 }

@@ -3,6 +3,7 @@ import { requireStaff } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { formatDateTime } from "@/lib/utils/formatters";
 import { CmsForm } from "./cms-form";
+import { FilterLinks, PageHeader } from "@/components/admin/ui";
 import { STAFF_ROLES, type CMSContent } from "@/lib/types";
 
 export default async function AdminCmsPage({ searchParams }: { searchParams: Promise<{ locale?: string }> }) {
@@ -15,19 +16,9 @@ export default async function AdminCmsPage({ searchParams }: { searchParams: Pro
 
   return (
     <>
-      <h1 className="text-2xl font-serif font-bold">{t.admin.nav.cms}</h1>
-      <nav className="flex gap-2" aria-label={t.admin.cms.locale}>
-        {(["fr", "ar"] as const).map((l) => (
-          <a key={l} href={`/admin/cms?locale=${l}`} aria-current={locale === l ? "page" : undefined}
-            className="px-3 py-1.5 rounded-full border border-tan/40 text-xs font-bold aria-[current=page]:bg-toffeeBrown aria-[current=page]:text-white">
-            {l === "fr" ? "Français" : "العربية"}
-          </a>
-        ))}
-      </nav>
-      <p className="text-xs opacity-70">
-        {t.admin.cms.emptyFallback}
-        {data?.updated_at && ` · ${t.admin.cms.publishedAt} ${formatDateTime(data.updated_at, prefs.lang)}`}
-      </p>
+      <PageHeader title={t.admin.nav.cms}
+        subtitle={<>{t.admin.cms.emptyFallback}{data?.updated_at && ` · ${t.admin.cms.publishedAt} ${formatDateTime(data.updated_at, prefs.lang)}`}</>}
+        actions={<FilterLinks label={t.admin.cms.locale} items={(["fr", "ar"] as const).map((l) => ({ href: `/admin/cms?locale=${l}`, label: l === "fr" ? "Français" : "العربية", active: locale === l }))} />} />
       <CmsForm key={locale} locale={locale} initial={{
         hero: { badge: content.hero?.badge ?? "", title: content.hero?.title ?? "", titleAccent: content.hero?.titleAccent ?? "", subtitle: content.hero?.subtitle ?? "" },
         faqs: content.faqs ?? [],

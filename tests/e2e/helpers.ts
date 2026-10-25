@@ -33,7 +33,7 @@ export async function makeUser(label: string, role?: "manager" | "admin") {
   const email = `${label}-${run}@it.concorde.test`;
   const password = `E2e-${crypto.randomUUID()}`;
   const { data, error } = await service.auth.admin.createUser({
-    email, password, email_confirm: true, user_metadata: { full_name: `E2E ${label}`, phone: "+33600000000" },
+    email, password, email_confirm: true, user_metadata: { full_name: `E2E ${label}`, phone: "+21622000000" },
   });
   if (error) throw error;
   createdUsers.push(data.user.id);

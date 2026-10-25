@@ -9,7 +9,7 @@ for (const lang of ["fr", "ar"] as const) {
       await context.addCookies([{ name: "ce_lang", value: lang, url: baseURL! }]);
     });
 
-    for (const path of ["/", "/catalogue", "/contact", "/about", "/login", "/register"]) {
+    for (const path of ["/", "/catalogue", "/professionnels", "/demande", "/contact", "/about", "/login", "/register"]) {
       test(`${path} renders with the right direction and no horizontal overflow`, async ({ page }) => {
         await page.goto(path);
         await expect(page.locator("html")).toHaveAttribute("dir", lang === "ar" ? "rtl" : "ltr");
@@ -29,7 +29,7 @@ test("unknown product slugs are a real 404", async ({ page }) => {
 
 test("booking dialog is keyboard operable", async ({ page }) => {
   await page.goto("/catalogue");
-  const book = page.getByRole("button", { name: /choisir dates/i }).first();
+  const book = page.getByRole("button", { name: /choisir les dates/i }).first();
   await book.focus();
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog");

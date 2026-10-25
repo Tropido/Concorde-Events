@@ -3,6 +3,7 @@ import type { Language } from "@/lib/i18n/translations";
 // Mirrors the enums in supabase/migrations.
 export type AppRole = "customer" | "professional" | "editor" | "manager" | "admin";
 export type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
+/** Database enum. The business is Tunisia-only; "FR" only exists on historical rows. */
 export type Country = "FR" | "TN";
 export type Currency = "EUR" | "TND";
 export type PriceTier = "retail" | "pro";
@@ -16,11 +17,39 @@ export type RequestStatus =
   | "rejected";
 export type MessageChannel = "site" | "contact" | "whatsapp";
 export type MessageStatus = "open" | "in_progress" | "resolved";
+export type EventType = "wedding" | "engagement" | "birthday" | "corporate" | "gala" | "private" | "other";
+export const EVENT_TYPES: EventType[] = ["wedding", "engagement", "birthday", "corporate", "gala", "private", "other"];
+export type DeliveryMode = "delivery" | "pickup";
+export type ContactChannel = "whatsapp" | "phone" | "email";
+export type Tone = "almond" | "sand" | "tan" | "copper" | "cream" | "stone";
+export const TONES: Tone[] = ["almond", "sand", "tan", "copper", "cream", "stone"];
+export type ProductBadge = "new" | "bestseller" | "limited";
 
 /** Operations staff (requests, stock, clients, inbox). */
 export const OPS_ROLES: AppRole[] = ["manager", "admin"];
 /** Everyone who may open /admin (editors only see the CMS). */
 export const STAFF_ROLES: AppRole[] = ["editor", "manager", "admin"];
+
+export interface ProTier {
+  code: string;
+  rank: number;
+  name: string;
+  minPoints: number;
+  discount: number;
+  benefits: string[];
+  color: string;
+}
+
+/** A professional's programme as the database reports it (read through RLS). */
+export interface ProStatus {
+  tier: ProTier;
+  next: ProTier | null;
+  points: number;
+  /** Effective discount on pro prices (custom rate or the tier's). */
+  discount: number;
+  benefits: string[];
+  locked: boolean;
+}
 
 /** The signed-in user as trusted from the database (never from the JWT metadata). */
 export interface Viewer {
@@ -30,34 +59,32 @@ export interface Viewer {
   companyName: string | null;
   phone: string | null;
   vatNumber: string | null;
-  country: Country | null;
+  activity: string | null;
+  city: string | null;
+  website: string | null;
   role: AppRole;
   status: AccountStatus;
+  pro: ProStatus | null;
 }
 
 export const isApprovedPro = (v: Viewer | null) => v?.role === "professional" && v.status === "approved";
 export const isStaff = (v: Viewer | null, roles: AppRole[] = STAFF_ROLES) =>
   !!v && v.status === "approved" && roles.includes(v.role);
 
-/** A nightly price as this viewer pays it. `amount` is null when the display currency
- *  needs an exchange rate that is currently unavailable. */
+/** A nightly price in TND as this viewer pays it. */
 export interface Price {
-  amount: number | null;
-  currency: Currency;
-  sourceAmount: number;
-  sourceCurrency: Currency;
+  /** What this viewer pays per night (pro rate minus programme discount for approved pros). */
+  amount: number;
+  /** Public retail rate, for comparison. */
+  retail: number | null;
   tier: PriceTier;
-}
-
-export interface FxInfo {
-  rate: number;
-  source: "provider" | "manual";
-  rateTime: string;
+  discount: number;
 }
 
 export interface CatalogueProduct {
   id: string;
   slug: string;
+  sku: string | null;
   title: string;
   description: string;
   /** Language the title/description are actually in (AR falls back to FR). */
@@ -65,12 +92,23 @@ export interface CatalogueProduct {
   category: { id: string; slug: string; name: string } | null;
   dimensions: { width: number | null; height: number | null; depth: number | null; unit: "cm" | "m" };
   color: string | null;
+  colorHex: string | null;
   material: string | null;
+  finish: string | null;
+  style: string | null;
+  weightKg: number | null;
+  seatingCapacity: number | null;
+  setupMinutes: number | null;
+  deposit: number | null;
+  highlights: string[];
+  care: string | null;
   tags: string[];
+  badge: ProductBadge | null;
+  tone: Tone;
   minimumNights: number;
   featured: boolean;
   images: string[];
-  /** Usable units in the selected country (owned minus maintenance), ignoring bookings. */
+  /** Usable units (owned minus maintenance), ignoring bookings. */
   stock: number;
   price: Price | null;
 }
@@ -90,11 +128,14 @@ export interface DraftLine {
   slug: string;
   title: string;
   image: string | null;
+  tone: Tone;
   quantity: number;
   /** Date-specific availability when the line was added; the server re-checks. */
   maxQuantity: number;
   startDate: string;
   endDate: string;
+  /** Nightly price shown when added (estimate only; the server prices the request). */
+  unitPrice: number | null;
 }
 
 export interface QuoteLine {
@@ -112,7 +153,8 @@ export interface QuoteLine {
   line_total: number;
 }
 
-/** Frozen at issue time by public.issue_quote(); never recomputed. */
+/** Frozen at issue time by public.issue_quote(); never recomputed. Older quotes may carry
+ *  EUR and an exchange rate; quotes issued now are always TND. */
 export interface QuoteSnapshot {
   reference: string;
   revision: number;
@@ -120,10 +162,12 @@ export interface QuoteSnapshot {
   valid_until: string;
   country: Country;
   tier: PriceTier;
+  discount_percent?: number;
   source_currency: Currency;
   currency: Currency;
   fx: { rate_eur_tnd: number; source: "provider" | "manual"; rate_time: string } | null;
   customer: { name: string; email: string; phone: string; company: string | null };
+  event?: { type: EventType | null; venue: string | null; guests: number | null; delivery_mode: DeliveryMode | null };
   notes: string | null;
   lines: QuoteLine[];
   total: number;

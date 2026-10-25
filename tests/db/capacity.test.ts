@@ -4,7 +4,7 @@ import { as, freshDb, isoDate, issueQuote, productId, submit, user } from "./har
 
 let db: PGlite;
 let client: string, manager: string;
-let sofa: string; // FR owned 12, TN owned 6 in the seed
+let sofa: string; // TN owned 12 in the seed
 
 beforeAll(async () => {
   db = await freshDb();
@@ -47,7 +47,7 @@ describe("submission validation", () => {
   it("bills by nights (calendar-date difference)", async () => {
     const r = await submit(db, client, [line(2, 15, 18)]);
     const { rows } = await db.query("select nights, line_total from public.request_lines where request_id = $1", [r.id]);
-    expect(rows[0]).toEqual({ nights: 3, line_total: "2100.000" }); // 350 x 2 x 3
+    expect(rows[0]).toEqual({ nights: 3, line_total: "6900.000" }); // 1150 x 2 x 3
   });
 
   it("keeps separate periods for the same product as separate lines", async () => {
@@ -58,7 +58,7 @@ describe("submission validation", () => {
 
   it("is idempotent per submission key and throttles per email", async () => {
     const key = crypto.randomUUID();
-    const payload = JSON.stringify({ country: "FR", customer_name: "X", customer_email: "spam@example.com", customer_phone: "123456", lines: [line(1, 30, 31)] });
+    const payload = JSON.stringify({ country: "TN", customer_name: "X", customer_email: "spam@example.com", customer_phone: "123456", lines: [line(1, 30, 31)] });
     const call = () => as(db, null, async (tx) => (await tx.query<{ r: string }>("select public.submit_request($1, $2) as r", [payload, key])).rows[0].r);
     expect(await call()).toBe(await call());
     for (let i = 0; i < 4; i++) {
@@ -84,32 +84,30 @@ describe("capacity", () => {
     expect((await db.query("select status from public.rental_requests where id = $1", [one.id])).rows[0]).toEqual({ status: "submitted" });
     expect((await db.query("select count(*)::int as n from public.quotes where request_id = $1", [one.id])).rows[0]).toEqual({ n: 0 });
     // Return day is blocked; the day after is free.
-    expect(await available(sofa, "FR", 63)).toBe(0);
-    expect(await available(sofa, "FR", 64)).toBe(12);
+    expect(await available(sofa, "TN", 63)).toBe(0);
+    expect(await available(sofa, "TN", 64)).toBe(12);
     // Cancelling releases the stock.
     await setStatus(all.id, "cancelled");
     await issueQuote(db, manager, one.id);
     await setStatus(one.id, "cancelled");
   });
 
-  it("keeps France and Tunisia stock independent", async () => {
-    const fr = await submit(db, client, [line(12, 70, 72)], {}, "FR");
-    const tn = await submit(db, client, [line(6, 70, 72)], {}, "TN");
-    await issueQuote(db, manager, fr.id);
-    await issueQuote(db, manager, tn.id, "TND");
-    expect(await available(sofa, "FR", 71)).toBe(0);
-    expect(await available(sofa, "TN", 71)).toBe(0);
-    const tn2 = await submit(db, client, [line(1, 70, 72)], {}, "TN");
-    await expect(issueQuote(db, manager, tn2.id, "TND")).rejects.toThrow(/capacity_exceeded/);
-    await setStatus(fr.id, "cancelled");
-    await setStatus(tn.id, "cancelled");
+  it("accepts Tunisian stock only (the business is TND-only)", async () => {
+    await expect(db.query("insert into public.product_stock (product_id, country, quantity_owned) values ($1, 'FR', 1) on conflict do nothing", [sofa]))
+      .rejects.toThrow(/product_stock_tn_only/);
+    await expect(db.query("insert into public.product_prices (product_id, country, tier, amount) values ($1, 'FR', 'retail', 10)", [sofa]))
+      .rejects.toThrow(/product_prices_tn_only/);
+    // A payload asking for France is still booked against Tunisian stock.
+    const r = await submit(db, client, [line(1, 70, 72)], {}, "FR");
+    expect((await db.query("select country from public.rental_requests where id = $1", [r.id])).rows[0]).toEqual({ country: "TN" });
+    await setStatus(r.id, "cancelled");
   });
 
   it("releases stock when a quote expires, and refuses to confirm an expired quote", async () => {
     const a = await submit(db, client, [line(12, 80, 82)]);
     await issueQuote(db, manager, a.id);
     await db.query("update public.rental_requests set quote_valid_until = current_date - 1 where id = $1", [a.id]);
-    expect(await available(sofa, "FR", 81)).toBe(12);
+    expect(await available(sofa, "TN", 81)).toBe(12);
     await expect(setStatus(a.id, "confirmed")).rejects.toThrow(/quote expired/);
     await setStatus(a.id, "cancelled");
   });
@@ -140,7 +138,7 @@ describe("capacity", () => {
     expect((await db.query("select status, quote_valid_until from public.rental_requests where id = $1", [r.id])).rows[0])
       .toEqual({ status: "submitted", quote_valid_until: null });
     const moved = (await db.query("select start_date::text, nights, line_total from public.request_lines where id = $1", [lineId])).rows[0];
-    expect(moved).toEqual({ start_date: isoDate(101), nights: 2, line_total: "1400.000" });
+    expect(moved).toEqual({ start_date: isoDate(101), nights: 2, line_total: "4600.000" });
     await expect(issueQuote(db, manager, r.id)).rejects.toThrow(/capacity_exceeded/);
 
     // A confirmed booking keeps its stock while moving, and cannot move into a conflict.
@@ -163,15 +161,15 @@ describe("capacity", () => {
     await setStatus(r.id, "dispatched");
     const lineId = (await db.query<{ id: string }>("select id from public.request_lines where request_id = $1", [r.id])).rows[0].id;
     const ret = () => as(db, manager, (tx) => tx.query("select public.return_request($1, $2)", [r.id, JSON.stringify([{ line_id: lineId, quantity: 1 }])]));
-    const stock = async () => (await db.query("select quantity_owned, quantity_maintenance from public.product_stock where product_id = $1 and country = 'FR'", [sofa])).rows[0];
+    const stock = async () => (await db.query("select quantity_owned, quantity_maintenance from public.product_stock where product_id = $1 and country = 'TN'", [sofa])).rows[0];
 
     await ret();
     await ret(); // second click: no effect
     expect(await stock()).toEqual({ quantity_owned: 12, quantity_maintenance: 1 });
-    expect(await available(sofa, "FR", 5)).toBe(11);
+    expect(await available(sofa, "TN", 5)).toBe(11);
 
     // Repaired: maintenance goes down, owned unchanged. Written off: both go down.
-    await as(db, manager, (tx) => tx.query("update public.product_stock set quantity_maintenance = 0 where product_id = $1 and country = 'FR'", [sofa]));
+    await as(db, manager, (tx) => tx.query("update public.product_stock set quantity_maintenance = 0 where product_id = $1 and country = 'TN'", [sofa]));
     expect(await stock()).toEqual({ quantity_owned: 12, quantity_maintenance: 0 });
   });
 
@@ -184,22 +182,22 @@ describe("capacity", () => {
     await db.exec("alter table public.request_lines disable trigger guard_line");
     await db.query("update public.request_lines set start_date = $2, end_date = $3 where request_id = $1", [r.id, isoDate(-3), isoDate(-1)]);
     await db.exec("alter table public.request_lines enable trigger guard_line");
-    expect(await available(sofa, "FR", 0)).toBe(0); // still out today
-    expect(await available(sofa, "FR", 1)).toBe(12); // expected back by tomorrow
+    expect(await available(sofa, "TN", 0)).toBe(0); // still out today
+    expect(await available(sofa, "TN", 1)).toBe(12); // expected back by tomorrow
     await as(db, manager, (tx) => tx.query("select public.return_request($1)", [r.id]));
-    expect(await available(sofa, "FR", 0)).toBe(12);
+    expect(await available(sofa, "TN", 0)).toBe(12);
   });
 
   it("refuses to reduce owned stock below commitments, but always records damage", async () => {
     const r = await submit(db, client, [line(10, 130, 131)]);
     await issueQuote(db, manager, r.id);
-    await expect(as(db, manager, (tx) => tx.query("update public.product_stock set quantity_owned = 9 where product_id = $1 and country = 'FR'", [sofa])))
+    await expect(as(db, manager, (tx) => tx.query("update public.product_stock set quantity_owned = 9 where product_id = $1 and country = 'TN'", [sofa])))
       .rejects.toThrow(/capacity_exceeded/);
-    await as(db, manager, (tx) => tx.query("update public.product_stock set quantity_maintenance = 3 where product_id = $1 and country = 'FR'", [sofa]));
+    await as(db, manager, (tx) => tx.query("update public.product_stock set quantity_maintenance = 3 where product_id = $1 and country = 'TN'", [sofa]));
     const conflicts = await as(db, manager, async (tx) => (await tx.query("select * from public.capacity_conflicts()")).rows);
     expect(conflicts.length).toBeGreaterThan(0);
     expect(await as(db, client, async (tx) => (await tx.query("select * from public.capacity_conflicts()")).rows)).toEqual([]);
-    await as(db, manager, (tx) => tx.query("update public.product_stock set quantity_maintenance = 0 where product_id = $1 and country = 'FR'", [sofa]));
+    await as(db, manager, (tx) => tx.query("update public.product_stock set quantity_maintenance = 0 where product_id = $1 and country = 'TN'", [sofa]));
     await setStatus(r.id, "cancelled");
   });
 });

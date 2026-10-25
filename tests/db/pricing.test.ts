@@ -2,8 +2,7 @@ import { beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
 import { as, freshDb, isoDate, issueQuote, productId, submit, user } from "./harness";
 
-// Seed: sofa FR retail 350 EUR / pro 280 EUR; TN retail 1150 TND / pro 920 TND.
-//       lamp FR retail 85 EUR. Provider rate 1 EUR = 3.364214 TND.
+// Seed (TND only): sofa retail 1150 / pro 920; lamp retail 280 / pro 215.
 let db: PGlite;
 let customer: string, pro: string, pendingPro: string, manager: string, admin: string;
 let sofa: string, lamp: string;
@@ -20,8 +19,8 @@ beforeAll(async () => {
 });
 
 type Snapshot = {
-  country: string; currency: string; source_currency: string; tier: string; total: number;
-  fx: { rate_eur_tnd: number; source: string } | null;
+  country: string; currency: string; source_currency: string; tier: string; total: number; discount_percent: number;
+  fx: unknown; event: { type: string | null; guests: number | null };
   lines: { quantity: number; nights: number; source_unit_price: number; unit_price: number; line_total: number }[];
 };
 const snapshot = async (quoteId: string) =>
@@ -29,72 +28,102 @@ const snapshot = async (quoteId: string) =>
 const unitPrice = async (requestId: string) =>
   (await db.query<{ unit_price: string }>("select unit_price from public.request_lines where request_id = $1", [requestId])).rows[0].unit_price;
 const sofaLine = (q = 1, s = 10, e = 12) => ({ product_id: sofa, quantity: q, start_date: isoDate(s), end_date: isoDate(e) });
+const account = async (id: string) =>
+  (await db.query<{ tier_code: string; points: number; tier_locked: boolean }>("select tier_code, points, tier_locked from public.pro_accounts where profile_id = $1", [id])).rows[0];
 
 describe("tiers", () => {
-  it("prices customers and pending pros at retail, approved pros at pro", async () => {
-    expect(await unitPrice((await submit(db, customer, [sofaLine()])).id)).toBe("350.000");
-    expect(await unitPrice((await submit(db, pendingPro, [sofaLine()])).id)).toBe("350.000");
-    expect(await unitPrice((await submit(db, pro, [sofaLine()])).id)).toBe("280.000");
-    expect(await unitPrice((await submit(db, null, [sofaLine()])).id)).toBe("350.000");
+  it("prices customers and pending pros at retail, approved pros at pro (bronze = no discount)", async () => {
+    expect(await unitPrice((await submit(db, customer, [sofaLine()])).id)).toBe("1150.000");
+    expect(await unitPrice((await submit(db, pendingPro, [sofaLine()])).id)).toBe("1150.000");
+    expect(await unitPrice((await submit(db, pro, [sofaLine()])).id)).toBe("920.000");
+    expect(await unitPrice((await submit(db, null, [sofaLine()])).id)).toBe("1150.000");
+  });
+
+  it("gives every professional a programme row, starting at bronze", async () => {
+    expect(await account(pro)).toEqual({ tier_code: "bronze", points: 0, tier_locked: false });
+    expect(await account(pendingPro)).toMatchObject({ tier_code: "bronze" });
+    expect((await db.query("select count(*)::int as n from public.pro_accounts where profile_id = $1", [customer])).rows[0]).toEqual({ n: 0 });
+  });
+
+  it("applies the tier discount, then a negotiated rate, to the pro price", async () => {
+    await as(db, manager, (tx) => tx.query("update public.pro_accounts set tier_code = 'or', tier_locked = true where profile_id = $1", [pro]));
+    expect(await unitPrice((await submit(db, pro, [sofaLine()])).id)).toBe("874.000"); // 920 - 5 %
+    await as(db, manager, (tx) => tx.query("update public.pro_accounts set custom_discount_percent = 12.5 where profile_id = $1", [pro]));
+    expect(await unitPrice((await submit(db, pro, [sofaLine()])).id)).toBe("805.000"); // 920 - 12.5 %
+    await as(db, manager, (tx) => tx.query("update public.pro_accounts set custom_discount_percent = null, tier_code = 'bronze', tier_locked = false where profile_id = $1", [pro]));
   });
 });
 
 describe("quotes", () => {
-  it("reconciles every line with the total in the source currency", async () => {
-    const r = await submit(db, pro, [sofaLine(2, 10, 13), { product_id: lamp, quantity: 5, start_date: isoDate(11), end_date: isoDate(12) }]);
-    const s = await snapshot(await issueQuote(db, manager, r.id, "EUR"));
-    expect(s).toMatchObject({ country: "FR", source_currency: "EUR", currency: "EUR", tier: "pro", fx: null });
+  it("are TND only and reconcile every line with the total", async () => {
+    const r = await submit(db, pro, [sofaLine(2, 10, 13), { product_id: lamp, quantity: 5, start_date: isoDate(11), end_date: isoDate(12) }],
+      { event_type: "wedding", guest_count: "180", event_venue: "Hammamet", delivery_mode: "delivery" });
+    const s = await snapshot(await issueQuote(db, manager, r.id));
+    expect(s).toMatchObject({ country: "TN", source_currency: "TND", currency: "TND", tier: "pro", fx: null });
+    expect(s.event).toMatchObject({ type: "wedding", guests: 180 });
     for (const l of s.lines) expect(l.line_total).toBeCloseTo(l.unit_price * l.quantity * l.nights, 6);
-    expect(s.total).toBeCloseTo(s.lines.reduce((a, l) => a + l.line_total, 0), 6);
-    expect(s.total).toBe(280 * 2 * 3 + 65 * 5 * 1);
+    expect(s.total).toBe(920 * 2 * 3 + 215 * 5 * 1);
+    await expect(issueQuote(db, manager, r.id, "EUR")).rejects.toThrow(/tnd_only/);
   });
 
-  it("converts EUR to TND by multiplying, rounded to millimes", async () => {
-    const r = await submit(db, customer, [sofaLine(1, 20, 21)]);
-    const s = await snapshot(await issueQuote(db, manager, r.id, "TND"));
-    expect(s.lines[0].source_unit_price).toBe(350);
-    expect(s.lines[0].unit_price).toBe(1177.475); // 350 x 3.364214 = 1177.4749
-    expect(s.fx).toMatchObject({ rate_eur_tnd: 3.364214, source: "provider" });
-    expect(s.country).toBe("FR"); // currency choice never moves the stock pool
+  it("rejects unknown event types and bad guest counts", async () => {
+    await expect(submit(db, customer, [sofaLine(1, 20, 21)], { event_type: "rave" })).rejects.toThrow(/invalid_contact/);
+    await expect(submit(db, customer, [sofaLine(1, 20, 21)], { guest_count: "-3" })).rejects.toThrow(/invalid_contact/);
   });
 
-  it("converts TND to EUR by dividing, rounded to cents", async () => {
-    const r = await submit(db, customer, [sofaLine(1, 20, 22)], {}, "TN");
-    const s = await snapshot(await issueQuote(db, manager, r.id, "EUR"));
-    expect(s).toMatchObject({ country: "TN", source_currency: "TND", currency: "EUR" });
-    expect(s.lines[0].unit_price).toBe(341.83); // 1150 / 3.364214 = 341.8329
-    expect(s.total).toBe(683.66);
-  });
-
-  it("refuses converted quotes without a fresh rate, but still quotes in the source currency", async () => {
-    await db.query("update public.fx_rates set provider_time = now() - interval '73 hours'");
-    const r = await submit(db, customer, [sofaLine(1, 30, 31)]);
-    await expect(issueQuote(db, manager, r.id, "TND")).rejects.toThrow(/fx_unavailable/);
-    await issueQuote(db, manager, r.id, "EUR");
-    expect((await db.query("select amount_tnd from public.catalogue_prices where product_id = $1 and country = 'FR' and tier = 'retail'", [sofa])).rows[0])
-      .toEqual({ amount_tnd: null });
-
-    // An admin override (with expiry) unblocks conversion and is recorded as such.
-    await as(db, admin, (tx) => tx.query(
-      "insert into public.fx_rates (rate_eur_tnd, source, provider_time, effective_until, note) values (3.5, 'manual', now(), now() + interval '1 day', 'provider outage')",
-    ));
-    const s = await snapshot(await issueQuote(db, manager, r.id, "TND"));
-    expect(s.lines[0].unit_price).toBe(1225);
-    expect(s.fx).toMatchObject({ rate_eur_tnd: 3.5, source: "manual" });
-    await db.query("delete from public.fx_rates where source = 'manual'");
-    await db.query("update public.fx_rates set provider_time = now()");
-  });
-
-  it("freezes issued quotes against later price and rate changes", async () => {
+  it("freezes issued quotes against later price changes", async () => {
     const r = await submit(db, customer, [sofaLine(1, 40, 42)]);
-    const q1 = await issueQuote(db, manager, r.id, "TND");
+    const q1 = await issueQuote(db, manager, r.id);
     const before = await snapshot(q1);
-    await db.query("update public.product_prices set amount = 999 where product_id = $1", [sofa]);
-    await db.query("insert into public.fx_rates (rate_eur_tnd, source, provider_time) values (3.9, 'provider', now() + interval '1 minute')");
+    await db.query("update public.product_prices set amount = 999 where product_id = $1 and tier = 'retail'", [sofa]);
     expect(await snapshot(q1)).toEqual(before);
-    // A new revision uses the new rate, but the price captured at submission.
-    const after = await snapshot(await issueQuote(db, manager, r.id, "TND"));
-    expect(after.lines[0].source_unit_price).toBe(350);
-    expect(after.lines[0].unit_price).toBe(1365);
+    // A new revision keeps the price captured at submission.
+    const after = await snapshot(await issueQuote(db, manager, r.id));
+    expect(after.lines[0].unit_price).toBe(1150);
+    await db.query("update public.product_prices set amount = 1150 where product_id = $1 and tier = 'retail'", [sofa]);
+  });
+});
+
+describe("loyalty points", () => {
+  it("awards 1 point per 10 TND when a pro rental completes, once, and promotes the tier", async () => {
+    const r = await submit(db, pro, [sofaLine(1, 2, 4)]); // 920 x 2 nights = 1840 -> 184 pts
+    await issueQuote(db, manager, r.id);
+    await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'confirmed' where id = $1", [r.id]));
+    await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'dispatched' where id = $1", [r.id]));
+    await as(db, manager, (tx) => tx.query("select public.return_request($1)", [r.id]));
+    await as(db, manager, (tx) => tx.query("select public.return_request($1)", [r.id])); // idempotent
+    expect((await account(pro)).points).toBe(184);
+
+    await as(db, manager, (tx) => tx.query("insert into public.reward_events (profile_id, points, reason) values ($1, 400, 'Gala Carthage bonus')", [pro]));
+    expect(await account(pro)).toMatchObject({ points: 584, tier_code: "argent" });
+  });
+
+  it("keeps a locked tier, never lets API callers edit points, and keeps the ledger immutable", async () => {
+    await as(db, manager, (tx) => tx.query("update public.pro_accounts set tier_code = 'diamant', tier_locked = true where profile_id = $1", [pro]));
+    await as(db, manager, (tx) => tx.query("insert into public.reward_events (profile_id, points, reason) values ($1, 10, 'x')", [pro]));
+    expect(await account(pro)).toMatchObject({ tier_code: "diamant" });
+    await expect(as(db, admin, (tx) => tx.query("update public.pro_accounts set points = 99999 where profile_id = $1", [pro])))
+      .rejects.toThrow(/reward events/);
+    await expect(as(db, admin, (tx) => tx.query("delete from public.reward_events where profile_id = $1", [pro])))
+      .rejects.toThrow(/permission denied|immutable/);
+  });
+
+  it("lets a pro read their own programme but not edit it; others see nothing", async () => {
+    const own = await as(db, pro, (tx) => tx.query("select tier_code from public.pro_accounts"));
+    expect(own.rows).toHaveLength(1);
+    const ownEvents = await as(db, pro, (tx) => tx.query("select points from public.reward_events"));
+    expect(ownEvents.rows.length).toBeGreaterThan(0);
+    await as(db, pro, (tx) => tx.query("update public.pro_accounts set tier_code = 'royal_elite' where profile_id = $1", [pro]));
+    expect(await account(pro)).toMatchObject({ tier_code: "diamant" }); // RLS: 0 rows updated
+    await expect(as(db, pro, (tx) => tx.query("insert into public.reward_events (profile_id, points, reason) values ($1, 1000, 'self')", [pro])))
+      .rejects.toThrow(/row-level security/);
+    expect((await as(db, customer, (tx) => tx.query("select * from public.pro_accounts"))).rows).toHaveLength(0);
+    expect((await as(db, null, (tx) => tx.query("select code from public.pro_tiers"))).rows).toHaveLength(6);
+  });
+
+  it("keeps product internals (cost, supplier) away from everyone but operations staff", async () => {
+    await as(db, manager, (tx) => tx.query("insert into public.product_internal (product_id, purchase_cost, supplier) values ($1, 2400, 'Atelier Sfax')", [sofa]));
+    expect((await as(db, pro, (tx) => tx.query("select * from public.product_internal"))).rows).toHaveLength(0);
+    expect((await as(db, manager, (tx) => tx.query("select supplier from public.product_internal"))).rows).toEqual([{ supplier: "Atelier Sfax" }]);
   });
 });

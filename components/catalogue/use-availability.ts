@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { dayNumber } from "@/lib/dates";
-import type { Country } from "@/lib/types";
 
-/** Per-day units available (bookings, valid quotes and maintenance already deducted). */
-export function useAvailability(productId: string | null, country: Country, from: string | null, to: string | null) {
+/** Per-day units available in Tunisia (bookings, valid quotes and maintenance deducted). */
+export function useAvailability(productId: string | null, from: string | null, to: string | null) {
   const [days, setDays] = useState<Map<string, number> | null>(null);
   const [error, setError] = useState(false);
 
@@ -18,7 +17,7 @@ export function useAvailability(productId: string | null, country: Country, from
     if (!productId || f === null || tt === null || tt < f) return;
     let cancelled = false;
     createClient()
-      .rpc("product_availability", { p_product: productId, p_country: country, p_from: from, p_to: to })
+      .rpc("product_availability", { p_product: productId, p_country: "TN", p_from: from, p_to: to })
       .then(({ data, error: e }) => {
         if (cancelled) return;
         if (e) setError(true);
@@ -27,7 +26,7 @@ export function useAvailability(productId: string | null, country: Country, from
     return () => {
       cancelled = true;
     };
-  }, [productId, country, from, to]);
+  }, [productId, from, to]);
 
   return { days, error };
 }

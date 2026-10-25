@@ -70,10 +70,10 @@ describe.skipIf(!safe)("hosted test project", () => {
       .insert({ slug: `it-${run}`, title_fr: `Integration ${run}` }).select("id").single();
     if (error) throw error;
     productId = data.id;
-    const stock = await service.from("product_stock").insert({ product_id: productId, country: "FR", quantity_owned: 1 });
+    const stock = await service.from("product_stock").insert({ product_id: productId, country: "TN", quantity_owned: 1 });
     const prices = await service.from("product_prices").insert([
-      { product_id: productId, country: "FR", tier: "retail", amount: 100 },
-      { product_id: productId, country: "FR", tier: "pro", amount: 80 },
+      { product_id: productId, country: "TN", tier: "retail", amount: 100 },
+      { product_id: productId, country: "TN", tier: "pro", amount: 80 },
     ]);
     if (stock.error || prices.error) throw stock.error ?? prices.error;
   });
@@ -86,7 +86,7 @@ describe.skipIf(!safe)("hosted test project", () => {
   const submit = async (client: SupabaseClient, email: string, start: number, end: number) => {
     const { data, error } = await client.rpc("submit_request", {
       payload: {
-        country: "FR", customer_name: "IT", customer_email: email, customer_phone: "+33600000000",
+        country: "TN", customer_name: "IT", customer_email: email, customer_phone: "+21622000000",
         lines: [{ product_id: productId, quantity: 1, start_date: day(start), end_date: day(end) }],
       },
       idem_key: crypto.randomUUID(),
@@ -130,7 +130,7 @@ describe.skipIf(!safe)("hosted test project", () => {
     const first = await submit(customerA.client, `a-${run}@it.concorde.test`, 40, 43);
     const second = await submit(customerB.client, `b-${run}@it.concorde.test`, 41, 44);
     const results = await Promise.all([first, second].map((id) =>
-      manager.client.rpc("issue_quote", { p_request: id, p_currency: "EUR" })));
+      manager.client.rpc("issue_quote", { p_request: id, p_currency: "TND" })));
     const ok = results.filter((r) => !r.error);
     const failed = results.filter((r) => r.error);
     expect(ok).toHaveLength(1);

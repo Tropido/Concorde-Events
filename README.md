@@ -1,9 +1,9 @@
 # Concorde Events
 
-Event-furniture rental platform for France and Tunisia. It has three parts:
+Event-furniture rental platform for Tunisia. Every price, quote and total is in Tunisian dinars (TND). French is the main language, with Arabic (RTL) as the second. It has three parts:
 
 - a public catalogue with per-date availability and quote requests;
-- a client area (`/account`);
+- a client area (`/account`), with a pro space (`/account/pro`) for professionals;
 - an operations back office (`/admin`).
 
 **Stack:** Next.js 15 App Router, TypeScript, Tailwind, and Supabase (Postgres, Auth, Storage, RLS). It is deployed on Vercel.
@@ -27,8 +27,7 @@ All `.env*` files except `.env.example` are git-ignored. Never commit keys.
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | all | Project URL |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | all | Public key. RLS protects the data. |
-| `SUPABASE_SECRET_KEY` | Production (cron), tests | Server-only. Used only by `/api/cron/fx` and the test suites. |
-| `CRON_SECRET` | Production | Vercel sends it as a bearer token to the FX cron. |
+| `SUPABASE_SECRET_KEY` | tests | Server-only. Used only by the integration and e2e suites; the app never needs it. |
 | `SUPABASE_DB_URL` | `.env.test.local` | Connection string for `npm run db:push` |
 | `TEST_PROJECT_REF` | `.env.test.local` | The integration and e2e suites refuse to run against any other project. |
 
@@ -46,6 +45,8 @@ npm run db:push -- --include-seed   # TEST project only: dev catalogue fixtures
 - **Never** seed production. `supabase/seed.sql` contains placeholder prices and stock.
 - Production starts empty, and staff enter the approved catalogue in `/admin/inventory`.
 - Back up production before migrating, and prefer additive migrations.
+- `20261025120000_tnd_pro_programme_products.sql` makes the system TND-only (it cancels open France requests and removes France stock and prices), adds the pro programme and the detailed product fields.
+- `20261025120100_catalogue_cleanup.sql` retires the English demo items and the screenshot items, and strips their images. A retired piece is hidden, not deleted: upload real photos in `/admin/inventory` and set it back online.
 - Rolling back the app on Vercel does not undo database changes.
 
 ### First administrator
@@ -87,6 +88,5 @@ npm run build
 ## Deployment (Vercel)
 
 - **Preview** environment variables point to the **test** Supabase project.
-- **Production** points to the production project, and also needs `SUPABASE_SECRET_KEY` and `CRON_SECRET`.
-- `vercel.json` schedules the daily exchange-rate refresh at `/api/cron/fx`.
+- **Production** points to the production project. It needs only the two public variables.
 - Pushing a branch creates a Preview deployment; merging to the production branch deploys Production.

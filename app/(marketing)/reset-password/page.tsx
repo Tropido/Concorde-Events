@@ -9,7 +9,7 @@ export default async function ResetPasswordPage() {
   return (
     <AuthCard title={t.auth.resetTitle}>
       {viewer ? <ResetForm /> : (
-        <p className="text-sm text-center">
+        <p className="text-sm">
           {t.auth.linkInvalid} <Link href="/forgot-password" className="underline">{t.auth.forgotTitle}</Link>
         </p>
       )}

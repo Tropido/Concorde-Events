@@ -62,7 +62,7 @@ describe("prices", () => {
     const vase = await productId(db, "vase");
     const upd = "update public.product_prices set amount = amount where product_id = $1 and tier = 'retail' returning 1";
     expect(await count(manager, upd, [vase])).toBe(0);
-    expect(await count(admin, upd, [vase])).toBe(2);
+    expect(await count(admin, upd, [vase])).toBe(1);
   });
 });
 
@@ -125,7 +125,7 @@ describe("requests and quotes", () => {
 
   it("denies direct inserts; the RPC ignores forged owner, status and prices", async () => {
     await expect(as(db, customerA, (tx) => tx.query(
-      "insert into public.rental_requests (customer_name, customer_email, customer_phone, country, tier, idempotency_key) values ('x','x@x.io','123456','FR','pro', gen_random_uuid())",
+      "insert into public.rental_requests (customer_name, customer_email, customer_phone, country, tier, idempotency_key) values ('x','x@x.io','123456','TN','pro', gen_random_uuid())",
     ))).rejects.toThrow(/permission denied/);
 
     const r = await submit(db, customerA, [{ product_id: sofa, quantity: 1, start_date: isoDate(20), end_date: isoDate(21), unit_price: 0 } as never], {
@@ -135,7 +135,7 @@ describe("requests and quotes", () => {
       "select r.user_id, r.status, r.tier, l.unit_price from public.rental_requests r join public.request_lines l on l.request_id = r.id where r.id = $1",
       [r.id],
     );
-    expect(rows[0]).toMatchObject({ user_id: customerA, status: "submitted", tier: "retail", unit_price: "350.000" });
+    expect(rows[0]).toMatchObject({ user_id: customerA, status: "submitted", tier: "retail", unit_price: "1150.000" });
   });
 
   it("makes quotes immutable for everyone", async () => {

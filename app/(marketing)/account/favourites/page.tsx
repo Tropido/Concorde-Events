@@ -20,14 +20,14 @@ export default async function FavouritesPage() {
 
   if (items.length === 0) {
     return (
-      <p className="py-12 text-center text-sm">
-        {t.account.noFavourites}{" "}
-        <Link href="/catalogue" className="underline font-bold">{t.nav.catalogue}</Link>
-      </p>
+      <div className="card flex flex-col items-center gap-3 p-12 text-center">
+        <p className="text-lg font-semibold tracking-tight">{t.account.noFavourites}</p>
+        <Link href="/catalogue" className="btn-ink">{t.bag.browse}</Link>
+      </div>
     );
   }
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="card grid grid-cols-2 gap-x-2.5 gap-y-8 p-4 sm:p-6 lg:grid-cols-3">
       {items.map((p) => <ProductCard key={p.id} product={p} />)}
     </div>
   );

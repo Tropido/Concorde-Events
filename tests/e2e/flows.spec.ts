@@ -15,31 +15,38 @@ test("request -> staff quote -> client sees it in another session", async ({ bro
   const manager = await makeUser("manager", "manager");
 
   const c = await browser.newPage();
+  // Capture the WhatsApp hand-off instead of opening wa.me.
+  await c.addInitScript(() => {
+    (window as unknown as { __opened: string[] }).__opened = [];
+    window.open = ((u?: string | URL) => { (window as unknown as { __opened: string[] }).__opened.push(String(u)); return null; }) as typeof window.open;
+  });
   await login(c, client.email, client.password);
   await c.goto("/catalogue");
-  await c.getByRole("button", { name: /choisir dates/i }).first().click();
+  await c.getByRole("button", { name: /choisir les dates/i }).first().click();
   const dialog = c.getByRole("dialog");
   await dialog.getByLabel("Début").fill(isoDate(30));
   await dialog.getByLabel("Fin (retour)").fill(isoDate(33));
-  await expect(dialog.getByText(/disponible/)).toBeVisible();
-  await dialog.getByRole("button", { name: /ajouter à ma demande/i }).click();
+  await expect(dialog.getByText(/disponible/).first()).toBeVisible();
+  await dialog.getByRole("button", { name: /^ajouter/i }).click();
+  await c.goto("/demande");
+  await c.getByRole("button", { name: "Mariage" }).click();
   await c.getByRole("button", { name: /envoyer ma demande/i }).click();
-  await c.getByRole("button", { name: /enregistrer la demande/i }).click();
   const status = c.getByRole("status");
   await expect(status).toContainText(/CE-\d{4}-\d{5}/);
   const reference = (await status.textContent())!.match(/CE-\d{4}-\d{5}/)![0];
-  // WhatsApp is a plain link (no popup), pointing at the business number with the reference.
-  const wa = c.getByRole("link", { name: /continuer sur whatsapp/i });
-  await expect(wa).toHaveAttribute("href", new RegExp(`^https://wa\\.me/21623040424\\?text=.*${reference}`));
+  // The WhatsApp hand-off targets the business number and carries the reference.
+  await c.getByRole("button", { name: /continuer sur whatsapp/i }).click();
+  const opened = await c.evaluate(() => (window as unknown as { __opened: string[] }).__opened);
+  expect(opened[0]).toMatch(new RegExp(`^https://wa\\.me/21623040424\\?text=.*${reference}`));
 
   const m = await browser.newPage();
   await login(m, manager.email, manager.password, "/admin/login");
   await m.goto("/admin/requests");
   await m.getByRole("link", { name: reference }).click();
-  await m.getByRole("button", { name: /émettre un devis/i }).click();
+  await m.getByRole("button", { name: /émettre le devis/i }).click();
   await expect(m.getByRole("status")).toContainText(/enregistré/i);
   await m.reload();
-  await expect(m.getByRole("link", { name: "R1" })).toBeVisible();
+  await expect(m.getByRole("link", { name: /^R1\b/ })).toBeVisible();
 
   await c.goto("/account");
   await c.reload();
@@ -87,7 +94,7 @@ test("signup confirmation, password recovery and logout", async ({ page, baseURL
   if (error) throw error;
   await page.goto(`${baseURL}/auth/confirm?token_hash=${data.properties.hashed_token}&type=signup&next=/account`);
   await expect(page).toHaveURL(/\/account$/);
-  await expect(page.getByRole("heading", { name: /Signup E2E/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Signup/ })).toBeVisible();
   await page.getByRole("button", { name: /se déconnecter/i }).first().click();
   // Sign-out revokes every session of the user: let it finish before starting recovery.
   await expect(page.getByRole("link", { name: /^connexion$/i }).first()).toBeVisible();
@@ -111,19 +118,22 @@ test("pro approval and suspension take effect immediately", async ({ browser }) 
   const p = await browser.newPage();
   await login(p, pro.email, pro.password);
   await p.goto("/account");
-  await expect(p.getByText(/en attente/i).first()).toBeVisible();
+  await expect(p.getByText(/en cours de validation/i).first()).toBeVisible();
 
   const m = await browser.newPage();
   await login(m, manager.email, manager.password, "/admin/login");
-  await m.goto("/admin/clients");
-  const card = m.getByRole("listitem").filter({ hasText: pro.email });
-  await card.getByRole("button", { name: /valider/i }).click();
+  await m.goto(`/admin/clients?view=pending&q=${encodeURIComponent(pro.email)}`);
+  await m.getByRole("button", { name: /^valider$/i }).first().click();
+  await expect(m.getByRole("status").first()).toBeVisible();
+  // /account/tools now lands on the pro space, which holds the margin calculator.
   await p.goto("/account/tools");
+  await expect(p).toHaveURL(/\/account\/pro$/);
   await expect(p.getByRole("heading", { name: /calculateur de marge/i })).toBeVisible();
 
-  await m.goto("/admin/clients?view=all");
+  await m.goto(`/admin/clients?view=pros&q=${encodeURIComponent(pro.email)}`);
   m.once("dialog", (d) => d.accept());
-  await m.getByRole("listitem").filter({ hasText: pro.email }).getByRole("button", { name: /suspendre/i }).click();
+  await m.getByRole("button", { name: /^suspendre$/i }).first().click();
+  await expect(m.getByRole("status").first()).toBeVisible();
   await p.goto("/account");
   await expect(p.getByRole("heading", { name: /compte suspendu/i })).toBeVisible();
 });
@@ -134,10 +144,10 @@ test("product photo upload persists after reload", async ({ browser }) => {
   await login(m, manager.email, manager.password, "/admin/login");
   await m.goto("/admin/inventory/new");
   await m.getByLabel("Titre (FR)").fill(`Pièce E2E ${run}`);
-  await m.getByLabel("Slug (URL)").fill(`e2e-${run}`);
+  await m.getByLabel("Adresse de la page").fill(`e2e-${run}`);
   // 1x1 PNG
   const png = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64");
-  await m.getByLabel(/ajouter des photos/i).setInputFiles({ name: "p.png", mimeType: "image/png", buffer: png });
+  await m.locator('input[type="file"]').setInputFiles({ name: "p.png", mimeType: "image/png", buffer: png });
   await expect(m.getByRole("button", { name: /retirer/i }).first()).toBeVisible();
   await m.getByRole("button", { name: /enregistrer la pièce/i }).click();
   await expect(m).toHaveURL(/\/admin\/inventory\/[0-9a-f-]{36}$/);
