@@ -1,6 +1,7 @@
 import { PGlite, type Transaction } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { addDays, todayIn } from "@/lib/dates";
 
 const root = path.resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(path.join(root, p), "utf8");
@@ -54,10 +55,10 @@ export async function productId(db: PGlite, slug: string) {
   return rows[0].id;
 }
 
+/** Days from today in Tunis, like private.local_today('TN'): a UTC date is a day behind
+ *  between midnight and 1 a.m. Tunis time, which made date checks flaky at night. */
 export function isoDate(daysFromToday: number) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + daysFromToday);
-  return d.toISOString().slice(0, 10);
+  return addDays(todayIn("TN"), daysFromToday);
 }
 
 /** Submits a request through the public RPC and returns its id + reference. */

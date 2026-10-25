@@ -140,6 +140,31 @@ test("pro approval and suspension take effect immediately", async ({ browser }) 
   await expect(p.getByRole("heading", { name: /compte suspendu/i })).toBeVisible();
 });
 
+test("prices: a visitor sees 'Prix sur devis', an approved Particulier+ sees dinars", async ({ browser }) => {
+  const visitor = await browser.newPage();
+  await visitor.goto("/catalogue");
+  const firstCard = visitor.locator("article").first();
+  await expect(firstCard).toContainText("Prix sur devis");
+  await expect(firstCard.getByRole("link", { name: /voir les tarifs avec particulier\+/i })).toBeVisible();
+
+  const plus = await makeUser("plus", "customer_plus");
+  const p = await browser.newPage();
+  await login(p, plus.email, plus.password);
+  await p.goto("/catalogue");
+  await expect(p.locator("article").first()).toContainText(/\d DT/);
+  await expect(p.getByText("Prix sur devis")).toHaveCount(0);
+});
+
+test("theme switch applies dark mode and keeps it after a reload", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Thème sombre" }).first().click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Thème clair" }).first().click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
+});
+
 test("product photo upload persists after reload", async ({ browser }) => {
   const manager = await makeUser("uploader", "manager");
   const m = await browser.newPage();

@@ -14,6 +14,7 @@ for (const lang of ["fr", "ar"] as const) {
         await page.goto(path);
         await expect(page.locator("html")).toHaveAttribute("dir", lang === "ar" ? "rtl" : "ltr");
         await expect(page.locator("html")).toHaveAttribute("lang", lang);
+        await expect(page).toHaveTitle(/Rent for Events/);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow).toBeLessThanOrEqual(1);
       });

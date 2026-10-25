@@ -10,7 +10,7 @@ import { BookingPanel } from "@/components/catalogue/date-selection-modal";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { PriceTag, ProductTile, ease } from "@/components/ui/kit";
 import { cn, formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { CatalogueProduct } from "@/lib/types";
+import { pricesVisible, type CatalogueProduct } from "@/lib/types";
 
 type Tab = "details" | "dimensions" | "care";
 
@@ -27,7 +27,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
     ...p.highlights.map((h) => ({ icon: Sparkles, text: h })),
     ...(p.seatingCapacity ? [{ icon: Users, text: t.product.seats(p.seatingCapacity) }] : []),
     ...(p.setupMinutes ? [{ icon: Clock, text: t.product.setup(p.setupMinutes) }] : []),
-    ...(p.deposit ? [{ icon: ShieldCheck, text: t.product.deposit(formatTND(p.deposit, language)) }] : []),
+    ...(p.deposit && pricesVisible(viewer) ? [{ icon: ShieldCheck, text: t.product.deposit(formatTND(p.deposit, language)) }] : []),
   ];
 
   const specs: [string, string | null][] = [

@@ -29,7 +29,7 @@ export const service: SupabaseClient = enabled
 
 export const createdUsers: string[] = [];
 
-export async function makeUser(label: string, role?: "manager" | "admin") {
+export async function makeUser(label: string, role?: "manager" | "admin" | "customer_plus" | "professional") {
   const email = `${label}-${run}@it.concorde.test`;
   const password = `E2e-${crypto.randomUUID()}`;
   const { data, error } = await service.auth.admin.createUser({
