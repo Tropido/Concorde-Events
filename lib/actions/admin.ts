@@ -259,7 +259,7 @@ export async function setAccountStatus(profileId: string, status: "approved" | "
 }
 
 export async function setRole(profileId: string, role: AppRole) {
-  const p = z.enum(["customer", "professional", "editor", "manager", "admin"]).safeParse(role);
+  const p = z.enum(["customer", "customer_plus", "professional", "editor", "manager", "admin"]).safeParse(role);
   if (!uuid.safeParse(profileId).success || !p.success) return { ok: false, error: "invalid" } as AdminResult;
   return run(["admin"], (db) => db.from("profiles").update({ role: p.data }).eq("id", profileId));
 }

@@ -2,23 +2,23 @@
 
 import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Building2, ChevronDown, Globe, Lock, Mail, MapPin, Phone, Plus, Unlock, X } from "lucide-react";
+import { Building2, CalendarHeart, ChevronDown, Globe, Lock, Mail, MapPin, Phone, Plus, Unlock, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { adjustPoints, saveClientNotes, saveProProgramme, setAccountStatus, setRole, type AdminResult } from "@/lib/actions/admin";
 import { ActionButton, Avatar, ResultText, btnDanger, btnPrimary } from "@/components/admin/ui";
 import { ease } from "@/components/ui/kit";
 import { cn, formatDateTime, formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { AccountStatus, AppRole, ProTier } from "@/lib/types";
+import type { AccountStatus, AppRole, EventType, ProTier } from "@/lib/types";
 
 export type ClientRow = {
   id: string; email: string; full_name: string | null; company_name: string | null; phone: string | null; vat_number: string | null;
-  activity: string | null; city: string | null; website: string | null; role: AppRole; status: AccountStatus; created_at: string;
+  activity: string | null; city: string | null; website: string | null; event_type: EventType | null; role: AppRole; status: AccountStatus; created_at: string;
   client_notes: { notes: string; flags: string[]; level: string | null } | null;
   pro_accounts: { tier_code: string; tier_locked: boolean; points: number; custom_discount_percent: number | null; extra_benefits: string[] } | null;
   stats: { requests: number; booked: number };
 };
 
-const ROLES: AppRole[] = ["customer", "professional", "editor", "manager", "admin"];
+const ROLES: AppRole[] = ["customer", "customer_plus", "professional", "editor", "manager", "admin"];
 const FLAGS = ["vip", "big_account", "reliable_payer", "watch", "new_partner", "dispute_resolved"] as const;
 const LEVELS = ["bronze", "argent", "or", "platine", "diamant", "royal_elite"] as const;
 const statusTone: Record<AccountStatus, string> = { pending: "bg-warn-soft text-warn", approved: "bg-ok-soft text-ok", rejected: "bg-bad-soft text-bad", suspended: "bg-bad-soft text-bad" };
@@ -27,7 +27,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
   const { t, language } = useApp();
   const a = t.admin.clients;
   const [open, setOpen] = useState(defaultOpen);
-  const isClient = c.role === "customer" || c.role === "professional";
+  const isClient = c.role === "customer" || c.role === "customer_plus" || c.role === "professional";
   const tier = c.pro_accounts && tiers.find((x) => x.code === c.pro_accounts!.tier_code);
   const flags = c.client_notes?.flags ?? [];
 
@@ -68,6 +68,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
                   {c.phone && <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-ink/40" aria-hidden /><a href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:underline"><bdi dir="ltr">{c.phone}</bdi></a></li>}
                   {c.company_name && <li className="flex items-center gap-2"><Building2 className="h-4 w-4 text-ink/40" aria-hidden />{c.company_name}{c.vat_number && <span className="font-mono text-xs text-ink/50">· {c.vat_number}</span>}</li>}
                   {c.city && <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-ink/40" aria-hidden />{c.city}</li>}
+                  {c.event_type && <li className="flex items-center gap-2"><CalendarHeart className="h-4 w-4 text-ink/40" aria-hidden />{t.eventTypes[c.event_type]}</li>}
                   {c.website && <li className="flex items-center gap-2"><Globe className="h-4 w-4 text-ink/40" aria-hidden /><bdi dir="ltr" className="truncate">{c.website}</bdi></li>}
                 </ul>
                 <dl className="grid grid-cols-2 gap-2 text-sm">
@@ -82,7 +83,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
                 ? <Programme profileId={c.id} account={c.pro_accounts} tiers={tiers} />
                 : isClient ? <LevelOnly /> : <div className="hidden xl:block" />}
 
-              {isClient && <Notes profileId={c.id} initial={c.client_notes} showLevel={c.role === "customer"} />}
+              {isClient && <Notes profileId={c.id} initial={c.client_notes} showLevel={c.role === "customer" || c.role === "customer_plus"} />}
             </div>
           </motion.div>
         )}

@@ -8,7 +8,7 @@ import { Check, Minus, Plus, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { BRAND_NAME, BRAND_SHORT } from "@/lib/brand";
-import type { ImageFit, Price, Tone } from "@/lib/types";
+import { pricesVisible, type ImageFit, type Price, type Tone } from "@/lib/types";
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -34,10 +34,28 @@ export function Logo({ className, compact = false }: { className?: string; compa
   );
 }
 
-/** Nightly TND price. Approved pros also see the public rate struck through. */
+/** Upsell under "Prix sur devis": sign up as Particulier+, or ask for it from the account. */
+export function SeePricesLink({ className }: { className?: string }) {
+  const { t, viewer } = useApp();
+  return (
+    <Link href={viewer ? "/account#particulier-plus" : "/register?type=customer_plus"} className={cn("text-[11px] text-ink/65 underline underline-offset-2 hover:text-ink", className)}>
+      {t.common.seePrices}
+    </Link>
+  );
+}
+
+/** Nightly TND price. Approved pros also see the public rate struck through. Visitors and
+ *  Particuliers get "Prix sur devis" (RLS returned no price row) with the Particulier+ link. */
 export function PriceTag({ price, className, size = "md", showUnit = true }: { price: Price | null; className?: string; size?: "sm" | "md" | "lg"; showUnit?: boolean }) {
-  const { t, language } = useApp();
-  if (!price) return <span className={cn("text-sm text-ink/60", className)}>{t.common.priceOnRequest}</span>;
+  const { t, language, viewer } = useApp();
+  if (!price) {
+    return (
+      <span className={cn("inline-flex flex-col gap-0.5", className)}>
+        <span className={cn("font-semibold tracking-tight", size === "lg" ? "text-xl" : "text-sm")}>{t.common.priceOnRequest}</span>
+        {!pricesVisible(viewer) && <SeePricesLink />}
+      </span>
+    );
+  }
   const big = size === "lg" ? "text-3xl" : size === "md" ? "text-base" : "text-sm";
   const saving = price.tier === "pro" && price.retail !== null && price.retail > price.amount;
   return (

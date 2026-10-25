@@ -10,7 +10,7 @@ import { cn, tierSwatch } from "@/lib/utils/formatters";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { PillTabs, PriceTag, ProductTile, RotatingBadge, ease } from "@/components/ui/kit";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-import type { CatalogueProduct, Category, CMSContent, ProTier } from "@/lib/types";
+import { pricesVisible, type CatalogueProduct, type Category, type CMSContent, type ProTier } from "@/lib/types";
 
 const enter = (i: number) => ({
   initial: { opacity: 0, y: 18, scale: 0.985 },
@@ -19,7 +19,7 @@ const enter = (i: number) => ({
 });
 
 export function HomeView({ products, categories, cms, tiers }: { products: CatalogueProduct[]; categories: Category[]; cms: CMSContent; tiers: ProTier[] }) {
-  const { t, setBookingProduct } = useApp();
+  const { t, viewer, setBookingProduct } = useApp();
   const hero = { ...t.hero, ...Object.fromEntries(Object.entries(cms.hero ?? {}).filter(([, v]) => v)) };
   const faqs = cms.faqs?.length ? cms.faqs : t.home.faqs;
   const testimonials = cms.testimonials ?? [];
@@ -28,7 +28,7 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
   const spotlight = categories.filter((c) => c.count > 0).sort((a, b) => b.count - a.count)[0];
   const facts = (
     <ul className="grid gap-3 text-sm sm:grid-cols-3">
-      {t.hero.facts.map((f) => (
+      {(pricesVisible(viewer) ? t.hero.facts : t.hero.factsHidden).map((f) => (
         <li key={f.title}><p className="font-semibold tracking-tight">{f.title}</p><p className="text-xs text-ink/60">{f.text}</p></li>
       ))}
     </ul>

@@ -67,7 +67,7 @@ export interface AdminTranslations {
     maintenanceTitle: string; maintenanceEmpty: string;
   };
   clients: {
-    subtitle: string; views: { label: string; pending: string; pros: string; customers: string; staff: string; inactive: string };
+    subtitle: string; views: { label: string; pending: string; pros: string; plus: string; customers: string; staff: string; inactive: string };
     searchPlaceholder: string; noPending: string; empty: string; approve: string; reject: string; suspend: string;
     reactivate: string; changeRole: string; statusLabels: Record<AccountStatus, string>; roleLabels: Record<AppRole, string>;
     flagLabels: Record<Flag, string>; identity: string; requestsCount: string; bookedValue: string; joined: string;

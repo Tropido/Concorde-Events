@@ -7,7 +7,8 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { StatusPill, StatusTrack } from "@/components/ui/status";
 import { todayIn } from "@/lib/dates";
 import { formatDateTime, formatDay, formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { RequestStatus } from "@/lib/types";
+import { PLUS_REQUEST_SUBJECT, pricesVisible, type RequestStatus } from "@/lib/types";
+import { UpgradeCard } from "./upgrade-card";
 
 type Row = {
   id: string; reference: string; status: RequestStatus; created_at: string; quote_valid_until: string | null; event_type: string | null;
@@ -26,6 +27,11 @@ export default async function AccountRequestsPage() {
     .order("created_at", { ascending: false });
   if (error) throw error;
   const rows = (data ?? []) as unknown as Row[];
+  const shown = pricesVisible(viewer);
+  // A Particulier can ask for Particulier+; an open request shows as pending.
+  const particulier = viewer.role === "customer" && viewer.status === "approved";
+  const asked = particulier && !!(await supabase.from("messages").select("id", { count: "exact", head: true })
+    .eq("profile_id", viewer.id).eq("subject", PLUS_REQUEST_SUBJECT).neq("status", "resolved")).count;
   const a = t.account;
   const today = todayIn("TN");
   const open = rows.filter((r) => ["submitted", "validated", "confirmed", "dispatched"].includes(r.status));
@@ -43,6 +49,8 @@ export default async function AccountRequestsPage() {
             : <Stat label={a.totalRequests} value={formatNumber(rows.length, prefs.lang)} />}
         </dl>
       </section>
+
+      {particulier && <UpgradeCard alreadyAsked={asked} />}
 
       {rows.length === 0 ? (
         <div className="card flex flex-col items-center gap-3 p-12 text-center">
@@ -80,7 +88,9 @@ export default async function AccountRequestsPage() {
                     {r.status === "validated" && r.quote_valid_until && <span className="block text-xs text-ink/55">{a.quoteValidUntil(formatDay(r.quote_valid_until, prefs.lang))}</span>}
                   </>
                 ) : (
-                  <span className="text-ink/60">{a.estimate} <span className="font-semibold text-ink">{formatTND(estimate, prefs.lang)}</span> · {a.noQuote}</span>
+                  shown
+                    ? <span className="text-ink/60">{a.estimate} <span className="font-semibold text-ink">{formatTND(estimate, prefs.lang)}</span> · {a.noQuote}</span>
+                    : <span className="text-ink/60"><span className="font-semibold text-ink">{t.common.priceOnRequest}</span> · {t.common.priceInQuote}</span>
                 )}
               </div>
               <div className="flex gap-2">

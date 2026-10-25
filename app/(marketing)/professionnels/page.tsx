@@ -41,11 +41,12 @@ export default async function ProsPage() {
       <section className="card overflow-hidden" aria-labelledby="compare-title">
         <h2 id="compare-title" className="p-6 text-2xl font-semibold tracking-tight sm:p-8">{p.compareTitle}</h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-y border-line text-start">
-                <th scope="col" className="w-1/2 px-6 py-3 text-start font-normal text-ink/55 sm:px-8">{p.feature}</th>
+                <th scope="col" className="w-2/5 px-6 py-3 text-start font-normal text-ink/60 sm:px-8">{p.feature}</th>
                 <th scope="col" className="px-4 py-3 text-center font-semibold">{t.auth.customer}</th>
+                <th scope="col" className="px-4 py-3 text-center font-semibold">{t.auth.customerPlus}</th>
                 <th scope="col" className="px-4 py-3 text-center font-semibold">{t.auth.professional}</th>
               </tr>
             </thead>
@@ -53,7 +54,7 @@ export default async function ProsPage() {
               {p.compare.map((row) => (
                 <tr key={row.label} className="border-b border-line last:border-0">
                   <th scope="row" className="px-6 py-3.5 text-start font-normal sm:px-8">{row.label}</th>
-                  {[row.customer, row.pro].map((v, i) => (
+                  {[row.customer, row.plus, row.pro].map((v, i) => (
                     <td key={i} className="px-4 py-3.5 text-center">
                       {v === true ? <Check className="mx-auto h-4 w-4 text-ok" aria-label={p.yes} /> : v === false ? <Minus className="mx-auto h-4 w-4 text-ink/25" aria-label={p.no} /> : <span className="text-xs">{v}</span>}
                     </td>

@@ -93,9 +93,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
 
           <div className="space-y-1">
             <PriceTag price={p.price} size="lg" />
-            <p className="text-xs text-ink/55">
-              {p.price?.tier === "pro" ? t.product.proPriceNote(p.price.discount) : t.product.retailNote}
-            </p>
+            {p.price && <p className="text-xs text-ink/55">{p.price.tier === "pro" ? t.product.proPriceNote(p.price.discount) : t.product.retailNote}</p>}
           </div>
 
           {p.description && <p className="text-[15px] leading-relaxed text-ink/70 text-pretty">{p.description}</p>}

@@ -105,17 +105,29 @@ describe.skipIf(!safe)("hosted test project", () => {
   });
 
   it("exposes only intended data to the anonymous key", async () => {
-    const pro = await anon.from("product_prices").select("*").eq("tier", "pro");
-    expect(pro.error).toBeNull();
-    expect(pro.data).toEqual([]);
-    const proView = await anon.from("catalogue_prices").select("*").eq("tier", "pro");
-    expect(proView.data).toEqual([]);
+    // Visitors see no price at all (retail included), as an empty list: they are treated like
+    // a Particulier, and the storefront's price query must not fail for them.
+    for (const table of ["product_prices", "catalogue_prices"]) {
+      const { data, error } = await anon.from(table).select("*").limit(5);
+      expect(error, table).toBeNull();
+      expect(data, table).toEqual([]);
+    }
     for (const table of ["rental_requests", "request_lines", "quotes", "profiles", "client_notes", "messages"]) {
       const { error } = await anon.from(table).select("*").limit(1);
       expect(error?.code, table).toBe("42501");
     }
     const insert = await anon.from("rental_requests").insert({ customer_name: "x" });
     expect(insert.error?.code).toBe("42501");
+  });
+
+  it("shows a Particulier no price row, and retail to an approved Particulier+", async () => {
+    const particulier = await customerA.client.from("product_prices").select("tier").eq("product_id", productId);
+    expect(particulier.error).toBeNull();
+    expect(particulier.data).toEqual([]);
+    const plus = await signedIn(`plus-${run}@it.concorde.test`, undefined, { account_type: "customer_plus" });
+    expect((await plus.client.from("product_prices").select("tier").eq("product_id", productId)).data).toEqual([]);
+    await service.from("profiles").update({ status: "approved" }).eq("id", plus.id);
+    expect((await plus.client.from("product_prices").select("tier").eq("product_id", productId)).data).toEqual([{ tier: "retail" }]);
   });
 
   it("isolates customers through the Data API", async () => {

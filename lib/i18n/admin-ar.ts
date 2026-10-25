@@ -261,7 +261,7 @@ export const adminAr: AdminTranslations = {
   },
   clients: {
     subtitle: "تفعيل الحسابات، برنامج المحترفين، الوسوم والملاحظات الداخلية.",
-    views: { label: "تصفية الحسابات", pending: "بانتظار التفعيل", pros: "المحترفون", customers: "الأفراد", staff: "الفريق", inactive: "الموقوفة والمرفوضة" },
+    views: { label: "تصفية الحسابات", pending: "بانتظار التفعيل", pros: "المحترفون", plus: "فرد+", customers: "الأفراد", staff: "الفريق", inactive: "الموقوفة والمرفوضة" },
     searchPlaceholder: "الاسم، البريد، الشركة، الهاتف…",
     noPending: "لا توجد حسابات بانتظار التفعيل.",
     empty: "لا توجد حسابات.",
@@ -271,7 +271,7 @@ export const adminAr: AdminTranslations = {
     reactivate: "إعادة التفعيل",
     changeRole: "تغيير الدور",
     statusLabels: { pending: "بانتظار التفعيل", approved: "نشط", rejected: "مرفوض", suspended: "موقوف" },
-    roleLabels: { customer: "فرد", professional: "محترف", editor: "محرّر", manager: "مدير", admin: "مسؤول" },
+    roleLabels: { customer: "فرد", customer_plus: "فرد+", professional: "محترف", editor: "محرّر", manager: "مدير", admin: "مسؤول" },
     flagLabels: { vip: "VIP", big_account: "حساب كبير", reliable_payer: "دفع موثوق", watch: "للمراقبة", new_partner: "شريك جديد", dispute_resolved: "نزاع محلول" },
     identity: "بيانات الاتصال",
     requestsCount: "الطلبات",

@@ -58,7 +58,8 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
       phone: z.string().trim().min(6).max(40),
       company_name: opt(120),
       vat_number: opt(40),
-      account_type: z.enum(["customer", "professional"]),
+      account_type: z.enum(["customer", "customer_plus", "professional"]),
+      event_type: z.enum(["wedding", "engagement", "birthday", "corporate", "gala", "private", "other"]).optional().or(z.literal("").transform(() => undefined)),
       activity: opt(80),
       city: opt(80),
       website: opt(200),
@@ -69,6 +70,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   }
   const { email: e, password, ...profile } = parsed.data;
   if (profile.account_type === "professional" && (!profile.company_name || !profile.activity)) return { error: "proFields" };
+  if (profile.account_type === "customer_plus" && !profile.city) return { error: "plusFields" };
   const supabase = await createClient();
   // Metadata only requests an account type; the database trigger decides the actual role.
   const { error } = await supabase.auth.signUp({

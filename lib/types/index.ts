@@ -1,7 +1,8 @@
 import type { Language } from "@/lib/i18n/translations";
 
 // Mirrors the enums in supabase/migrations.
-export type AppRole = "customer" | "professional" | "editor" | "manager" | "admin";
+/** customer = "Particulier", customer_plus = "Particulier+". */
+export type AppRole = "customer" | "customer_plus" | "professional" | "editor" | "manager" | "admin";
 export type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 /** Database enum. The business is Tunisia-only; "FR" only exists on historical rows. */
 export type Country = "FR" | "TN";
@@ -26,6 +27,9 @@ export const TONES: Tone[] = ["almond", "sand", "tan", "copper", "cream", "stone
 export type ProductBadge = "new" | "bestseller" | "limited";
 /** "contain": cut-out staged whole on its tile; "cover": ambiance photo filling it. */
 export type ImageFit = "contain" | "cover";
+
+/** Subject of the inbox ticket a Particulier sends to ask for Particulier+ (staff read French). */
+export const PLUS_REQUEST_SUBJECT = "Demande de passage à Particulier+";
 
 /** Operations staff (requests, stock, clients, inbox). */
 export const OPS_ROLES: AppRole[] = ["manager", "admin"];
@@ -70,6 +74,12 @@ export interface Viewer {
 }
 
 export const isApprovedPro = (v: Viewer | null) => v?.role === "professional" && v.status === "approved";
+/** Who sees prices on the site; mirrors private.can_see_retail (RLS stays the authority).
+ *  Visitors and Particuliers (pending Particulier+ included) get "Prix sur devis". */
+export const pricesVisible = (v: Viewer | null) =>
+  !!v && ((v.role === "customer_plus" && v.status === "approved")
+    || (v.role === "professional" && (v.status === "pending" || v.status === "approved"))
+    || (STAFF_ROLES.includes(v.role) && v.status === "approved"));
 export const isStaff = (v: Viewer | null, roles: AppRole[] = STAFF_ROLES) =>
   !!v && v.status === "approved" && roles.includes(v.role);
 

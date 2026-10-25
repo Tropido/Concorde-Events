@@ -26,7 +26,8 @@ export default async function AccountLayout({ children }: { children: React.Reac
       <div className="min-w-0 space-y-2.5">
         {viewer.status === "pending" && (
           <p role="status" className="rounded-[1.5rem] bg-warn-soft p-5 text-sm text-warn">
-            <strong className="font-semibold">{t.auth.pendingTitle}.</strong> {t.account.pendingBanner}
+            <strong className="font-semibold">{viewer.role === "customer_plus" ? t.auth.pendingTitlePlus : t.auth.pendingTitle}.</strong>{" "}
+            {viewer.role === "customer_plus" ? t.account.pendingBannerPlus : t.account.pendingBanner}
           </p>
         )}
         {children}

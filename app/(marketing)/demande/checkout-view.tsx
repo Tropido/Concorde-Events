@@ -10,8 +10,8 @@ import { nights } from "@/lib/dates";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { waLink } from "@/lib/utils/whatsapp";
 import { DraftLineRow, draftEstimate } from "@/components/catalogue/bag-drawer";
-import { EmptyState, ease } from "@/components/ui/kit";
-import { EVENT_TYPES, type ContactChannel, type DeliveryMode, type EventType } from "@/lib/types";
+import { EmptyState, SeePricesLink, ease } from "@/components/ui/kit";
+import { EVENT_TYPES, pricesVisible, type ContactChannel, type DeliveryMode, type EventType } from "@/lib/types";
 import type { SubmitErrorCode } from "@/lib/i18n/translations";
 
 export function CheckoutView() {
@@ -25,7 +25,8 @@ export function CheckoutView() {
   const [pending, start] = useTransition();
   // One key per attempt at a given draft: a retried submit returns the same reference.
   const keyRef = useRef<{ draft: string; key: string } | null>(null);
-  const total = draftEstimate(draft);
+  const shown = pricesVisible(viewer);
+  const total = shown ? draftEstimate(draft) : null;
 
   const submit = (form: FormData) => {
     const draftJson = JSON.stringify(draft);
@@ -145,7 +146,11 @@ export function CheckoutView() {
           {viewer?.pro && viewer.status === "approved" && viewer.pro.discount > 0 && (
             <div className="flex justify-between text-ink/60"><dt>{t.pro.discountApplied(viewer.pro.tier.name)}</dt><dd><bdi dir="ltr">−{viewer.pro.discount}%</bdi></dd></div>
           )}
-          <div className="flex items-baseline justify-between"><dt className="text-ink/60">{t.bag.estimate}</dt><dd className="text-2xl font-semibold tabular-nums">{total !== null ? formatTND(total, language) : "—"}</dd></div>
+          {shown ? (
+            <div className="flex items-baseline justify-between"><dt className="text-ink/60">{t.bag.estimate}</dt><dd className="text-2xl font-semibold tabular-nums">{total !== null ? formatTND(total, language) : "—"}</dd></div>
+          ) : (
+            <div className="space-y-1"><dt className="font-semibold">{t.common.priceOnRequest}</dt><dd className="text-xs text-ink/60">{t.common.priceInQuote} <SeePricesLink /></dd></div>
+          )}
         </dl>
         {error && <p role="alert" className="rounded-2xl bg-bad-soft p-3 text-sm text-bad">{t.submitErrors[error]}</p>}
         <button type="submit" disabled={pending} className="btn-ink h-12 w-full">{pending ? c.sending : c.send}</button>

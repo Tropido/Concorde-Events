@@ -259,7 +259,7 @@ export const adminFr: AdminTranslations = {
   },
   clients: {
     subtitle: "Validation des comptes, programme pro, étiquettes et notes internes.",
-    views: { label: "Filtrer les comptes", pending: "À valider", pros: "Professionnels", customers: "Particuliers", staff: "Équipe", inactive: "Suspendus & refusés" },
+    views: { label: "Filtrer les comptes", pending: "À valider", pros: "Professionnels", plus: "Particulier+", customers: "Particuliers", staff: "Équipe", inactive: "Suspendus & refusés" },
     searchPlaceholder: "Nom, e-mail, société, téléphone…",
     noPending: "Aucun compte en attente de validation.",
     empty: "Aucun compte.",
@@ -269,7 +269,7 @@ export const adminFr: AdminTranslations = {
     reactivate: "Réactiver",
     changeRole: "Changer le rôle",
     statusLabels: { pending: "En attente", approved: "Actif", rejected: "Refusé", suspended: "Suspendu" },
-    roleLabels: { customer: "Particulier", professional: "Professionnel", editor: "Éditeur", manager: "Manager", admin: "Administrateur" },
+    roleLabels: { customer: "Particulier", customer_plus: "Particulier+", professional: "Professionnel", editor: "Éditeur", manager: "Manager", admin: "Administrateur" },
     flagLabels: { vip: "VIP", big_account: "Grand compte", reliable_payer: "Paiement fiable", watch: "À surveiller", new_partner: "Nouveau partenaire", dispute_resolved: "Litige résolu" },
     identity: "Coordonnées",
     requestsCount: "Demandes",

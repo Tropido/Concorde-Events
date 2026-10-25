@@ -25,18 +25,23 @@ The middleware only refreshes sessions and redirects anonymous visitors.
 
 ## Permission matrix
 
-| Capability | Visitor | Customer | Pending pro | Approved pro | Editor | Manager | Admin |
-|---|---|---|---|---|---|---|---|
-| Browse catalogue, retail prices | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| Pro prices, programme discount, points, margin calculator | | | | ✓ | | ✓ (prices) | ✓ (prices) |
-| Submit request / contact form | ✓ | ✓ | ✓ (retail tier) | ✓ (pro tier) | ✓ | ✓ | ✓ |
-| Own requests, quotes, messages, favourites | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| CMS (homepage content) | | | | | ✓ | ✓ | ✓ |
-| Requests, quotes, rentals, inbox, stock, products | | | | | | ✓ | ✓ |
-| Approve / reject / suspend clients | | | | | | ✓ (not staff accounts) | ✓ |
-| Manage a pro's programme (tier lock, negotiated discount, benefits, points) | | | | | | ✓ | ✓ |
-| Product internal data (purchase cost, supplier, storage) | | | | | | ✓ | ✓ |
-| Prices, roles, programme tiers | | | | | | | ✓ |
+Particulier = role `customer`, Particulier+ = role `customer_plus`. A pending Particulier+ gets the Particulier experience.
+
+| Capability | Visitor | Particulier | Particulier+ | Pending pro | Approved pro | Editor | Manager | Admin |
+|---|---|---|---|---|---|---|---|---|
+| Browse catalogue, availability | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Retail (public) prices and estimates | | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Pro prices, programme discount, points, margin calculator | | | | | ✓ | | ✓ (prices) | ✓ (prices) |
+| Submit request / contact form (priced on the server) | ✓ (retail) | ✓ (retail) | ✓ (retail) | ✓ (retail) | ✓ (pro tier) | ✓ | ✓ | ✓ |
+| Issued quote with its amounts | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Own requests, quotes, messages, favourites | | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Ask for Particulier+ (inbox ticket) | | ✓ | | | | | | |
+| CMS (homepage content) | | | | | | ✓ | ✓ | ✓ |
+| Requests, quotes, rentals, inbox, stock, products | | | | | | | ✓ | ✓ |
+| Approve / reject / suspend clients | | | | | | | ✓ (not staff accounts) | ✓ |
+| Manage a pro's programme (tier lock, negotiated discount, benefits, points) | | | | | | | ✓ | ✓ |
+| Product internal data (purchase cost, supplier, storage) | | | | | | | ✓ | ✓ |
+| Prices, roles (Particulier → Particulier+ included), programme tiers | | | | | | | | ✓ |
 
 Staff notes (`client_notes`) are never readable by the client they describe. The last approved admin cannot be demoted.
 
@@ -50,8 +55,10 @@ Staff notes (`client_notes`) are never readable by the client they describe. The
 - Prices are nightly rates in TND. Amounts show as whole dinars ("1 250 DT") or with three millime digits ("7 064,850 DT"), with Latin digits in both languages.
 - Issued quotes freeze the tier, programme discount, event details, unit prices, dates, line totals and total.
 - Stock is held from **quote validation** (`validated`, while the quote is valid), then while `confirmed` and `dispatched`.
-- **Retail prices are public.** Pro prices are visible only to approved pros and staff, enforced by RLS on separate price rows.
-- Customers (particuliers) are active once their email is confirmed and pay the retail rate. Professionals stay pending until staff approve them; while pending they pay retail.
+- **Three customer types** (2026-10-26): **Particulier** sees no price anywhere; **Particulier+** sees the public (retail) prices; **Professionnel** is unchanged. Visitors are treated like a Particulier. RLS enforces it (`private.can_see_retail`): visitors and Particuliers read zero price rows. Pro prices are visible only to approved pros and staff.
+- A Particulier is active once the email is confirmed. Particulier+ and Professionnel stay pending until staff approve them; while pending they get the Particulier experience (a pending pro still sees retail, as before). Existing approved customers became Particulier+ (they already saw prices).
+- Requests are priced on the server for every type: Particuliers, Particulier+ and pending pros pay retail; approved pros pay the pro rate minus their programme discount. The issued quote always shows its amounts: it is how a Particulier learns the price.
+- A Particulier asks for Particulier+ from `/account` (an inbox ticket); an admin changes the role.
 - Approved professionals pay the pro rate minus their programme discount (the tier's, or a negotiated one set by staff). A piece without a pro rate falls back to retail, still with the discount. The discount is frozen on the request at submission.
 - WhatsApp: `wa.me/21623040424`. There is no Cloud API. The app records "client opened the link" separately from "staff confirmed contact".
 

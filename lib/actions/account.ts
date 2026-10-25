@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth";
-import type { Viewer } from "@/lib/types";
+import { PLUS_REQUEST_SUBJECT, type Viewer } from "@/lib/types";
 
 /** Rejected/suspended accounts keep read access to their history but cannot write. */
 const active = (v: Viewer | null): v is Viewer => !!v && (v.status === "approved" || v.status === "pending");
@@ -58,6 +58,31 @@ export async function sendMessage(_: FormState, form: FormData): Promise<FormSta
   });
   if (error) return { error: true };
   revalidatePath("/account/messages");
+  return { ok: true };
+}
+
+/** A Particulier asks staff for Particulier+, as an inbox ticket (one open request at a time).
+ *  Staff then change the role; the database refuses self-promotion anyway. */
+export async function requestPlusUpgrade(): Promise<FormState> {
+  const viewer = await getViewer();
+  if (!viewer || viewer.role !== "customer" || viewer.status !== "approved") return { error: true };
+  const supabase = await createClient();
+  const { count } = await supabase.from("messages").select("id", { count: "exact", head: true })
+    .eq("profile_id", viewer.id).eq("subject", PLUS_REQUEST_SUBJECT).neq("status", "resolved");
+  if (count) return { ok: true };
+  const { error } = await supabase.from("messages").insert({
+    channel: "site",
+    profile_id: viewer.id,
+    name: viewer.fullName,
+    email: viewer.email,
+    phone: viewer.phone,
+    country: "TN",
+    category: "other",
+    subject: PLUS_REQUEST_SUBJECT,
+    body: `${viewer.fullName ?? viewer.email} souhaite passer à Particulier+.${viewer.city ? ` Ville : ${viewer.city}.` : ""}`,
+  });
+  if (error) return { error: true };
+  revalidatePath("/account");
   return { ok: true };
 }
 

@@ -5,15 +5,24 @@ import path from "node:path";
 const root = path.resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(path.join(root, p), "utf8");
 
-/** In-process Postgres with the real migrations + dev seed applied. */
-export async function freshDb() {
+const migrations = () => readdirSync(path.join(root, "supabase/migrations")).sort();
+
+/** In-process Postgres with the real migrations + dev seed applied. With `before`, stops
+ *  ahead of that migration (no seed), so a data migration can be tested on old rows. */
+export async function freshDb({ before }: { before?: string } = {}) {
   const db = new PGlite();
   await db.exec(read("tests/db/supabase-shim.sql"));
-  for (const f of readdirSync(path.join(root, "supabase/migrations")).sort()) {
+  for (const f of migrations()) {
+    if (before && f >= before) return db;
     await db.exec(read(`supabase/migrations/${f}`));
   }
   await db.exec(read("supabase/seed.sql"));
   return db;
+}
+
+/** Applies the migrations from `from` onwards (after freshDb({ before: from })). */
+export async function migrateFrom(db: PGlite, from: string) {
+  for (const f of migrations()) if (f >= from) await db.exec(read(`supabase/migrations/${f}`));
 }
 
 /** Runs fn as an API caller (anon when uid is null), like PostgREST does. Commits at the end,
@@ -26,14 +35,14 @@ export async function as<T>(db: PGlite, uid: string | null, fn: (tx: Transaction
   });
 }
 
-type Role = "customer" | "professional" | "editor" | "manager" | "admin";
+type Role = "customer" | "customer_plus" | "professional" | "editor" | "manager" | "admin";
 type Status = "pending" | "approved" | "rejected" | "suspended";
 
 /** Signs a user up through the real auth trigger, then sets role/status as the SQL editor would. */
 export async function user(db: PGlite, email: string, role: Role = "customer", status: Status = "approved") {
   const { rows } = await db.query<{ id: string }>(
     "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
-    [email, JSON.stringify({ full_name: email.split("@")[0], account_type: role === "professional" ? "professional" : "customer" })],
+    [email, JSON.stringify({ full_name: email.split("@")[0], account_type: role === "professional" || role === "customer_plus" ? role : "customer" })],
   );
   const id = rows[0].id;
   await db.query("update public.profiles set role = $2, status = $3 where id = $1", [id, role, status]);

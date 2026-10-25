@@ -6,8 +6,8 @@ import { getTiers } from "@/lib/tiers";
 import { FilterLinks, PageHeader } from "@/components/admin/ui";
 import { ClientCard, type ClientRow } from "./forms";
 
-type View = "pending" | "pros" | "customers" | "staff" | "inactive";
-const VIEWS: View[] = ["pending", "pros", "customers", "staff", "inactive"];
+type View = "pending" | "pros" | "plus" | "customers" | "staff" | "inactive";
+const VIEWS: View[] = ["pending", "pros", "plus", "customers", "staff", "inactive"];
 
 export default async function AdminClientsPage({ searchParams }: { searchParams: Promise<{ view?: string; q?: string }> }) {
   const [{ t, prefs }, viewer, sp] = await Promise.all([getT(), requireStaff(), searchParams]);
@@ -15,10 +15,11 @@ export default async function AdminClientsPage({ searchParams }: { searchParams:
   const db = await createClient();
   const view: View = VIEWS.includes(sp.view as View) ? (sp.view as View) : "pending";
   let q = db.from("profiles")
-    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, role, status, created_at, client_notes(notes, flags, level), pro_accounts(tier_code, tier_locked, points, custom_discount_percent, extra_benefits)")
+    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, event_type, role, status, created_at, client_notes(notes, flags, level), pro_accounts(tier_code, tier_locked, points, custom_discount_percent, extra_benefits)")
     .order("created_at", { ascending: false }).limit(200);
   if (view === "pending") q = q.eq("status", "pending");
   if (view === "pros") q = q.eq("role", "professional").neq("status", "pending");
+  if (view === "plus") q = q.eq("role", "customer_plus").eq("status", "approved");
   if (view === "customers") q = q.eq("role", "customer").eq("status", "approved");
   if (view === "staff") q = q.in("role", ["editor", "manager", "admin"]);
   if (view === "inactive") q = q.in("status", ["rejected", "suspended"]);
@@ -44,6 +45,7 @@ export default async function AdminClientsPage({ searchParams }: { searchParams:
   const count = (v: View) => (all.data ?? []).filter((p) =>
     v === "pending" ? p.status === "pending"
     : v === "pros" ? p.role === "professional" && p.status !== "pending"
+    : v === "plus" ? p.role === "customer_plus" && p.status === "approved"
     : v === "customers" ? p.role === "customer" && p.status === "approved"
     : v === "staff" ? ["editor", "manager", "admin"].includes(p.role)
     : ["rejected", "suspended"].includes(p.status)).length;

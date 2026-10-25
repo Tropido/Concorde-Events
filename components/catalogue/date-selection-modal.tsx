@@ -74,7 +74,7 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
         </button>
       </div>
       <p className="text-xs text-ink/50">
-        {n !== null && n > 0 ? t.booking.summary(qty, n) : product.minimumNights > 1 ? t.booking.minNights(product.minimumNights) : t.booking.nightsRule}
+        {n !== null && n > 0 ? (product.price ? t.booking.summary(qty, n) : t.booking.summaryQty(qty, n)) : product.minimumNights > 1 ? t.booking.minNights(product.minimumNights) : t.booking.nightsRule}
       </p>
     </div>
   );
