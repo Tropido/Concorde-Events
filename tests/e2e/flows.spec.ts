@@ -70,7 +70,8 @@ test("contact enquiry reaches the staff inbox", async ({ browser }) => {
   const m = await browser.newPage();
   await login(m, manager.email, manager.password, "/admin/login");
   await m.goto("/admin/inbox?channel=contact");
-  await expect(m.getByText(`Mariage ${run}`)).toBeVisible();
+  // The newest thread opens automatically, so the subject shows in the list and the heading.
+  await expect(m.getByText(`Mariage ${run}`).first()).toBeVisible();
 });
 
 test("CMS publish appears on the homepage", async ({ browser }) => {
@@ -123,8 +124,9 @@ test("pro approval and suspension take effect immediately", async ({ browser }) 
   const m = await browser.newPage();
   await login(m, manager.email, manager.password, "/admin/login");
   await m.goto(`/admin/clients?view=pending&q=${encodeURIComponent(pro.email)}`);
+  // The card only offers the action while it applies, so its disappearing is the confirmation.
   await m.getByRole("button", { name: /^valider$/i }).first().click();
-  await expect(m.getByRole("status").first()).toBeVisible();
+  await expect(m.getByRole("button", { name: /^valider$/i })).toHaveCount(0);
   // /account/tools now lands on the pro space, which holds the margin calculator.
   await p.goto("/account/tools");
   await expect(p).toHaveURL(/\/account\/pro$/);
@@ -133,7 +135,7 @@ test("pro approval and suspension take effect immediately", async ({ browser }) 
   await m.goto(`/admin/clients?view=pros&q=${encodeURIComponent(pro.email)}`);
   m.once("dialog", (d) => d.accept());
   await m.getByRole("button", { name: /^suspendre$/i }).first().click();
-  await expect(m.getByRole("status").first()).toBeVisible();
+  await expect(m.getByRole("button", { name: /^suspendre$/i })).toHaveCount(0);
   await p.goto("/account");
   await expect(p.getByRole("heading", { name: /compte suspendu/i })).toBeVisible();
 });

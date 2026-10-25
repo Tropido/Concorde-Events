@@ -102,7 +102,7 @@ The capacity invariant is one deferred constraint trigger with a per-country adv
 - [x] FR/AR dictionaries with type-enforced parity, RTL logical classes, native dialogs, reduced motion, image optimization
 - [x] Migrations applied to the TEST project; `test:integration` 5/5, `test:e2e` 34/34, Supabase advisors clean (2026-10-06)
 - [x] 2026-10-25: TND-only system, pro programme (tiers, points, discounts, benefits), detailed products with staff-only internal data, richer client approval (labels, rank, notes, programme), WhatsApp tickets, redesigned storefront and back office
-- [ ] Apply the two 2026-10-25 migrations to the TEST project (`npm run db:push`), then re-run `test:integration` and `test:e2e`
+- [x] 2026-10-25 migrations applied to the TEST project; `test:integration` 5/5, `test:e2e` 42/42
 - [ ] Vercel Preview env → TEST project; Supabase Auth URLs and templates; verify Preview
 - [ ] Production project, SMTP, first admin, approved catalogue → merge and verify production
 

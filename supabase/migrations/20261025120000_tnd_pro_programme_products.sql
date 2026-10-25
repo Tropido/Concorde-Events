@@ -12,6 +12,9 @@
 -- Open French requests can no longer be served (no French stock any more).
 update public.rental_requests set status = 'cancelled'
 where country = 'FR' and status in ('submitted', 'validated', 'confirmed');
+-- Run the deferred capacity checks queued by that update now: ALTER TABLE refuses a table
+-- with pending trigger events, and the rest of this migration doesn't rely on deferral.
+set constraints all immediate;
 
 delete from public.product_prices where country <> 'TN';
 delete from public.product_stock where country <> 'TN';
