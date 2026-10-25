@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { ArrowDown, ArrowUp, ImagePlus, Star, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
@@ -112,10 +111,26 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
         </Section>
 
         <Section id="media" title={a.sections.media} hint={a.uploadHint}>
+          <div className="flex flex-wrap items-start gap-4 rounded-2xl bg-paper p-3">
+            <ProductTile src={v.images[0]} alt="" tone={v.tone} fit={v.image_fit} sizes="96px" className="h-28 w-24 shrink-0 rounded-xl" />
+            <fieldset className="min-w-0 flex-1 space-y-2">
+              <legend className="field-label">{a.imageFit}</legend>
+              <div className="flex flex-wrap gap-1.5">
+                {(["contain", "cover"] as const).map((fit) => (
+                  <label key={fit} className={cn("cursor-pointer rounded-full px-3 py-1.5 text-xs ring-1 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-toffeeBrown",
+                    v.image_fit === fit ? "bg-ink text-card ring-ink" : "bg-card ring-line hover:ring-ink/30")}>
+                    <input type="radio" name="image_fit" value={fit} checked={v.image_fit === fit} onChange={() => set("image_fit", fit)} className="sr-only" />
+                    {fit === "contain" ? a.fitContain : a.fitCover}
+                  </label>
+                ))}
+              </div>
+              <p className="text-[11px] text-ink/60">{a.fitHint}</p>
+            </fieldset>
+          </div>
           <ul className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
             {v.images.map((src, i) => (
               <li key={src} className="group relative">
-                <div className={cn("relative aspect-square overflow-hidden rounded-2xl", `tone-${v.tone}`)}><Image src={src} alt="" fill sizes="160px" className="object-cover" /></div>
+                <ProductTile src={src} alt="" tone={v.tone} fit={v.image_fit} sizes="160px" className="aspect-square rounded-2xl" />
                 {i === 0 && <span className="absolute start-2 top-2 rounded-full bg-ink px-2 py-0.5 text-[10px] text-card">{a.cover}</span>}
                 <div className="absolute end-2 top-2 flex gap-1">
                   {i > 0 && <IconBtn label={a.makeCover} onClick={() => setV((x) => ({ ...x, images: [src, ...x.images.filter((u) => u !== src)] }))}><Star className="h-3.5 w-3.5" /></IconBtn>}
@@ -144,7 +159,7 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
             <div className="flex flex-wrap gap-2">
               {TONES.map((tone) => (
                 <button key={tone} type="button" onClick={() => set("tone", tone as Tone)} aria-pressed={v.tone === tone} aria-label={a.tones[tone]} title={a.tones[tone]}
-                  className={cn("h-10 w-10 rounded-full ring-2 ring-offset-2 ring-offset-card transition", `tone-${tone}`, v.tone === tone ? "ring-ink" : "ring-transparent hover:ring-line")} />
+                  className={cn("h-10 w-10 rounded-full ring-2 ring-offset-2 ring-offset-card transition", `stage-${tone}`, v.tone === tone ? "ring-ink" : "ring-transparent hover:ring-line")} />
               ))}
             </div>
           </fieldset>
@@ -233,7 +248,7 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
 
       <aside className="card sticky top-2.5 hidden space-y-3 p-4 xl:block" aria-label={a.preview}>
         <p className="label">{a.preview}</p>
-        <ProductTile src={v.images[0]} alt={v.title_fr || "·"} tone={v.tone} sizes="280px" className="aspect-[4/5] rounded-[1.5rem]">
+        <ProductTile src={v.images[0]} alt={v.title_fr || "·"} tone={v.tone} fit={v.image_fit} sizes="280px" className="aspect-[4/5] rounded-[1.5rem]">
           {v.badge && <span className="pill absolute start-3 top-3 py-1 text-[11px]">{t.product.badges[v.badge]}</span>}
         </ProductTile>
         <div className="flex items-start justify-between gap-2 px-1">

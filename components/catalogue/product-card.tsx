@@ -14,7 +14,7 @@ export function ProductCard({ product: p, priority, className }: { product: Cata
     <article className={cn("group relative flex flex-col gap-3", className)}>
       <div className="relative">
       <Link href={`/catalogue/${p.slug}`} className="block rounded-[1.5rem] focus-visible:outline-offset-4" aria-label={p.title}>
-        <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} priority={priority}
+        <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} fit={p.imageFit} priority={priority}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="aspect-[4/5] rounded-[1.5rem]">
           <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
             {p.badge ? <span className="pill py-1 text-[11px]">{t.product.badges[p.badge]}</span> : <span />}

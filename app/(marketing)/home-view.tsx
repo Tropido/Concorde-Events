@@ -60,18 +60,21 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
           <div className="card p-6 lg:hidden">{facts}</div>
 
           {featured ? (
-            <motion.article {...enter(2)} className="group relative flex min-h-[460px] flex-col overflow-hidden rounded-[1.75rem] lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
-              <ProductTile src={featured.images[0]} alt={featured.title} tone={featured.tone} sizes="(max-width: 1024px) 100vw, 40vw" priority className="absolute inset-0" />
-              <div className="relative flex items-start justify-between p-5 sm:p-6">
-                <div lang={featured.lang}>
+            // Text sits above and below the stage, never on the photo.
+            <motion.article {...enter(2)} className="card group flex min-h-[460px] flex-col gap-3 p-3 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
+              <div className="flex items-start justify-between gap-3 px-3 pt-3">
+                <div lang={featured.lang} className="min-w-0">
                   <p className="label">{t.home.featuredLabel}</p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight">{featured.title}</h2>
+                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-balance">{featured.title}</h2>
                 </div>
-                <RotatingBadge text={t.home.badgeRing}><ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" /></RotatingBadge>
+                <RotatingBadge text={t.home.badgeRing} className="h-16 w-16 shrink-0"><ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" /></RotatingBadge>
               </div>
-              <div className="relative mt-auto m-3 flex items-center gap-2 rounded-full bg-card/90 p-1.5 ps-5 backdrop-blur">
+              <Link href={`/catalogue/${featured.slug}`} tabIndex={-1} aria-hidden className="relative block min-h-[280px] flex-1">
+                <ProductTile src={featured.images[0]} alt="" tone={featured.tone} fit={featured.imageFit} sizes="(max-width: 1024px) 100vw, 40vw" priority className="absolute inset-0 rounded-[1.4rem]" />
+              </Link>
+              <div className="flex items-center gap-2 rounded-full bg-paper p-1.5 ps-5">
                 <PriceTag price={featured.price} size="sm" />
-                <Link href={`/catalogue/${featured.slug}`} className="ms-auto rounded-full px-3 py-2 text-xs font-medium hover:bg-paper">{t.common.details}</Link>
+                <Link href={`/catalogue/${featured.slug}`} className="ms-auto rounded-full px-3 py-2 text-xs font-medium hover:bg-card">{t.common.details}</Link>
                 <button type="button" onClick={() => setBookingProduct(featured)} className="btn-ink btn-sm">{t.home.chooseDates}</button>
               </div>
             </motion.article>
@@ -83,16 +86,14 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
 
           {spotlight && (
               <motion.div {...enter(3)} className="lg:col-span-3 lg:col-start-5 lg:row-start-2">
-                <Link href={`/catalogue?cat=${spotlight.slug}`} className="group grain tone-almond relative flex h-full min-h-[200px] overflow-hidden rounded-[1.75rem] p-6">
-                  <div className="relative z-10 flex flex-col justify-between">
+                <Link href={`/catalogue?cat=${spotlight.slug}`} className="card group flex h-full min-h-[260px] flex-col gap-4 p-5">
+                  <div>
                     <p className="label">{t.home.collection}</p>
-                    <div>
-                      <p className="text-2xl font-semibold tracking-tight">{spotlight.name}</p>
-                      <p className="text-xs text-ink/55">{t.categories.pieces(spotlight.count)}</p>
-                    </div>
+                    <p className="mt-1 text-xl font-semibold leading-tight tracking-tight text-balance">{spotlight.name}</p>
+                    <p className="text-xs text-ink/60">{t.categories.pieces(spotlight.count)}</p>
                   </div>
                   {spotlightProduct && (
-                    <ProductTile src={spotlightProduct.images[0]} alt="" tone="almond" sizes="200px" className="absolute -bottom-4 end-4 h-[78%] w-[46%] rounded-2xl" />
+                    <ProductTile src={spotlightProduct.images[0]} alt="" tone={spotlightProduct.tone} fit={spotlightProduct.imageFit} sizes="(max-width: 1024px) 100vw, 25vw" className="min-h-[150px] flex-1 rounded-2xl" />
                   )}
                 </Link>
               </motion.div>

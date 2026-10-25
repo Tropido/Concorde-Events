@@ -1,13 +1,13 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { discounted } from "@/lib/pro";
-import { isApprovedPro, type CatalogueProduct, type Category, type Price, type ProductBadge, type Tone, type Viewer } from "@/lib/types";
+import { isApprovedPro, type CatalogueProduct, type Category, type ImageFit, type Price, type ProductBadge, type Tone, type Viewer } from "@/lib/types";
 import type { Prefs } from "@/lib/prefs";
 
 const PRODUCT_COLUMNS =
   "id, slug, sku, category_id, title_fr, title_ar, description_fr, description_ar, width, height, depth, dimension_unit, " +
   "color, color_hex, material, finish, style, weight_kg, seating_capacity, setup_minutes, deposit_amount, " +
-  "highlights_fr, highlights_ar, care_fr, care_ar, tags, badge, tone, minimum_nights, featured, images, " +
+  "highlights_fr, highlights_ar, care_fr, care_ar, tags, badge, tone, minimum_nights, featured, images, image_fit, " +
   "categories(id, slug, name_fr, name_ar)";
 
 type ProductRow = {
@@ -17,7 +17,7 @@ type ProductRow = {
   color: string | null; color_hex: string | null; material: string | null; finish: string | null; style: string | null;
   weight_kg: number | null; seating_capacity: number | null; setup_minutes: number | null; deposit_amount: number | null;
   highlights_fr: string[]; highlights_ar: string[]; care_fr: string | null; care_ar: string | null;
-  tags: string[]; badge: ProductBadge | null; tone: Tone; minimum_nights: number; featured: boolean; images: string[];
+  tags: string[]; badge: ProductBadge | null; tone: Tone; minimum_nights: number; featured: boolean; images: string[]; image_fit: ImageFit | null;
   categories: { id: string; slug: string; name_fr: string; name_ar: string | null } | null;
 };
 
@@ -53,6 +53,7 @@ function mapProduct(row: ProductRow, prefs: Prefs, stock: number, price: Price |
     minimumNights: row.minimum_nights,
     featured: row.featured,
     images: row.images ?? [],
+    imageFit: row.image_fit ?? "contain",
     stock,
     price,
   };

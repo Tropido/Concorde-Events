@@ -55,7 +55,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
         <div className="space-y-2.5 lg:sticky lg:top-20">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={image} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease }}>
-              <ProductTile src={p.images[image]} alt={p.title} tone={p.tone} priority sizes="(max-width: 1024px) 100vw, 58vw" className="aspect-square rounded-[1.75rem] sm:aspect-[5/4]" />
+              <ProductTile src={p.images[image]} alt={p.title} tone={p.tone} fit={p.imageFit} priority sizes="(max-width: 1024px) 100vw, 58vw" className="aspect-square rounded-[1.75rem] sm:aspect-[5/4]" />
             </motion.div>
           </AnimatePresence>
           {p.images.length > 1 && (
@@ -63,7 +63,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
               {p.images.map((src, i) => (
                 <button key={src} type="button" onClick={() => setImage(i)} aria-pressed={image === i} aria-label={`${p.title} ${i + 1}`}
                   className={cn("shrink-0 rounded-2xl ring-2 ring-offset-2 ring-offset-paper transition", image === i ? "ring-ink" : "ring-transparent opacity-70 hover:opacity-100")}>
-                  <ProductTile src={src} alt="" tone={p.tone} sizes="88px" className="h-20 w-20 rounded-2xl" />
+                  <ProductTile src={src} alt="" tone={p.tone} fit={p.imageFit} sizes="88px" className="h-20 w-20 rounded-2xl" />
                 </button>
               ))}
             </div>

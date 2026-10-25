@@ -1,12 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { CalendarRange, Trash2 } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { nights } from "@/lib/dates";
 import { cn, formatDay, formatTND } from "@/lib/utils/formatters";
-import { CloseButton, Drawer, QuantityStepper } from "@/components/ui/kit";
+import { CloseButton, Drawer, ProductTile, QuantityStepper } from "@/components/ui/kit";
 import { EventDatesChip } from "@/components/ui/date-range-picker";
 import type { DraftLine } from "@/lib/types";
 
@@ -25,8 +24,8 @@ export function DraftLineRow({ line: l, compact = false }: { line: DraftLine; co
   const n = nights(l.startDate, l.endDate) ?? 0;
   return (
     <li className="flex gap-3 py-3">
-      <Link href={`/catalogue/${l.slug}`} className={cn("relative shrink-0 overflow-hidden rounded-2xl", `tone-${l.tone ?? "almond"}`, compact ? "h-16 w-16" : "h-20 w-20")}>
-        {l.image && <Image src={l.image} alt="" fill sizes="80px" className="object-cover" />}
+      <Link href={`/catalogue/${l.slug}`} className="shrink-0" tabIndex={-1} aria-hidden>
+        <ProductTile src={l.image} alt="" tone={l.tone ?? "almond"} fit={l.imageFit} sizes="80px" className={cn("rounded-2xl", compact ? "h-16 w-16" : "h-20 w-20")} />
       </Link>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start justify-between gap-2">

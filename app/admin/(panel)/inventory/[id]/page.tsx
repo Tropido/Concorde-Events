@@ -13,7 +13,7 @@ const EMPTY: ProductFormValue = {
   badge: null, tone: "almond", color: null, color_hex: null, material: null, finish: null, style: null,
   width: null, height: null, depth: null, dimension_unit: "cm", weight_kg: null, seating_capacity: null, setup_minutes: null,
   deposit_amount: null, highlights_fr: [], highlights_ar: [], care_fr: null, care_ar: null, tags: [],
-  minimum_nights: 1, featured: false, status: "active", images: [], owned: 0, prices: { retail: null, pro: null },
+  minimum_nights: 1, featured: false, status: "active", images: [], image_fit: "contain", owned: 0, prices: { retail: null, pro: null },
   internal: { purchase_cost: null, purchase_date: null, supplier: null, storage_location: null, condition: null, internal_notes: null },
 };
 
@@ -48,7 +48,7 @@ export default async function AdminProductPage({ params }: { params: Promise<{ i
       width: n(p.width), height: n(p.height), depth: n(p.depth), dimension_unit: p.dimension_unit, weight_kg: n(p.weight_kg),
       seating_capacity: p.seating_capacity, setup_minutes: p.setup_minutes, deposit_amount: n(p.deposit_amount),
       highlights_fr: p.highlights_fr ?? [], highlights_ar: p.highlights_ar ?? [], care_fr: p.care_fr, care_ar: p.care_ar, tags: p.tags ?? [],
-      minimum_nights: p.minimum_nights, featured: p.featured, status: p.status, images: p.images ?? [], owned: stock?.quantity_owned ?? 0,
+      minimum_nights: p.minimum_nights, featured: p.featured, status: p.status, images: p.images ?? [], image_fit: p.image_fit ?? "contain", owned: stock?.quantity_owned ?? 0,
       prices: { retail: price("retail"), pro: price("pro") },
       internal: {
         purchase_cost: n(internal.purchase_cost), purchase_date: (internal.purchase_date as string) ?? null, supplier: (internal.supplier as string) ?? null,

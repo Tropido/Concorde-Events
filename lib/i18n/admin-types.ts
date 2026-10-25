@@ -50,7 +50,7 @@ export interface AdminTranslations {
     featured: string; retire: string; reactivate: string;
     sections: { title: string; general: string; media: string; look: string; specs: string; pricing: string; internal: string };
     titleFr: string; titleAr: string; descFr: string; descAr: string; slug: string; slugHint: string; sku: string; skuHint: string;
-    noCategory: string; badge: string; noBadge: string; visible: string; uploadHint: string; cover: string; makeCover: string;
+    noCategory: string; badge: string; noBadge: string; visible: string; uploadHint: string; imageFit: string; fitContain: string; fitCover: string; fitHint: string; cover: string; makeCover: string;
     removeImage: string; moveUp: string; moveDown: string; upload: string; uploading: string; tone: string;
     tones: Record<Tone, string>; color: string; colorHex: string; colorPlaceholder: string; material: string; finish: string;
     style: string; stylePlaceholder: string; highlightsFr: string; highlightsAr: string; highlightsHint: string;

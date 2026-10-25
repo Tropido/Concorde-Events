@@ -7,6 +7,8 @@ const v = (name: string) => `rgb(var(--${name}) / <alpha-value>)`;
 const config: Config = {
   darkMode: "class",
   content: ["./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],
+  // Built from data (`stage-${product.tone}`), so the content scanner cannot see them.
+  safelist: ["almond", "sand", "tan", "copper", "cream", "stone"].flatMap((t) => [`tone-${t}`, `stage-${t}`]),
   theme: {
     extend: {
       // Colours are CSS variables (RGB channels) so opacity modifiers keep working and
@@ -36,6 +38,15 @@ const config: Config = {
           copper: v("tone-copper"),
           cream: v("tone-cream"),
           stone: v("tone-stone"),
+        },
+        /** Behind product photos: stays light in dark mode (see globals.css). */
+        stage: {
+          almond: v("stage-almond"),
+          sand: v("stage-sand"),
+          tan: v("stage-tan"),
+          copper: v("stage-copper"),
+          cream: v("stage-cream"),
+          stone: v("stage-stone"),
         },
         ok: { DEFAULT: v("ok"), soft: v("ok-soft") },
         warn: { DEFAULT: v("warn"), soft: v("warn-soft") },

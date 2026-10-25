@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
-import type { CatalogueProduct, DraftLine, Viewer } from "@/lib/types";
+import type { CatalogueProduct, DraftLine, ImageFit, Tone, Viewer } from "@/lib/types";
 import { applyTheme, setPrefCookie, type Prefs, type Theme } from "@/lib/prefs";
 import { translations, type Language, type Translations } from "@/lib/i18n/translations";
 
@@ -11,7 +11,8 @@ export interface Toast {
   id: string;
   title: string;
   image?: string | null;
-  tone?: string;
+  tone?: Tone;
+  fit?: ImageFit;
   action?: { label: string; onClick?: () => void; href?: string };
 }
 

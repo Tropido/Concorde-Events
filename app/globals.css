@@ -36,6 +36,14 @@
   --tone-copper: 220 194 169;
   --tone-cream: 243 233 220;
   --tone-stone: 228 220 211;
+  /* Product stages: the tile behind a photo. Light in both themes (a lit display case), so
+     cut-out photos on white backgrounds blend in with mix-blend-multiply. */
+  --stage-almond: 237 224 212;
+  --stage-sand: 233 211 189;
+  --stage-tan: 229 201 168;
+  --stage-copper: 220 194 169;
+  --stage-cream: 243 233 220;
+  --stage-stone: 228 220 211;
   --ok: 79 107 74;
   --ok-soft: 227 234 221;
   --warn: 138 93 23;
@@ -62,6 +70,12 @@
   --tone-copper: 63 44 34;
   --tone-cream: 51 38 28;
   --tone-stone: 53 45 39;
+  --stage-almond: 222 208 194;
+  --stage-sand: 219 200 180;
+  --stage-tan: 214 190 162;
+  --stage-copper: 208 186 165;
+  --stage-cream: 228 217 204;
+  --stage-stone: 214 207 199;
   --ok: 156 191 148;
   --ok-soft: 34 48 31;
   --warn: 224 176 98;
@@ -160,6 +174,12 @@
   .tone-copper { @apply bg-tone-copper; }
   .tone-cream { @apply bg-tone-cream; }
   .tone-stone { @apply bg-tone-stone; }
+  .stage-almond { @apply bg-stage-almond; }
+  .stage-sand { @apply bg-stage-sand; }
+  .stage-tan { @apply bg-stage-tan; }
+  .stage-copper { @apply bg-stage-copper; }
+  .stage-cream { @apply bg-stage-cream; }
+  .stage-stone { @apply bg-stage-stone; }
 
   /* Legacy surface names still used by a few screens. */
   .apple-card {

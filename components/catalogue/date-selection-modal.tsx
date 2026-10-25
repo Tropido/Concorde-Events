@@ -38,6 +38,7 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
       slug: product.slug,
       title: product.title,
       image: product.images[0] ?? null,
+      imageFit: product.imageFit,
       tone: product.tone,
       quantity: qty,
       maxQuantity: max!,
@@ -46,7 +47,7 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
       unitPrice: product.price?.amount ?? null,
     });
     setEventDates({ start, end });
-    toast({ title: t.bag.added(product.title), image: product.images[0], tone: product.tone, action: { label: t.bag.view, onClick: () => setBagOpen(true) } });
+    toast({ title: t.bag.added(product.title), image: product.images[0], tone: product.tone, fit: product.imageFit, action: { label: t.bag.view, onClick: () => setBagOpen(true) } });
     onAdded?.();
   };
 
@@ -100,7 +101,7 @@ export function BookingModal() {
         {p && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease }} className="flex max-h-[90vh] flex-col">
             <div className="flex items-center gap-3 p-4 sm:p-5">
-              <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} sizes="56px" className="h-14 w-14 shrink-0 rounded-2xl" />
+              <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} fit={p.imageFit} sizes="56px" className="h-14 w-14 shrink-0 rounded-2xl" />
               <div className="min-w-0 flex-1" lang={p.lang}>
                 <p className="label">{p.category?.name ?? t.booking.title}</p>
                 <h2 id="booking-title" className="truncate text-lg font-semibold tracking-tight">{p.title}</h2>

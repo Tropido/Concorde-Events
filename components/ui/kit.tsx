@@ -8,7 +8,7 @@ import { Check, Minus, Plus, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { BRAND_NAME, BRAND_SHORT } from "@/lib/brand";
-import type { Price, Tone } from "@/lib/types";
+import type { ImageFit, Price, Tone } from "@/lib/types";
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
@@ -49,15 +49,26 @@ export function PriceTag({ price, className, size = "md", showUnit = true }: { p
   );
 }
 
-/** A product picture on its tinted tile; a quiet monogram when no photo exists yet. */
-export function ProductTile({ src, alt, tone, sizes, priority, className, children }: {
-  src?: string | null; alt: string; tone: Tone; sizes: string; priority?: boolean; className?: string; children?: React.ReactNode;
+const zoom = "transition-transform duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]";
+
+/** A product picture on its stage. "contain" (cut-outs) stands the whole piece on the tile
+ *  with a floor shadow, white photo backgrounds multiplied into the tone; "cover" fills it
+ *  (ambiance photos). A quiet monogram when no photo exists yet. */
+export function ProductTile({ src, alt, tone, sizes, priority, className, children, fit = "contain" }: {
+  src?: string | null; alt: string; tone: Tone; sizes: string; priority?: boolean; className?: string; children?: React.ReactNode; fit?: ImageFit;
 }) {
   return (
-    <div className={cn("grain relative overflow-hidden", `tone-${tone}`, className)}>
-      {src ? (
-        <Image src={src} alt={alt} fill sizes={sizes} priority={priority}
-          className="object-cover transition-transform duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
+    <div className={cn("grain relative overflow-hidden", `stage-${tone}`, className)}>
+      {src && fit === "cover" ? (
+        <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={cn("object-cover", zoom)} />
+      ) : src ? (
+        <>
+          {/* The piece stands on the floor shadow rather than floating in the middle. */}
+          <span aria-hidden className="absolute inset-x-[20%] bottom-[7%] h-[6%] rounded-[50%] bg-espresso/25 blur-[10px]" />
+          <span className={cn("absolute inset-x-[10%] top-[10%] bottom-[9%]", zoom)}>
+            <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="object-contain object-bottom mix-blend-multiply" />
+          </span>
+        </>
       ) : (
         <span aria-hidden className="absolute inset-0 flex items-center justify-center display text-[7rem] text-ink/[0.07] select-none">
           {alt.trim().charAt(0)}
@@ -186,9 +197,7 @@ export function Toaster() {
             transition={{ duration: 0.35, ease }}
             className="pointer-events-auto flex max-w-md items-center gap-3 rounded-full bg-ink py-1.5 ps-1.5 pe-1.5 text-card shadow-float">
             {x.image ? (
-              <span className={cn("relative h-9 w-9 shrink-0 overflow-hidden rounded-full", `tone-${x.tone ?? "almond"}`)}>
-                <Image src={x.image} alt="" fill sizes="36px" className="object-cover" />
-              </span>
+              <ProductTile src={x.image} alt="" tone={x.tone ?? "almond"} fit={x.fit} sizes="36px" className="h-9 w-9 shrink-0 rounded-full" />
             ) : (
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ok text-card"><Check className="h-4 w-4" /></span>
             )}

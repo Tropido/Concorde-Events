@@ -24,6 +24,8 @@ export type ContactChannel = "whatsapp" | "phone" | "email";
 export type Tone = "almond" | "sand" | "tan" | "copper" | "cream" | "stone";
 export const TONES: Tone[] = ["almond", "sand", "tan", "copper", "cream", "stone"];
 export type ProductBadge = "new" | "bestseller" | "limited";
+/** "contain": cut-out staged whole on its tile; "cover": ambiance photo filling it. */
+export type ImageFit = "contain" | "cover";
 
 /** Operations staff (requests, stock, clients, inbox). */
 export const OPS_ROLES: AppRole[] = ["manager", "admin"];
@@ -108,6 +110,7 @@ export interface CatalogueProduct {
   minimumNights: number;
   featured: boolean;
   images: string[];
+  imageFit: ImageFit;
   /** Usable units (owned minus maintenance), ignoring bookings. */
   stock: number;
   price: Price | null;
@@ -128,6 +131,8 @@ export interface DraftLine {
   slug: string;
   title: string;
   image: string | null;
+  /** Missing on drafts saved before photo framing existed. */
+  imageFit?: ImageFit;
   tone: Tone;
   quantity: number;
   /** Date-specific availability when the line was added; the server re-checks. */

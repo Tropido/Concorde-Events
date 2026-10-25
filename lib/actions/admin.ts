@@ -168,6 +168,7 @@ const ProductInput = z.object({
   featured: z.boolean(),
   status: z.enum(["active", "retired"]),
   images: z.array(z.string().url().max(1000)).max(12),
+  image_fit: z.enum(["contain", "cover"]),
   owned: z.number().int().min(0).max(100000),
   prices: z.object({ retail: money, pro: money }).optional(),
   internal: z.object({

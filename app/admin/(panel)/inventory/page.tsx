@@ -7,10 +7,10 @@ import { setProductStatus } from "@/lib/actions/admin";
 import { ActionButton, FilterLinks, PageHeader } from "@/components/admin/ui";
 import { ProductThumb } from "./thumb";
 import { formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { Tone } from "@/lib/types";
+import type { ImageFit, Tone } from "@/lib/types";
 
 type Row = {
-  id: string; slug: string; sku: string | null; title_fr: string; status: string; images: string[]; tone: Tone; featured: boolean;
+  id: string; slug: string; sku: string | null; title_fr: string; status: string; images: string[]; image_fit: ImageFit; tone: Tone; featured: boolean;
   categories: { name_fr: string } | null;
   product_stock: { quantity_owned: number; quantity_maintenance: number }[];
   product_prices: { tier: "retail" | "pro"; amount: number }[];
@@ -22,7 +22,7 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
   const a = t.admin.inventory;
   const db = await createClient();
   const { data, error } = await db.from("products")
-    .select("id, slug, sku, title_fr, status, images, tone, featured, categories(name_fr), product_stock(quantity_owned, quantity_maintenance), product_prices(tier, amount), product_internal(purchase_cost)")
+    .select("id, slug, sku, title_fr, status, images, image_fit, tone, featured, categories(name_fr), product_stock(quantity_owned, quantity_maintenance), product_prices(tier, amount), product_internal(purchase_cost)")
     .order("status").order("title_fr");
   if (error) throw error;
   const all = (data ?? []) as unknown as Row[];
@@ -85,7 +85,7 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
                   <tr key={r.id} className="border-b border-line last:border-0 hover:bg-paper/60">
                     <td className="px-4 py-3 ps-6">
                       <Link href={`/admin/inventory/${r.id}`} className="flex items-center gap-3">
-                        <ProductThumb src={r.images[0]} tone={r.tone} title={r.title_fr} />
+                        <ProductThumb src={r.images[0]} tone={r.tone} fit={r.image_fit} title={r.title_fr} />
                         <div className="min-w-0">
                           <p className="truncate font-medium hover:underline">{r.title_fr}{r.featured && <span className="ms-1.5 text-toffeeBrown" title={a.featured}>★</span>}</p>
                           <p className="truncate font-mono text-[11px] text-ink/45" dir="ltr">{r.sku ?? r.slug}</p>
