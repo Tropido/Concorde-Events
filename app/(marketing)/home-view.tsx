@@ -5,11 +5,11 @@ import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowUpRight, CalendarDays, ChevronDown, MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
-import { todayIn, validateRange } from "@/lib/dates";
 import { waLink } from "@/lib/utils/whatsapp";
 import { cn, tierSwatch } from "@/lib/utils/formatters";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { PillTabs, PriceTag, ProductTile, RotatingBadge, ease } from "@/components/ui/kit";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import type { CatalogueProduct, Category, CMSContent, ProTier } from "@/lib/types";
 
 const enter = (i: number) => ({
@@ -26,6 +26,13 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
   const available = products.filter((p) => p.stock > 0);
   const featured = available.find((p) => p.featured && p.images[0]) ?? available.find((p) => p.images[0]) ?? available[0];
   const spotlight = categories.filter((c) => c.count > 0).sort((a, b) => b.count - a.count)[0];
+  const facts = (
+    <ul className="grid gap-3 text-sm sm:grid-cols-3">
+      {t.hero.facts.map((f) => (
+        <li key={f.title}><p className="font-semibold tracking-tight">{f.title}</p><p className="text-xs text-ink/60">{f.text}</p></li>
+      ))}
+    </ul>
+  );
   const spotlightProduct = spotlight && available.find((p) => p.category?.id === spotlight.id && p.images[0] && p.id !== featured?.id);
 
   return (
@@ -33,7 +40,7 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
       {/* Bento hero: one orchestrated entrance, nothing else moves on load. */}
       <section className="shell pt-3">
         <div className="grid gap-2.5 lg:grid-cols-12">
-          <motion.div {...enter(0)} className="card flex flex-col justify-between gap-10 p-6 sm:p-10 lg:col-span-7">
+          <motion.div {...enter(0)} className="card flex flex-col justify-between gap-10 p-6 sm:p-10 lg:col-span-7 lg:col-start-1 lg:row-start-1">
             <span className="pill w-fit"><span className="h-1.5 w-1.5 rounded-full bg-toffeeBrown" aria-hidden />{hero.badge}</span>
             <div className="space-y-6">
               <h1 className="display max-w-[12ch] text-[clamp(2.75rem,7vw,5.75rem)] text-balance">{hero.title}</h1>
@@ -45,15 +52,15 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
                 </a>
               </div>
             </div>
-            <ul className="grid gap-3 border-t border-line pt-5 text-sm sm:grid-cols-3">
-              {t.hero.facts.map((f) => (
-                <li key={f.title}><p className="font-semibold tracking-tight">{f.title}</p><p className="text-xs text-ink/55">{f.text}</p></li>
-              ))}
-            </ul>
+            <div className="hidden border-t border-line pt-5 lg:block">{facts}</div>
           </motion.div>
 
+          <motion.div {...enter(1)} className="lg:col-span-4 lg:col-start-1 lg:row-start-2"><EventDates /></motion.div>
+          {/* On phones the dates come right after the hero text; the facts follow them. */}
+          <div className="card p-6 lg:hidden">{facts}</div>
+
           {featured ? (
-            <motion.article {...enter(1)} className="group relative flex min-h-[460px] flex-col overflow-hidden rounded-[1.75rem] lg:col-span-5 lg:row-span-2">
+            <motion.article {...enter(2)} className="group relative flex min-h-[460px] flex-col overflow-hidden rounded-[1.75rem] lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
               <ProductTile src={featured.images[0]} alt={featured.title} tone={featured.tone} sizes="(max-width: 1024px) 100vw, 40vw" priority className="absolute inset-0" />
               <div className="relative flex items-start justify-between p-5 sm:p-6">
                 <div lang={featured.lang}>
@@ -69,14 +76,13 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
               </div>
             </motion.article>
           ) : (
-            <motion.div {...enter(1)} className="grain tone-sand flex min-h-[320px] flex-col justify-end rounded-[1.75rem] p-8 lg:col-span-5 lg:row-span-2">
+            <motion.div {...enter(2)} className="grain tone-sand flex min-h-[320px] flex-col justify-end rounded-[1.75rem] p-8 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
               <p className="max-w-xs text-2xl font-semibold tracking-tight">{t.home.catalogueSoon}</p>
             </motion.div>
           )}
 
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:col-span-7">
-            {spotlight ? (
-              <motion.div {...enter(2)}>
+          {spotlight && (
+              <motion.div {...enter(3)} className="lg:col-span-3 lg:col-start-5 lg:row-start-2">
                 <Link href={`/catalogue?cat=${spotlight.slug}`} className="group grain tone-almond relative flex h-full min-h-[200px] overflow-hidden rounded-[1.75rem] p-6">
                   <div className="relative z-10 flex flex-col justify-between">
                     <p className="label">{t.home.collection}</p>
@@ -90,9 +96,7 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
                   )}
                 </Link>
               </motion.div>
-            ) : <div />}
-            <motion.div {...enter(3)}><QuickDates /></motion.div>
-          </div>
+          )}
         </div>
       </section>
 
@@ -151,33 +155,23 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
   );
 }
 
-function QuickDates() {
+/** The visitor's event dates: every piece added from here on starts with them. */
+function EventDates() {
   const { t, eventDates, setEventDates } = useApp();
-  const today = todayIn("TN");
-  const [start, setStart] = useState(eventDates.start);
-  const [end, setEnd] = useState(eventDates.end);
-  const [saved, setSaved] = useState(false);
-  const problem = start || end ? validateRange(start, end, { today }) : null;
   return (
-    <form className="card flex h-full flex-col justify-between gap-4 p-6"
-      onSubmit={(e) => { e.preventDefault(); if (!validateRange(start, end, { today })) { setEventDates({ start, end }); setSaved(true); } }}>
-      <div className="flex items-center justify-between">
-        <p className="label">{t.hero.quickBooking.title}</p>
-        <CalendarDays className="h-4 w-4 text-ink/40" aria-hidden />
+    <section aria-labelledby="dates-title" className="flex h-full flex-col justify-between gap-6 rounded-[1.75rem] bg-espresso p-6 text-espresso-fg sm:p-8">
+      <div className="space-y-2">
+        <div className="flex items-start justify-between gap-3">
+          <h2 id="dates-title" className="text-2xl font-semibold tracking-tight text-balance">{t.hero.quickBooking.title}</h2>
+          <CalendarDays className="mt-1 h-5 w-5 shrink-0 text-almondCream/60" aria-hidden />
+        </div>
+        <p className="max-w-sm text-sm text-almondCream/70 text-pretty">{t.hero.quickBooking.text}</p>
       </div>
-      <div className="grid grid-cols-2 gap-2">
-        <label><span className="sr-only">{t.hero.quickBooking.startDate}</span>
-          <input type="date" min={today} value={start} onChange={(e) => { setStart(e.target.value); setSaved(false); }} className="field px-3 text-xs" aria-label={t.hero.quickBooking.startDate} /></label>
-        <label><span className="sr-only">{t.hero.quickBooking.endDate}</span>
-          <input type="date" min={start || today} value={end} onChange={(e) => { setEnd(e.target.value); setSaved(false); }} className="field px-3 text-xs" aria-label={t.hero.quickBooking.endDate} /></label>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <p aria-live="polite" className="text-xs text-ink/55">
-          {problem ? <span className="text-bad">{t.booking.rangeErrors[problem]}</span> : saved ? t.hero.quickBooking.datesSaved : t.hero.quickBooking.hint}
-        </p>
-        <button type="submit" disabled={!start || !end || !!problem} className="btn-ink btn-sm shrink-0">{t.hero.quickBooking.save}</button>
-      </div>
-    </form>
+      <DateRangePicker start={eventDates.start} end={eventDates.end} onChange={(start, end) => setEventDates({ start, end })} size="lg" surface="espresso" />
+      <Link href="/catalogue" className="btn bg-espresso-fg text-espresso hover:bg-almondCream">
+        {t.hero.quickBooking.cta}<ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+      </Link>
+    </section>
   );
 }
 

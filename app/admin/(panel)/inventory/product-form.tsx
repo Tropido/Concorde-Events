@@ -9,6 +9,7 @@ import { createClient } from "@/lib/supabase/client";
 import { saveProduct, type AdminResult, type ProductInput } from "@/lib/actions/admin";
 import { ResultText } from "@/components/admin/ui";
 import { PriceTag, ProductTile } from "@/components/ui/kit";
+import { DatePicker } from "@/components/ui/date-range-picker";
 import { discounted } from "@/lib/pro";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { TONES, type ProTier, type Tone } from "@/lib/types";
@@ -205,7 +206,8 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
         <Section id="internal" title={a.sections.internal} hint={a.internalHint}>
           <div className="grid gap-3 md:grid-cols-3">
             <F label={a.purchaseCost}><Money value={v.internal.purchase_cost} onChange={(x) => setInternal("purchase_cost", x)} zero /></F>
-            <F label={a.purchaseDate}><input type="date" value={v.internal.purchase_date ?? ""} onChange={(e) => setInternal("purchase_date", e.target.value || null)} className="field" /></F>
+            {/* Not inside a <label>: clicks in the picker popover would re-trigger it. */}
+            <div><span className="field-label">{a.purchaseDate}</span><DatePicker label={a.purchaseDate} value={v.internal.purchase_date ?? ""} onChange={(iso) => setInternal("purchase_date", iso || null)} /></div>
             <F label={a.condition}>
               <select value={v.internal.condition ?? ""} onChange={(e) => setInternal("condition", (e.target.value || null) as ProductFormValue["internal"]["condition"])} className="field">
                 <option value="">—</option>

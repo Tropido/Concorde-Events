@@ -1,6 +1,7 @@
 import type { DeliveryMode, ContactChannel, EventType, ProductBadge, RequestStatus } from "@/lib/types";
 import type { RangeProblem } from "@/lib/dates";
 import type { Theme } from "@/lib/prefs";
+import type { DayBlock } from "@/lib/date-range";
 import type { AdminTranslations } from "./admin-types";
 import { fr } from "./fr";
 import { ar } from "./ar";
@@ -38,7 +39,7 @@ export interface Translations {
   hero: {
     badge: string; title: string; titleAccent: string; subtitle: string; ctaExplore: string; ctaWhatsapp: string;
     whatsappGreeting: string; facts: Item[];
-    quickBooking: { title: string; startDate: string; endDate: string; save: string; hint: string; datesSaved: string };
+    quickBooking: { title: string; text: string; cta: string };
   };
   home: {
     featuredLabel: string; badgeRing: string; chooseDates: string; catalogueSoon: string; collection: string;
@@ -58,6 +59,12 @@ export interface Translations {
     summary: (qty: number, nights: number) => string; rangeErrors: Record<RangeProblem, string>; decrease: string; increase: string;
   };
   calendar: { prev: string; next: string; hint: string };
+  picker: {
+    choose: string; dialog: string; dialogSingle: string; clear: string; apply: string; edit: string; pickEnd: string;
+    yourDates: string; chooseDates: string;
+    states: { start: string; end: string; inRange: string; today: string; limited: string; available: (n: number) => string };
+    blocked: Record<DayBlock, string>;
+  };
   scheduling: { legendAvailable: string; legendSelected: string; legendLimited: string; legendFull: string };
   bag: {
     title: string; short: string; pieces: (n: number) => string; emptyTitle: string; emptyText: string; browse: string;

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cleanupUsers, enabled, isoDate, login, makeUser, run, service } from "./helpers";
+import { cleanupUsers, enabled, isoDate, login, makeUser, pickDay, run, service } from "./helpers";
 
 test.skip(!enabled, "needs .env.local + .env.test.local for the TEST Supabase project");
 test.describe.configure({ mode: "serial" });
@@ -24,8 +24,8 @@ test("request -> staff quote -> client sees it in another session", async ({ bro
   await c.goto("/catalogue");
   await c.getByRole("button", { name: /choisir les dates/i }).first().click();
   const dialog = c.getByRole("dialog");
-  await dialog.getByLabel("Début").fill(isoDate(30));
-  await dialog.getByLabel("Fin (retour)").fill(isoDate(33));
+  await pickDay(dialog, isoDate(30));
+  await pickDay(dialog, isoDate(33));
   await expect(dialog.getByText(/disponible/).first()).toBeVisible();
   await dialog.getByRole("button", { name: /^ajouter/i }).click();
   await c.goto("/demande");

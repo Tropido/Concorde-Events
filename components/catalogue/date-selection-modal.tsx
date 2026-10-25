@@ -6,7 +6,7 @@ import { ShoppingBag } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { nights, todayIn, validateRange } from "@/lib/dates";
 import { formatTND } from "@/lib/utils/formatters";
-import { AvailabilityCalendar } from "@/components/ui/availability-calendar";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Dialog } from "@/components/ui/dialog";
 import { CloseButton, PriceTag, ProductTile, QuantityStepper, ease } from "@/components/ui/kit";
 import { minAvailable, useAvailability } from "./use-availability";
@@ -64,16 +64,6 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
 
   const controls = (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block">
-          <span className="field-label">{t.booking.start}</span>
-          <input type="date" min={today} value={start} onChange={(e) => setStart(e.target.value)} className="field" />
-        </label>
-        <label className="block">
-          <span className="field-label">{t.booking.end}</span>
-          <input type="date" min={start || today} value={end} onChange={(e) => setEnd(e.target.value)} className="field" />
-        </label>
-      </div>
       <p aria-live="polite" className="min-h-5 text-xs font-medium">{status}</p>
       <div className="flex items-center gap-3">
         <QuantityStepper value={qty} max={max} label={t.booking.quantity} onChange={setQuantity} />
@@ -88,15 +78,15 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
     </div>
   );
 
-  const calendar = (
-    <AvailabilityCalendar productId={product.id} stock={product.stock} startDate={start} endDate={end}
-      onSelectDates={(s, e) => { setStart(s); setEnd(e); }} />
+  const picker = (
+    <DateRangePicker inline start={start} end={end} minimumNights={product.minimumNights} productId={product.id} stock={product.stock}
+      onChange={(s, e) => { setStart(s); setEnd(e); }} />
   );
 
   return layout === "stacked" ? (
-    <div className="space-y-6">{controls}<div className="rounded-3xl bg-paper p-4">{calendar}</div></div>
+    <div className="space-y-5">{picker}{controls}</div>
   ) : (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">{controls}<div className="rounded-3xl bg-paper p-4">{calendar}</div></div>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">{picker}<div className="lg:pt-16">{controls}</div></div>
   );
 }
 

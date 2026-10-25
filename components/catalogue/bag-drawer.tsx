@@ -7,6 +7,7 @@ import { useApp } from "@/lib/context/app-context";
 import { nights } from "@/lib/dates";
 import { cn, formatDay, formatTND } from "@/lib/utils/formatters";
 import { CloseButton, Drawer, QuantityStepper } from "@/components/ui/kit";
+import { EventDatesChip } from "@/components/ui/date-range-picker";
 import type { DraftLine } from "@/lib/types";
 
 export function draftEstimate(draft: DraftLine[]) {
@@ -63,6 +64,7 @@ export function BagDrawer() {
         </div>
         <CloseButton onClick={close} label={t.common.close} />
       </div>
+      <EventDatesChip hideWhenEmpty className="px-5 pb-2" />
       {draft.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
           <p className="text-lg font-semibold tracking-tight">{t.bag.emptyTitle}</p>

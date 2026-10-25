@@ -38,3 +38,27 @@ test("booking dialog is keyboard operable", async ({ page }) => {
   await expect(dialog).toBeHidden();
   await expect(book).toBeFocused();
 });
+
+test("date picker works from the keyboard and returns focus", async ({ page }) => {
+  await page.goto("/");
+  const block = page.locator('section[aria-labelledby="dates-title"]');
+  const start = block.getByRole("button", { name: /début/i });
+  await start.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  // Focus starts on today: tomorrow is the start, two days later the return.
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  await dialog.getByRole("button", { name: "Valider" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(block).toContainText("2 nuits");
+
+  await start.click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(start).toBeFocused();
+});
