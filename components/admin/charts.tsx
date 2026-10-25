@@ -5,8 +5,8 @@ import { motion } from "framer-motion";
 import { cn } from "@/lib/utils/formatters";
 
 // Single-hue charts: ink line/area on the card surface, recessive grid, hover tooltip.
-const INK = "#2b1d13";
-const GRID = "#e9dccd";
+// Strokes use currentColor (each svg sets text-ink) and token classes, so both themes work.
+const INK = "currentColor";
 
 export function Sparkline({ values, className, label }: { values: number[]; className?: string; label: string }) {
   const id = useId();
@@ -15,7 +15,7 @@ export function Sparkline({ values, className, label }: { values: number[]; clas
   const pts = values.map((v, i) => [values.length < 2 ? w : (i / (values.length - 1)) * w, h - 3 - (v / max) * (h - 8)] as const);
   const d = pts.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)},${y.toFixed(1)}`).join(" ");
   return (
-    <svg viewBox={`0 0 ${w} ${h}`} className={cn("h-9 w-28", className)} role="img" aria-label={label} preserveAspectRatio="none">
+    <svg viewBox={`0 0 ${w} ${h}`} className={cn("h-9 w-28 text-ink", className)} role="img" aria-label={label} preserveAspectRatio="none">
       <defs>
         <linearGradient id={id} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={INK} stopOpacity=".14" /><stop offset="1" stopColor={INK} stopOpacity="0" /></linearGradient>
       </defs>
@@ -63,21 +63,21 @@ export function AreaChart({ points, format, label, emptyLabel }: {
 
   return (
     <div className="relative" dir="ltr">
-      <svg ref={ref} viewBox={`0 0 ${w} ${h}`} className="h-60 w-full touch-none" role="img" aria-label={label}
+      <svg ref={ref} viewBox={`0 0 ${w} ${h}`} className="h-60 w-full touch-none text-ink" role="img" aria-label={label}
         onPointerMove={onMove} onPointerLeave={() => setHover(null)}>
         <defs>
           <linearGradient id={gid} x1="0" x2="0" y1="0" y2="1"><stop offset="0" stopColor={INK} stopOpacity=".12" /><stop offset="1" stopColor={INK} stopOpacity="0" /></linearGradient>
         </defs>
         {[0, 0.5, 1].map((f) => (
           <g key={f}>
-            <line x1={pad.l} x2={w - pad.r} y1={y(max * f)} y2={y(max * f)} stroke={GRID} strokeDasharray={f ? "3 4" : undefined} />
+            <line x1={pad.l} x2={w - pad.r} y1={y(max * f)} y2={y(max * f)} className="stroke-line" strokeDasharray={f ? "3 4" : undefined} />
           </g>
         ))}
         <path d={`${line} L${x(points.length - 1)},${y(0)} L${x(0)},${y(0)} Z`} fill={`url(#${gid})`} />
         <motion.path d={line} fill="none" stroke={INK} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round"
           initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }} />
         {[0.5, 1].map((f) => (
-          <text key={f} x={pad.l} y={y(max * f) - 4} className="fill-ink/40 font-mono" fontSize="10" stroke="#fcf9f5" strokeWidth={4} paintOrder="stroke">{format(max * f)}</text>
+          <text key={f} x={pad.l} y={y(max * f) - 4} className="fill-ink/40 stroke-card font-mono" fontSize="10" strokeWidth={4} paintOrder="stroke">{format(max * f)}</text>
         ))}
         {/* Weekly ticks anchored on the latest day, so the last two labels never collide. */}
         {points.map((p, i) => (points.length - 1 - i) % every === 0 && (
@@ -86,12 +86,12 @@ export function AreaChart({ points, format, label, emptyLabel }: {
         {hp && hover !== null && (
           <g>
             <line x1={x(hover)} x2={x(hover)} y1={pad.t} y2={y(0)} stroke={INK} strokeOpacity=".25" />
-            <circle cx={x(hover)} cy={y(hp.value)} r={5} fill="#fcf9f5" stroke={INK} strokeWidth={2} />
+            <circle cx={x(hover)} cy={y(hp.value)} r={5} className="fill-card" stroke={INK} strokeWidth={2} />
           </g>
         )}
       </svg>
       {hp && hover !== null && (
-        <div className="pointer-events-none absolute top-2 rounded-2xl bg-ink px-3 py-2 text-card shadow-float"
+        <div className="pointer-events-none absolute top-2 rounded-2xl bg-espresso px-3 py-2 text-espresso-fg shadow-float"
           style={{ left: `clamp(0px, calc(${(x(hover) / w) * 100}% - 70px), calc(100% - 140px))` }}>
           <p className="font-mono text-[10px] text-almondCream/60">{hp.label}</p>
           <p className="text-base font-semibold tabular-nums">{format(hp.value)}</p>
@@ -153,8 +153,8 @@ export function Ring({ value, label, caption }: { value: number; label: string; 
   const v = Math.max(0, Math.min(1, value));
   return (
     <div className="flex items-center gap-5">
-      <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90" role="img" aria-label={`${label}: ${Math.round(v * 100)}%`}>
-        <circle cx="50" cy="50" r={r} fill="none" stroke={GRID} strokeWidth="9" />
+      <svg viewBox="0 0 100 100" className="h-28 w-28 -rotate-90 text-ink" role="img" aria-label={`${label}: ${Math.round(v * 100)}%`}>
+        <circle cx="50" cy="50" r={r} fill="none" className="stroke-line" strokeWidth="9" />
         <motion.circle cx="50" cy="50" r={r} fill="none" stroke={INK} strokeWidth="9" strokeLinecap="round" strokeDasharray={c}
           initial={{ strokeDashoffset: c }} animate={{ strokeDashoffset: c * (1 - v) }} transition={{ duration: 1.2, ease: [0.22, 1, 0.36, 1] }} />
       </svg>

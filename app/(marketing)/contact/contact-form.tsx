@@ -31,14 +31,14 @@ export function ContactForm({ defaults }: { defaults: { name: string; email: str
           </form>
         )}
       </div>
-      <aside className="flex flex-col justify-between gap-8 rounded-[1.75rem] bg-ink p-6 text-card sm:p-8">
+      <aside className="flex flex-col justify-between gap-8 rounded-[1.75rem] bg-espresso p-6 text-espresso-fg sm:p-8">
         <div className="space-y-3">
           <h2 className="text-2xl font-semibold tracking-tight">{t.contact.whatsappTitle}</h2>
           <p className="text-sm text-almondCream/70">{t.contact.whatsappText}</p>
           <p className="text-xl font-semibold"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></p>
         </div>
         <div className="space-y-3">
-          <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn w-full bg-card text-ink hover:bg-almondCream">
+          <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn w-full bg-espresso-fg text-espresso hover:bg-almondCream">
             <MessageCircle className="h-4 w-4" aria-hidden />{t.contact.whatsappButton}
           </a>
           <p className="text-xs text-almondCream/50">{t.contact.addressPending}</p>

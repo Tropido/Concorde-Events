@@ -117,7 +117,7 @@ export default async function AdminInboxPage({ searchParams }: { searchParams: P
                 {[...selected.message_replies].sort((x, y) => x.created_at.localeCompare(y.created_at)).map((r) => {
                   const viaWa = r.body.startsWith("[WhatsApp] ");
                   return (
-                    <li key={r.id} className={cn("ms-auto max-w-[80%] rounded-2xl rounded-se-md p-4 text-sm", viaWa ? "bg-ink text-card" : r.internal ? "bg-warn-soft" : "bg-tone-sand")}>
+                    <li key={r.id} className={cn("ms-auto max-w-[80%] rounded-2xl rounded-se-md p-4 text-sm", viaWa ? "bg-espresso text-espresso-fg" : r.internal ? "bg-warn-soft" : "bg-tone-sand")}>
                       <p className={cn("mb-1 text-[11px]", viaWa ? "text-almondCream/60" : "text-ink/50")}>
                         {r.author?.full_name ?? "—"} · {formatDateTime(r.created_at, prefs.lang)} · {viaWa ? a.sentWhatsapp : r.internal ? a.internal : a.publicReply}
                       </p>

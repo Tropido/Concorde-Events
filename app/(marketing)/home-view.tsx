@@ -7,7 +7,7 @@ import { ArrowUpRight, CalendarDays, ChevronDown, MessageCircle } from "lucide-r
 import { useApp } from "@/lib/context/app-context";
 import { todayIn, validateRange } from "@/lib/dates";
 import { waLink } from "@/lib/utils/whatsapp";
-import { cn } from "@/lib/utils/formatters";
+import { cn, tierSwatch } from "@/lib/utils/formatters";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { PillTabs, PriceTag, ProductTile, RotatingBadge, ease } from "@/components/ui/kit";
 import type { CatalogueProduct, Category, CMSContent, ProTier } from "@/lib/types";
@@ -211,7 +211,7 @@ function ProTeaser({ tiers }: { tiers: ProTier[] }) {
   const { t } = useApp();
   return (
     <section className="shell" aria-labelledby="pro-title">
-      <div className="grid gap-8 rounded-[1.75rem] bg-ink p-6 text-card sm:p-10 lg:grid-cols-2">
+      <div className="grid gap-8 rounded-[1.75rem] bg-espresso p-6 text-espresso-fg sm:p-10 lg:grid-cols-2">
         <div className="flex flex-col justify-between gap-8">
           <div className="space-y-4">
             <p className="font-mono text-[10.5px] uppercase tracking-label text-almondCream/50">{t.pro.teaserLabel}</p>
@@ -219,15 +219,15 @@ function ProTeaser({ tiers }: { tiers: ProTier[] }) {
             <p className="max-w-md text-sm text-almondCream/70">{t.pro.teaserText}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/register?type=professional" className="btn bg-card text-ink hover:bg-almondCream">{t.pro.become}</Link>
-            <Link href="/professionnels" className="btn text-card ring-1 ring-almondCream/25 hover:ring-almondCream/60">{t.pro.learnMore}</Link>
+            <Link href="/register?type=professional" className="btn bg-espresso-fg text-espresso hover:bg-almondCream">{t.pro.become}</Link>
+            <Link href="/professionnels" className="btn text-espresso-fg ring-1 ring-almondCream/25 hover:ring-almondCream/60">{t.pro.learnMore}</Link>
           </div>
         </div>
         {tiers.length > 0 && (
           <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {tiers.map((tier) => (
               <li key={tier.code} className="rounded-2xl bg-almondCream/[0.06] p-4 ring-1 ring-almondCream/10">
-                <span className="mb-3 block h-1.5 w-8 rounded-full" style={{ background: tier.color === "#3d281a" || tier.color === "#5c3d28" ? "#ddb892" : tier.color }} aria-hidden />
+                <span className="mb-3 block h-1.5 w-8 rounded-full" style={{ background: tierSwatch(tier.color) }} aria-hidden />
                 <p className="font-semibold tracking-tight">{tier.name}</p>
                 <p className="text-xs text-almondCream/55">{tier.discount > 0 ? t.pro.tierDiscount(tier.discount) : t.pro.proRates}</p>
               </li>

@@ -154,10 +154,10 @@ export function Drawer({ open, onClose, labelledBy, children, side = "end" }: {
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[60]">
-          <motion.div className="absolute inset-0 bg-ink/35 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-espresso/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div ref={ref} role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1}
             initial={{ x: `${offscreen}%` }} animate={{ x: 0 }} exit={{ x: `${offscreen}%` }} transition={{ duration: 0.45, ease }}
-            className={cn("absolute top-0 bottom-0 flex w-full max-w-[440px] flex-col bg-card shadow-float outline-none sm:top-2 sm:bottom-2 sm:rounded-[1.75rem]",
+            className={cn("absolute top-0 bottom-0 flex w-full max-w-[440px] flex-col bg-raised shadow-float outline-none sm:top-2 sm:bottom-2 sm:rounded-[1.75rem]",
               fromEnd ? "end-0 sm:end-2" : "start-0 sm:start-2")}>
             {children}
           </motion.div>

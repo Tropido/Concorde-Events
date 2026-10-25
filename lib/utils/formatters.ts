@@ -38,6 +38,14 @@ export function formatDateTime(isoTimestamp: string, lang: Language) {
   return new Intl.DateTimeFormat(locale(lang), { dateStyle: "medium", timeStyle: "short", timeZone: "Africa/Tunis" }).format(new Date(isoTimestamp));
 }
 
+/** A tier swatch for dark surfaces: tier colours too dark to see there fall back to tan. */
+export function tierSwatch(hex: string) {
+  const m = /^#([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
+  if (!m) return "rgb(var(--tan))";
+  const [r, g, b] = m.slice(1).map((x) => parseInt(x, 16));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 70 ? "rgb(var(--tan))" : hex;
+}
+
 export function initials(name: string | null | undefined) {
   const parts = (name ?? "").trim().split(/\s+/).filter(Boolean);
   return ((parts[0]?.[0] ?? "") + (parts[1]?.[0] ?? "")).toUpperCase() || "·";

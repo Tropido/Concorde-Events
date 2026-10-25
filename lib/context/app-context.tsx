@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useR
 import { useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
 import type { CatalogueProduct, DraftLine, Viewer } from "@/lib/types";
-import { setPrefCookie, type Prefs } from "@/lib/prefs";
+import { applyTheme, setPrefCookie, type Prefs, type Theme } from "@/lib/prefs";
 import { translations, type Language, type Translations } from "@/lib/i18n/translations";
 
 export interface Toast {
@@ -22,6 +22,8 @@ interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: Translations;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
 
   draft: DraftLine[];
   addToDraft: (line: Omit<DraftLine, "id">) => void;
@@ -62,6 +64,7 @@ function readDraft(): DraftLine[] {
 export function AppProvider({ children, prefs, viewer }: { children: React.ReactNode; prefs: Prefs; viewer: Viewer | null }) {
   const router = useRouter();
   const [language, setLanguageState] = useState<Language>(prefs.lang);
+  const [theme, setThemeState] = useState<Theme>(prefs.theme);
   const [draft, setDraft] = useState<DraftLine[]>([]);
   const [bagOpen, setBagOpen] = useState(false);
   const [bagPulse, setBagPulse] = useState(0);
@@ -72,6 +75,19 @@ export function AppProvider({ children, prefs, viewer }: { children: React.React
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   useEffect(() => setLanguageState(prefs.lang), [prefs.lang]);
+  // Re-applied after server refreshes too, which re-render <html> with the cookie's class.
+  useEffect(() => applyTheme(theme), [theme, prefs]);
+  // Printed pages (quotes above all) always come out light.
+  useEffect(() => {
+    const light = () => document.documentElement.classList.remove("dark");
+    const restore = () => applyTheme(theme);
+    window.addEventListener("beforeprint", light);
+    window.addEventListener("afterprint", restore);
+    return () => {
+      window.removeEventListener("beforeprint", light);
+      window.removeEventListener("afterprint", restore);
+    };
+  }, [theme]);
   useEffect(() => {
     setDraft(readDraft());
     try {
@@ -118,6 +134,11 @@ export function AppProvider({ children, prefs, viewer }: { children: React.React
       language,
       setLanguage,
       t: translations[language],
+      theme,
+      setTheme: (next) => {
+        setThemeState(next);
+        setPrefCookie("theme", next);
+      },
       draft,
       addToDraft: (line) => {
         const same = draft.find((l) => l.productId === line.productId && l.startDate === line.startDate && l.endDate === line.endDate);
@@ -155,7 +176,7 @@ export function AppProvider({ children, prefs, viewer }: { children: React.React
       toast,
       dismissToast,
     };
-  }, [viewer, language, draft, persist, bagOpen, bagPulse, eventDates, previewProduct, bookingProduct, toasts, toast, dismissToast, router]);
+  }, [viewer, language, theme, draft, persist, bagOpen, bagPulse, eventDates, previewProduct, bookingProduct, toasts, toast, dismissToast, router]);
 
   return (
     <AppContext.Provider value={value}>

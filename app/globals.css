@@ -7,7 +7,68 @@
   --font-display: "Inter Tight Variable", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Owner palette: the same in both themes. */
+  --almond-cream: 237 224 212;
+  --desert-sand: 230 204 178;
+  --tan: 221 184 146;
+  --faded-copper: 176 137 104;
+  --coffee-bean: 127 85 57;
+  --toffee-brown: 156 102 68;
+}
+
+/* Colour tokens are RGB channels, used as rgb(var(--x) / alpha) by tailwind.config.ts.
+   .theme-light pins a subtree to the light palette (the quote document). */
+:root,
+.theme-light {
   color-scheme: light;
+  --paper: 247 241 234;
+  --card: 252 249 245;
+  --raised: 252 249 245;
+  --ink: 43 29 19;
+  --ink-soft: 92 61 40;
+  --line: 233 220 205;
+  --espresso: 43 29 19;
+  --espresso-fg: 252 249 245;
+  --tone-almond: 237 224 212;
+  --tone-sand: 233 211 189;
+  --tone-tan: 229 201 168;
+  --tone-copper: 220 194 169;
+  --tone-cream: 243 233 220;
+  --tone-stone: 228 220 211;
+  --ok: 79 107 74;
+  --ok-soft: 227 234 221;
+  --warn: 138 93 23;
+  --warn-soft: 244 230 200;
+  --bad: 154 68 53;
+  --bad-soft: 243 220 213;
+  --shadow: 43 29 19;
+}
+
+/* Dark palette built from the same owner colours: coffee-black surfaces, almond-cream ink. */
+.dark {
+  color-scheme: dark;
+  --paper: 24 17 12;
+  --card: 35 25 18;
+  --raised: 45 32 23;
+  --ink: 237 224 212;
+  --ink-soft: 205 184 165;
+  --line: 58 42 30;
+  --espresso: 48 35 26;
+  --espresso-fg: 252 249 245;
+  --tone-almond: 58 44 33;
+  --tone-sand: 61 45 32;
+  --tone-tan: 66 48 31;
+  --tone-copper: 63 44 34;
+  --tone-cream: 51 38 28;
+  --tone-stone: 53 45 39;
+  --ok: 156 191 148;
+  --ok-soft: 34 48 31;
+  --warn: 224 176 98;
+  --warn-soft: 58 44 18;
+  --bad: 229 143 126;
+  --bad-soft: 61 31 25;
+  --shadow: 0 0 0;
 }
 
 [dir="rtl"] {
@@ -36,11 +97,11 @@
     letter-spacing: 0;
   }
   ::selection {
-    background: #ddb892;
-    color: #2b1d13;
+    background: rgb(var(--tan));
+    color: rgb(var(--espresso));
   }
   :focus-visible {
-    outline: 2px solid #9c6644;
+    outline: 2px solid rgb(var(--toffee-brown));
     outline-offset: 2px;
   }
   input[type="number"]::-webkit-inner-spin-button {
@@ -76,7 +137,7 @@
     @apply btn bg-card text-ink ring-1 ring-line hover:ring-ink/30;
   }
   .btn-toffee {
-    @apply btn bg-toffeeBrown text-card hover:bg-coffeeBean;
+    @apply btn bg-toffeeBrown text-espresso-fg hover:bg-coffeeBean;
   }
   .btn-sm {
     @apply px-3.5 py-2 text-xs;
@@ -147,7 +208,7 @@
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(127, 85, 57, 0.25);
+  background: rgb(var(--ink) / 0.2);
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: padding-box;

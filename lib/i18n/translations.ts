@@ -1,5 +1,6 @@
 import type { DeliveryMode, ContactChannel, EventType, ProductBadge, RequestStatus } from "@/lib/types";
 import type { RangeProblem } from "@/lib/dates";
+import type { Theme } from "@/lib/prefs";
 import type { AdminTranslations } from "./admin-types";
 import { fr } from "./fr";
 import { ar } from "./ar";
@@ -22,6 +23,7 @@ export interface Translations {
   nav: {
     home: string; catalogue: string; decoration: string; pros: string; about: string; contact: string;
     account: string; admin: string; logIn: string; signUp: string; menu: string; language: string;
+    theme: string; themes: Record<Theme, string>;
   };
   common: {
     loading: string; save: string; saving: string; cancel: string; close: string; back: string; confirm: string;

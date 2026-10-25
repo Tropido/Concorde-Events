@@ -21,7 +21,8 @@ export default async function QuotePage({ params }: { params: Promise<{ id: stri
   if (!data) notFound();
 
   return (
-    <main id="main" className="flex-1 px-3 py-6 print:p-0 sm:px-6">
+    // theme-light: quotes always read and print on the light palette.
+    <main id="main" className="theme-light min-h-screen flex-1 bg-paper px-3 py-6 text-ink print:p-0 sm:px-6">
       <div className="mx-auto max-w-4xl space-y-3">
         <div className="flex items-center justify-between print:hidden">
           <Link href={isStaffViewer(viewer) ? `/admin/requests/${data.request_id}` : "/account"} className="btn-light btn-sm">{t.common.back}</Link>

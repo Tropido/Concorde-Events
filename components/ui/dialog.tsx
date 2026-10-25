@@ -36,8 +36,8 @@ export function Dialog({
         if (e.target === ref.current) onClose();
       }}
       className={cn(
-        "m-auto w-[calc(100%-1.5rem)] max-h-[90vh] p-0 rounded-[1.75rem] bg-card text-ink shadow-float",
-        "backdrop:bg-ink/40 backdrop:backdrop-blur-[2px]",
+        "m-auto w-[calc(100%-1.5rem)] max-h-[90vh] p-0 rounded-[1.75rem] bg-raised text-ink shadow-float",
+        "backdrop:bg-espresso/45 backdrop:backdrop-blur-[2px]",
         className,
       )}
     >

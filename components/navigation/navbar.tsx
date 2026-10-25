@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutGrid, Menu, ShoppingBag, UserRound } from "lucide-react";
+import { LayoutGrid, Menu, Monitor, Moon, ShoppingBag, Sun, UserRound } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { isStaff } from "@/lib/types";
 import { cn, initials } from "@/lib/utils/formatters";
 import { CloseButton, Drawer, Logo } from "@/components/ui/kit";
 import { BRAND_NAME } from "@/lib/brand";
+import { THEMES, type Theme } from "@/lib/prefs";
 import type { Language } from "@/lib/i18n/translations";
 
 export function LanguageSwitch({ className }: { className?: string }) {
@@ -21,6 +22,25 @@ export function LanguageSwitch({ className }: { className?: string }) {
           {l === "fr" ? "FR" : "ع"}
         </button>
       ))}
+    </div>
+  );
+}
+
+const THEME_ICONS: Record<Theme, typeof Sun> = { light: Sun, dark: Moon, system: Monitor };
+
+export function ThemeSwitch({ className }: { className?: string }) {
+  const { t, theme, setTheme } = useApp();
+  return (
+    <div role="group" aria-label={t.nav.theme} className={cn("flex rounded-full bg-paper p-0.5", className)}>
+      {THEMES.map((x) => {
+        const Icon = THEME_ICONS[x];
+        return (
+          <button key={x} type="button" aria-label={t.nav.themes[x]} title={t.nav.themes[x]} aria-pressed={theme === x} onClick={() => setTheme(x)}
+            className={cn("flex h-7 w-7 items-center justify-center rounded-full transition-colors", theme === x ? "bg-card text-ink shadow-inset" : "text-ink/50 hover:text-ink")}>
+            <Icon className="h-3.5 w-3.5" aria-hidden />
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -57,6 +77,7 @@ export function Navbar() {
           </nav>
 
           <div className="ms-auto flex items-center gap-1.5 lg:ms-0">
+            <ThemeSwitch className="hidden lg:flex" />
             <LanguageSwitch className="hidden sm:flex" />
             {viewer ? (
               <Link href={staff ? "/admin" : "/account"} className="hidden items-center gap-2 rounded-full py-1 ps-1 pe-3 text-[13px] hover:bg-paper sm:flex">
@@ -95,7 +116,7 @@ export function Navbar() {
           ))}
         </nav>
         <div className="mt-auto space-y-4 p-5">
-          <LanguageSwitch />
+          <div className="flex items-center gap-2"><LanguageSwitch /><ThemeSwitch /></div>
           {viewer ? (
             <Link href={staff ? "/admin" : "/account"} onClick={() => setMenu(false)} className="btn-light w-full">{staff ? t.nav.admin : t.nav.account}</Link>
           ) : (

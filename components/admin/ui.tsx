@@ -8,7 +8,7 @@ import { BarChart3, Boxes, ExternalLink, FileText, LayoutDashboard, LogOut, Menu
 import { useApp } from "@/lib/context/app-context";
 import { signOut } from "@/lib/actions/auth";
 import { cn, initials } from "@/lib/utils/formatters";
-import { LanguageSwitch } from "@/components/navigation/navbar";
+import { LanguageSwitch, ThemeSwitch } from "@/components/navigation/navbar";
 import { CloseButton, Drawer, Logo } from "@/components/ui/kit";
 import type { AdminResult } from "@/lib/actions/admin";
 import type { AppRole } from "@/lib/types";
@@ -84,7 +84,7 @@ function Footer({ name, role }: { name: string; role: AppRole }) {
   return (
     <div className="space-y-3">
       <Link href="/" className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-ink/60 hover:bg-paper"><ExternalLink className="h-4 w-4" aria-hidden />{t.admin.nav.backToSite}</Link>
-      <LanguageSwitch className="mx-3 w-fit" />
+      <div className="mx-3 flex items-center gap-2"><LanguageSwitch /><ThemeSwitch /></div>
       <div className="flex items-center gap-3 rounded-2xl bg-paper p-2.5">
         <span className="flex h-9 w-9 items-center justify-center rounded-full bg-tone-sand text-xs font-semibold">{initials(name)}</span>
         <div className="min-w-0 flex-1">

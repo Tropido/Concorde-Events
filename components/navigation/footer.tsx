@@ -11,17 +11,17 @@ export function Footer() {
   const { t } = useApp();
   const col = "space-y-3";
   const head = "font-mono text-[10.5px] uppercase tracking-label text-almondCream/45";
-  const link = "block text-sm text-almondCream/80 hover:text-card";
+  const link = "block text-sm text-almondCream/80 hover:text-espresso-fg";
   return (
     <footer className="shell mt-24 pb-3">
-      <div className="rounded-[1.75rem] bg-ink px-6 py-12 text-almondCream sm:px-10">
+      <div className="rounded-[1.75rem] bg-espresso px-6 py-12 text-almondCream sm:px-10">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="space-y-5">
             <div className="space-y-2">
-              <span className="text-card"><Logo /></span>
+              <span className="text-espresso-fg"><Logo /></span>
               <p className="font-mono text-[10.5px] uppercase tracking-label text-almondCream/50">{t.footer.signature}</p>
             </div>
-            <p className="max-w-sm text-2xl font-semibold leading-tight tracking-tight text-card text-balance">{t.footer.statement}</p>
+            <p className="max-w-sm text-2xl font-semibold leading-tight tracking-tight text-espresso-fg text-balance">{t.footer.statement}</p>
             <p className="max-w-sm text-sm text-almondCream/65">{t.footer.aboutText}</p>
           </div>
           <nav aria-label={t.footer.shop} className={col}>
@@ -41,7 +41,7 @@ export function Footer() {
           <div className={col}>
             <h2 className={head}>{t.footer.whatsapp}</h2>
             <p className="text-sm text-almondCream/80"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></p>
-            <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn btn-sm bg-card text-ink hover:bg-almondCream">
+            <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn btn-sm bg-espresso-fg text-espresso hover:bg-almondCream">
               <MessageCircle className="h-4 w-4" aria-hidden />{t.footer.whatsappCta}
             </a>
           </div>

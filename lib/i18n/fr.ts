@@ -22,6 +22,8 @@ export const fr: Translations = {
     signUp: "Créer un compte",
     menu: "Menu",
     language: "Langue",
+    theme: "Thème",
+    themes: { light: "Thème clair", dark: "Thème sombre", system: "Thème de l'appareil" },
   },
   common: {
     loading: "Chargement…",

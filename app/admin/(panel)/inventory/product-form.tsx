@@ -105,8 +105,8 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
             </F>
           </div>
           <div className="flex flex-wrap gap-4 pt-1 text-sm">
-            <label className="flex items-center gap-2"><input type="checkbox" checked={v.featured} onChange={(e) => set("featured", e.target.checked)} className="h-4 w-4 accent-[#2b1d13]" />{a.featured}</label>
-            <label className="flex items-center gap-2"><input type="checkbox" checked={v.status === "active"} onChange={(e) => set("status", e.target.checked ? "active" : "retired")} className="h-4 w-4 accent-[#2b1d13]" />{a.visible}</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={v.featured} onChange={(e) => set("featured", e.target.checked)} className="h-4 w-4 accent-ink" />{a.featured}</label>
+            <label className="flex items-center gap-2"><input type="checkbox" checked={v.status === "active"} onChange={(e) => set("status", e.target.checked ? "active" : "retired")} className="h-4 w-4 accent-ink" />{a.visible}</label>
           </div>
         </Section>
 

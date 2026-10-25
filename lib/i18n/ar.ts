@@ -26,6 +26,8 @@ export const ar: Translations = {
     signUp: "إنشاء حساب",
     menu: "القائمة",
     language: "اللغة",
+    theme: "المظهر",
+    themes: { light: "المظهر الفاتح", dark: "المظهر الداكن", system: "مظهر الجهاز" },
   },
   common: {
     loading: "جارٍ التحميل…",

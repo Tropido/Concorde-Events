@@ -12,6 +12,7 @@ import { getPrefs } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { getViewer } from "@/lib/auth";
 import { BRAND_NAME } from "@/lib/brand";
+import { THEME_SCRIPT } from "@/lib/prefs";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { lang } = await getPrefs();
@@ -23,7 +24,14 @@ export async function generateMetadata(): Promise<Metadata> {
   };
 }
 
-export const viewport: Viewport = { themeColor: "#f7f1ea" };
+export const viewport: Viewport = {
+  // Browser chrome colours: the light and dark paper tokens (meta tags can't read CSS variables).
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f7f1ea" },
+    { media: "(prefers-color-scheme: dark)", color: "#18110c" },
+  ],
+  colorScheme: "light dark",
+};
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const prefs = await getPrefs();
@@ -32,7 +40,12 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const viewer = await getViewer().catch(() => null);
 
   return (
-    <html lang={prefs.lang} dir={prefs.dir}>
+    // "dark" is set here when the cookie says so; for "system" THEME_SCRIPT sets it before
+    // paint, hence suppressHydrationWarning on <html> only.
+    <html lang={prefs.lang} dir={prefs.dir} data-theme={prefs.theme} className={prefs.theme === "dark" ? "dark" : undefined} suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
+      </head>
       <body className="min-h-screen flex flex-col">
         <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:start-3 focus:z-[100] btn-ink btn-sm">
           {translations[prefs.lang].common.skipToContent}
