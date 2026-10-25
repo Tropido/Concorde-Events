@@ -8,6 +8,7 @@ import { useApp } from "@/lib/context/app-context";
 import { isStaff } from "@/lib/types";
 import { cn, initials } from "@/lib/utils/formatters";
 import { CloseButton, Drawer, Logo } from "@/components/ui/kit";
+import { BRAND_NAME } from "@/lib/brand";
 import type { Language } from "@/lib/i18n/translations";
 
 export function LanguageSwitch({ className }: { className?: string }) {
@@ -44,7 +45,7 @@ export function Navbar() {
     <header className="sticky top-0 z-50 pt-2">
       <div className="shell">
         <div className="flex h-14 items-center gap-3 rounded-full bg-card/85 ps-3 pe-2 shadow-lift ring-1 ring-line backdrop-blur-xl">
-          <Link href="/" aria-label="Concorde Events" className="shrink-0"><Logo /></Link>
+          <Link href="/" aria-label={BRAND_NAME} className="shrink-0"><Logo /></Link>
 
           <nav aria-label={t.nav.menu} className="mx-auto hidden items-center gap-1 lg:flex">
             {links.map((l) => (

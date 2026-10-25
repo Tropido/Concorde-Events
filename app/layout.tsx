@@ -11,14 +11,15 @@ import { AppProvider } from "@/lib/context/app-context";
 import { getPrefs } from "@/lib/i18n/server";
 import { translations } from "@/lib/i18n/translations";
 import { getViewer } from "@/lib/auth";
+import { BRAND_NAME } from "@/lib/brand";
 
 export async function generateMetadata(): Promise<Metadata> {
   const { lang } = await getPrefs();
   const m = translations[lang].meta;
   return {
-    title: { default: m.title, template: `%s · Concorde Events` },
+    title: { default: m.title, template: `%s · ${BRAND_NAME}` },
     description: m.description,
-    openGraph: { title: "Concorde Events", description: m.description, locale: lang === "ar" ? "ar_TN" : "fr_TN" },
+    openGraph: { title: BRAND_NAME, siteName: BRAND_NAME, description: m.description, locale: lang === "ar" ? "ar_TN" : "fr_TN" },
   };
 }
 

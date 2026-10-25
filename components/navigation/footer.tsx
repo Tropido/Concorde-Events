@@ -5,6 +5,7 @@ import { MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { BUSINESS_WHATSAPP_DISPLAY, waLink } from "@/lib/utils/whatsapp";
 import { Logo } from "@/components/ui/kit";
+import { COMPANY_NAME } from "@/lib/brand";
 
 export function Footer() {
   const { t } = useApp();
@@ -16,7 +17,10 @@ export function Footer() {
       <div className="rounded-[1.75rem] bg-ink px-6 py-12 text-almondCream sm:px-10">
         <div className="grid gap-10 md:grid-cols-[1.4fr_1fr_1fr_1fr]">
           <div className="space-y-5">
-            <span className="text-card [&_.text-ink\/50]:text-almondCream/50"><Logo /></span>
+            <div className="space-y-2">
+              <span className="text-card"><Logo /></span>
+              <p className="font-mono text-[10.5px] uppercase tracking-label text-almondCream/50">{t.footer.signature}</p>
+            </div>
             <p className="max-w-sm text-2xl font-semibold leading-tight tracking-tight text-card text-balance">{t.footer.statement}</p>
             <p className="max-w-sm text-sm text-almondCream/65">{t.footer.aboutText}</p>
           </div>
@@ -43,7 +47,7 @@ export function Footer() {
           </div>
         </div>
         <div className="mt-12 flex flex-col gap-2 border-t border-almondCream/10 pt-6 text-xs text-almondCream/45 sm:flex-row sm:justify-between">
-          <p>© {new Date().getFullYear()} Concorde Events · {t.footer.rights}</p>
+          <p>© {new Date().getFullYear()} {COMPANY_NAME} · {t.footer.rights}</p>
           <p>{t.footer.tagline}</p>
         </div>
       </div>

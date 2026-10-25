@@ -1,4 +1,6 @@
-# Concorde Events: specification and status
+# Rent for Events: specification and status
+
+Rent for Events is a niche brand of the company Concorde Events. The public site carries the brand; quotes are issued by Concorde Events under it, and request references keep the `CE-YYYY-NNNNN` format.
 
 This file describes the implemented system. It replaces the original prototype spec, which described mock data, a role simulator and a mock fallback. None of those exist any more.
 

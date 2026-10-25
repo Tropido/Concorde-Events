@@ -1,11 +1,12 @@
 import type { Translations } from "./translations";
 import { adminFr } from "./admin-fr";
+import { BRAND_NAME, COMPANY_NAME } from "@/lib/brand";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
 export const fr: Translations = {
   meta: {
-    title: "Concorde Events · Location de mobilier événementiel en Tunisie",
+    title: `${BRAND_NAME} · Location de mobilier événementiel en Tunisie`,
     description: "Mobilier et décoration d'événement à louer en Tunisie : disponibilités par date, prix à la nuit en dinars, devis confirmé sur WhatsApp.",
   },
   nav: {
@@ -82,7 +83,7 @@ export const fr: Translations = {
     subtitle: "Assises, tables, luminaires et décoration à louer partout en Tunisie. Choisissez vos pièces et vos dates : nous confirmons la disponibilité et votre devis sur WhatsApp.",
     ctaExplore: "Voir la collection",
     ctaWhatsapp: "Écrire sur WhatsApp",
-    whatsappGreeting: "Bonjour Concorde Events, je souhaite un devis de location.",
+    whatsappGreeting: `Bonjour ${BRAND_NAME}, je souhaite un devis de location.`,
     facts: [
       { title: "Prix à la nuit", text: "En dinars, affichés avant toute demande." },
       { title: "Disponibilité réelle", text: "Le stock est vérifié pour chaque date." },
@@ -99,7 +100,7 @@ export const fr: Translations = {
   },
   home: {
     featuredLabel: "Pièce à la une",
-    badgeRing: "LOCATION · À LA NUIT · CONCORDE · TUNISIE · ",
+    badgeRing: `${BRAND_NAME.toUpperCase()} · TUNISIE · `,
     chooseDates: "Choisir les dates",
     catalogueSoon: "La collection est en cours de mise en ligne. Écrivez-nous pour vos besoins.",
     collection: "Collection",
@@ -211,7 +212,7 @@ export const fr: Translations = {
     openWhatsapp: "Continuer sur WhatsApp",
     track: "Suivre ma demande",
     createAccount: "Créer un compte pour suivre",
-    whatsappIntro: (ref) => `Bonjour Concorde Events, je viens d'envoyer la demande ${ref} :`,
+    whatsappIntro: (ref) => `Bonjour ${BRAND_NAME}, je viens d'envoyer la demande ${ref} :`,
     whatsappContact: "Contact",
   },
   submitErrors: {
@@ -304,7 +305,7 @@ export const fr: Translations = {
     loginTitle: "Connexion",
     loginSubtitle: "Retrouvez vos demandes, devis et favoris.",
     adminLoginTitle: "Gestion",
-    adminLoginSubtitle: "Accès réservé à l'équipe Concorde Events.",
+    adminLoginSubtitle: `Accès réservé à l'équipe ${BRAND_NAME}.`,
     email: "E-mail",
     password: "Mot de passe",
     forgot: "Mot de passe oublié ?",
@@ -400,7 +401,7 @@ export const fr: Translations = {
     send: "Envoyer",
     noMessages: "Aucun message.",
     reply: "Répondre",
-    staffReply: "Concorde Events",
+    staffReply: BRAND_NAME,
     you: "Vous",
     profileSaved: "Profil enregistré.",
     proToolsTitle: "Calculateur de marge",
@@ -431,7 +432,7 @@ export const fr: Translations = {
   },
   about: {
     title: "Une collection pensée pour recevoir.",
-    intro: "Concorde Events loue aux particuliers et aux professionnels de l'événementiel une collection de mobilier et de décoration, choisie pour sa matière et sa présence, partout en Tunisie.",
+    intro: `${BRAND_NAME} est la marque de location de ${COMPANY_NAME}. Nous louons aux particuliers et aux professionnels de l'événementiel une collection de mobilier et de décoration, choisie pour sa matière et sa présence, partout en Tunisie.`,
     sections: [
       { title: "Des pièces choisies", text: "Assises, tables, luminaires et objets décoratifs sélectionnés un par un, entretenus après chaque location." },
       { title: "Un stock réel", text: "La disponibilité affichée correspond à notre stock, date par date. Pas de surprise le jour J." },
@@ -456,10 +457,11 @@ export const fr: Translations = {
     lineTotal: "Total",
     total: "Total",
     legacyFx: (rate) => `Devis émis avant le passage au dinar seul (taux appliqué : 1 EUR = ${rate} TND).`,
-    notInvoice: "Ce document est un devis. Il ne constitue pas une facture.",
+    notInvoice: `Devis émis par ${COMPANY_NAME} sous la marque ${BRAND_NAME}. Ce document ne constitue pas une facture.`,
     tierPro: "Tarif professionnel",
     tierRetail: "Tarif public",
     notes: "Précisions",
+    byCompany: `par ${COMPANY_NAME}`,
   },
   footer: {
     statement: "Le décor de vos événements, livré prêt à recevoir.",
@@ -472,6 +474,7 @@ export const fr: Translations = {
     whatsappCta: "Nous écrire",
     rights: "Tous droits réservés.",
     tagline: "Prix en dinars tunisiens (DT).",
+    signature: `${BRAND_NAME} by ${COMPANY_NAME}`,
   },
   admin: adminFr,
 };

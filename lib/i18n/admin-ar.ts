@@ -1,11 +1,12 @@
 import type { AdminTranslations } from "./admin-types";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Arabic counted noun: 1 → singular, 2 → dual, 3–10 → plural, 11+ → singular accusative. */
 const c = (n: number, one: string, two: string, few: string, many: string = one) =>
   n === 1 ? one : n === 2 ? two : n >= 3 && n <= 10 ? `${n} ${few}` : `${n} ${many}`;
 
 export const adminAr: AdminTranslations = {
-  title: "إدارة كونكورد",
+  title: `إدارة ${BRAND_NAME}`,
   badge: "الإدارة",
   nav: {
     groupOps: "العمليات",
@@ -122,7 +123,7 @@ export const adminAr: AdminTranslations = {
       cancelled: "تم إلغاء الطلب: تم تحرير المخزون.",
       rejected: "تم رفض الطلب.",
     },
-    waGreeting: (name, ref) => `مرحباً ${name}، معكم كونكورد إيفنتس بخصوص طلبكم ${ref}.`,
+    waGreeting: (name, ref) => `مرحباً ${name}، معكم ${BRAND_NAME} بخصوص طلبكم ${ref}.`,
   },
   inbox: {
     subtitle: "واتساب وفضاء العميل ونموذج الاتصال في مكان واحد.",

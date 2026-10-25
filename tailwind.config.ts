@@ -1,6 +1,6 @@
 import type { Config } from "tailwindcss";
 
-// Concorde design tokens. Every colour derives from the owner's six-colour palette
+// Design tokens. Every colour derives from the owner's six-colour palette
 // (almond cream, desert sand, tan, faded copper, coffee bean, toffee brown).
 const config: Config = {
   content: ["./components/**/*.{ts,tsx}", "./app/**/*.{ts,tsx}", "./lib/**/*.{ts,tsx}"],

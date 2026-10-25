@@ -1,6 +1,7 @@
 import type { Language, Translations } from "@/lib/i18n/translations";
 import type { QuoteSnapshot } from "@/lib/types";
 import { formatDateTime, formatDay, formatMoney } from "@/lib/utils/formatters";
+import { BRAND_NAME } from "@/lib/brand";
 
 /** Renders an issued quote exactly as frozen in its snapshot. Every value is rendered as
  *  React text (escaped), never as HTML; nothing is recalculated here. */
@@ -12,7 +13,8 @@ export function QuoteDocument({ snapshot: s, lang, t }: { snapshot: QuoteSnapsho
     <article className="space-y-8 rounded-[1.75rem] bg-card p-8 text-sm text-ink shadow-lift print:rounded-none print:p-0 print:shadow-none sm:p-12">
       <header className="flex flex-wrap items-start justify-between gap-6 border-b border-line pb-8">
         <div className="space-y-1">
-          <p className="text-2xl font-bold tracking-[-0.02em]">Concorde Events</p>
+          <p className="text-2xl font-bold tracking-[-0.02em]">{BRAND_NAME}</p>
+          <p className="text-xs text-ink/60">{t.quote.byCompany}</p>
           <p className="font-mono text-[10.5px] uppercase tracking-label text-ink/50">{t.quote.issuer}</p>
         </div>
         <div className="space-y-1 text-end">

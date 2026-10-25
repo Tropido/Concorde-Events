@@ -1,4 +1,6 @@
-# Concorde Events
+# Rent for Events
+
+Rent for Events is the event-rental brand of the company Concorde Events: the site, logo and messages use the brand, while quotes name Concorde Events as their legal issuer (`lib/brand.ts`).
 
 Event-furniture rental platform for Tunisia. Every price, quote and total is in Tunisian dinars (TND). French is the main language, with Arabic (RTL) as the second. It has three parts:
 

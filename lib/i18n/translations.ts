@@ -122,11 +122,11 @@ export interface Translations {
     title: string; issuer: string; print: string; issuedOn: string; validUntil: string; client: string; event: string;
     guests: (n: number) => string; period: string; item: string; qty: string; nights: string; unitPrice: string;
     lineTotal: string; total: string; legacyFx: (rate: string) => string; notInvoice: string; tierPro: string;
-    tierRetail: string; notes: string;
+    tierRetail: string; notes: string; byCompany: string;
   };
   footer: {
     statement: string; aboutText: string; shop: string; account: string; proRegister: string; myRequests: string;
-    whatsapp: string; whatsappCta: string; rights: string; tagline: string;
+    whatsapp: string; whatsappCta: string; rights: string; tagline: string; signature: string;
   };
   admin: AdminTranslations;
 }

@@ -1,28 +1,33 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { Fragment, useEffect, useId, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Minus, Plus, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { cn, formatTND } from "@/lib/utils/formatters";
+import { BRAND_NAME, BRAND_SHORT } from "@/lib/brand";
 import type { Price, Tone } from "@/lib/types";
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
+/** Wordmark plus the "R4E" mark; the digit carries the accent. Inherits the text colour. */
 export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
+  const words = BRAND_NAME.split(" ");
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)} dir="ltr">
       <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden>
-        <circle cx="16" cy="16" r="16" fill="#2b1d13" />
-        <path d="M21.5 11.2a7 7 0 1 0 0 9.6" fill="none" stroke="#ddb892" strokeWidth="2.4" strokeLinecap="round" />
-        <circle cx="21.6" cy="16" r="1.7" fill="#ddb892" />
+        <circle cx="16" cy="16" r="16" className="fill-ink" />
+        <text x="16" y="20.4" textAnchor="middle" fontSize="12.5" fontWeight="800" letterSpacing="-0.6" className="fill-card font-display">
+          {[...BRAND_SHORT].map((c, i) => <tspan key={i} className={/\d/.test(c) ? "fill-tan dark:fill-toffeeBrown" : undefined}>{c}</tspan>)}
+        </text>
       </svg>
       {!compact && (
-        <span className="leading-none">
-          <span className="block text-[15px] font-bold tracking-[-0.02em]">Concorde</span>
-          <span className="block font-mono text-[9px] uppercase tracking-[0.28em] text-ink/50">Events</span>
+        <span className="whitespace-nowrap text-[15px] font-bold leading-none tracking-[-0.02em]">
+          {words.map((w, i) => (
+            <Fragment key={i}>{i > 0 && " "}<span className={i > 0 && i < words.length - 1 ? "font-medium opacity-55" : undefined}>{w}</span></Fragment>
+          ))}
         </span>
       )}
     </span>

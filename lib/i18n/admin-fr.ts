@@ -1,9 +1,10 @@
 import type { AdminTranslations } from "./admin-types";
+import { BRAND_NAME } from "@/lib/brand";
 
 const s = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
 
 export const adminFr: AdminTranslations = {
-  title: "Gestion Concorde",
+  title: `Gestion ${BRAND_NAME}`,
   badge: "Gestion",
   nav: {
     groupOps: "Opérations",
@@ -120,7 +121,7 @@ export const adminFr: AdminTranslations = {
       cancelled: "Demande annulée : le stock est libéré.",
       rejected: "Demande refusée.",
     },
-    waGreeting: (name, ref) => `Bonjour ${name}, ici Concorde Events au sujet de votre demande ${ref}.`,
+    waGreeting: (name, ref) => `Bonjour ${name}, ici ${BRAND_NAME} au sujet de votre demande ${ref}.`,
   },
   inbox: {
     subtitle: "WhatsApp, espace client et formulaire de contact, au même endroit.",

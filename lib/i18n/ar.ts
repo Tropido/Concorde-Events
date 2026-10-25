@@ -1,5 +1,6 @@
 import type { Translations } from "./translations";
 import { adminAr } from "./admin-ar";
+import { BRAND_NAME, COMPANY_NAME } from "@/lib/brand";
 
 // Arabic plural forms (1, 2, 3–10, 11+), with Latin digits as used for prices in Tunisia.
 const plural = (n: number, one: string, two: string, few: string, many: string) =>
@@ -9,7 +10,7 @@ const pieces = (n: number) => plural(n, "قطعة واحدة", "قطعتان", "
 
 export const ar: Translations = {
   meta: {
-    title: "كونكورد إيفنتس · كراء أثاث المناسبات في تونس",
+    title: `${BRAND_NAME} · كراء أثاث المناسبات في تونس`,
     description: "أثاث وديكور المناسبات للكراء في تونس: التوفر حسب التاريخ، أسعار الليلة بالدينار، وتأكيد عرض السعر عبر واتساب.",
   },
   nav: {
@@ -86,7 +87,7 @@ export const ar: Translations = {
     subtitle: "مقاعد وطاولات وإنارة وديكور للكراء في كامل تونس. اختاروا القطع والتواريخ، ونؤكد لكم التوفر وعرض السعر عبر واتساب.",
     ctaExplore: "اكتشفوا المجموعة",
     ctaWhatsapp: "راسلونا على واتساب",
-    whatsappGreeting: "مرحبا كونكورد إيفنتس، أرغب في عرض سعر للكراء.",
+    whatsappGreeting: `مرحبا ${BRAND_NAME}، أرغب في عرض سعر للكراء.`,
     facts: [
       { title: "سعر الليلة", text: "بالدينار، ظاهر قبل أي طلب." },
       { title: "توفر حقيقي", text: "يتم التحقق من المخزون لكل تاريخ." },
@@ -103,7 +104,7 @@ export const ar: Translations = {
   },
   home: {
     featuredLabel: "قطعة مميزة",
-    badgeRing: "كراء · بالليلة · كونكورد · تونس · ",
+    badgeRing: `${BRAND_NAME.toUpperCase()} · تونس · `,
     chooseDates: "اختيار التواريخ",
     catalogueSoon: "المجموعة قيد النشر. راسلونا لاحتياجاتكم.",
     collection: "مجموعة",
@@ -215,7 +216,7 @@ export const ar: Translations = {
     openWhatsapp: "المتابعة على واتساب",
     track: "متابعة طلبي",
     createAccount: "إنشاء حساب للمتابعة",
-    whatsappIntro: (ref) => `مرحبا كونكورد إيفنتس، أرسلت للتو الطلب ${ref}:`,
+    whatsappIntro: (ref) => `مرحبا ${BRAND_NAME}، أرسلت للتو الطلب ${ref}:`,
     whatsappContact: "الاتصال",
   },
   submitErrors: {
@@ -308,7 +309,7 @@ export const ar: Translations = {
     loginTitle: "تسجيل الدخول",
     loginSubtitle: "تابعوا طلباتكم وعروض الأسعار والمفضلة.",
     adminLoginTitle: "الإدارة",
-    adminLoginSubtitle: "الدخول مخصص لفريق كونكورد إيفنتس.",
+    adminLoginSubtitle: `الدخول مخصص لفريق ${BRAND_NAME}.`,
     email: "البريد الإلكتروني",
     password: "كلمة المرور",
     forgot: "نسيتم كلمة المرور؟",
@@ -404,7 +405,7 @@ export const ar: Translations = {
     send: "إرسال",
     noMessages: "لا توجد رسائل.",
     reply: "رد",
-    staffReply: "كونكورد إيفنتس",
+    staffReply: BRAND_NAME,
     you: "أنتم",
     profileSaved: "تم حفظ الملف الشخصي.",
     proToolsTitle: "حاسبة الهامش",
@@ -435,7 +436,7 @@ export const ar: Translations = {
   },
   about: {
     title: "مجموعة صُممت للاستقبال.",
-    intro: "تؤجر كونكورد إيفنتس للأفراد ومحترفي المناسبات مجموعة من الأثاث والديكور، مختارة لجودة موادها وحضورها، في كامل تونس.",
+    intro: `${BRAND_NAME} هي علامة الكراء التابعة لشركة ${COMPANY_NAME}. نؤجر للأفراد ومحترفي المناسبات مجموعة من الأثاث والديكور، مختارة لجودة موادها وحضورها، في كامل تونس.`,
     sections: [
       { title: "قطع مختارة", text: "مقاعد وطاولات وإنارة وقطع ديكور مختارة واحدة واحدة، وتتم صيانتها بعد كل كراء." },
       { title: "مخزون حقيقي", text: "التوفر المعروض يطابق مخزوننا تاريخا بتاريخ. لا مفاجآت يوم المناسبة." },
@@ -460,10 +461,11 @@ export const ar: Translations = {
     lineTotal: "المجموع",
     total: "المجموع",
     legacyFx: (rate) => `عرض سعر صادر قبل اعتماد الدينار فقط (السعر المطبق: 1 يورو = ${rate} دينار).`,
-    notInvoice: "هذه الوثيقة عرض سعر وليست فاتورة.",
+    notInvoice: `عرض سعر صادر عن ${COMPANY_NAME} تحت علامة ${BRAND_NAME}. هذه الوثيقة ليست فاتورة.`,
     tierPro: "سعر مهني",
     tierRetail: "سعر عام",
     notes: "تفاصيل",
+    byCompany: `من ${COMPANY_NAME}`,
   },
   footer: {
     statement: "ديكور مناسباتكم، يصلكم جاهزا للاستقبال.",
@@ -476,6 +478,7 @@ export const ar: Translations = {
     whatsappCta: "راسلونا",
     rights: "جميع الحقوق محفوظة.",
     tagline: "الأسعار بالدينار التونسي.",
+    signature: `${BRAND_NAME} من ${COMPANY_NAME}`,
   },
   admin: adminAr,
 };
