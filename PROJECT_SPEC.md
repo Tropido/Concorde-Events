@@ -76,6 +76,10 @@ Each value is a constant in SQL or TypeScript.
 | Deposit | Shown on the product page, settled off-site | `products.deposit_amount` |
 | Guest requests | Allowed; 5 per email per hour, plus a honeypot | `submit_request` |
 | Turnaround buffer | None beyond the blocked return day | capacity trigger |
+| Particulier → Particulier+ | The client asks from `/account` (inbox ticket); an admin changes the role. Managers approve pending Particulier+ accounts but cannot change roles. | `requestPlusUpgrade`, `guard_profile` |
+| Deposit visibility | Hidden with the prices (visitors, Particuliers) | product page |
+| Luxury catalogue (TEST data) | 31 pieces: prices, pro prices (15–20 % under retail), stock, deposits and featured pieces are placeholders for Fatma to validate. Photos are temporary Unsplash images, to be replaced. | `supabase/data/catalogue-luxe.sql`, `product_internal.internal_notes` |
+| Theme | Follows the device by default; a visitor's choice is kept for a year | `ce_theme` cookie |
 
 ### Not in scope or deferred
 
@@ -112,11 +116,14 @@ The capacity invariant is one deferred constraint trigger with a per-country adv
 - [x] Migrations applied to the TEST project; `test:integration` 5/5, `test:e2e` 34/34, Supabase advisors clean (2026-10-06)
 - [x] 2026-10-25: TND-only system, pro programme (tiers, points, discounts, benefits), detailed products with staff-only internal data, richer client approval (labels, rank, notes, programme), WhatsApp tickets, redesigned storefront and back office
 - [x] 2026-10-25 migrations applied to the TEST project; `test:integration` 5/5, `test:e2e` 42/42
-- [ ] Vercel Preview env → TEST project; Supabase Auth URLs and templates; verify Preview
+- [x] 2026-10-26 (Rent for Events update): rebrand; light and dark mode; date range picker; staged product photos with `image_fit`; Particulier / Particulier+ / Professionnel; provisional luxury catalogue on TEST. `test` 154/154, `test:integration` 6/6, `test:e2e` 46/46, build OK
+- [x] Vercel Preview env → TEST project; verify Preview
+- [ ] Supabase Auth URLs and email templates (rename to Rent for Events; checked in the dashboard, not from code)
 - [ ] Production project, SMTP, first admin, approved catalogue → merge and verify production
 
 ## Known limitations
 
+- Vercel Production currently runs on the TEST Supabase project (owner decision 2026-10-25): test runs, demo accounts and the provisional catalogue are visible on the live site until Production gets its own project.
 - The Arabic copy was written by the developer and should be reviewed by a native speaker. Product and CMS text in Arabic is entered by staff; when it is missing, French is shown.
 - Locale is cookie-based, so search engines index the French version only.
 - The unused `fx_rates` table and EUR enum value stay in the schema so pre-2026-10-25 quotes remain readable; nothing writes to them.

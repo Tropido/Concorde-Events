@@ -8,6 +8,8 @@ Event-furniture rental platform for Tunisia. Every price, quote and total is in 
 - a client area (`/account`), with a pro space (`/account/pro`) for professionals;
 - an operations back office (`/admin`).
 
+There are three customer types. A **Particulier** (and any visitor) sees no prices: the price arrives in the quote. A **Particulier+** sees the public prices once staff approve the account. A **Professionnel** gets pro prices and the loyalty programme. The site has a light and a dark theme (`ce_theme` cookie: light, dark or the device setting).
+
 **Stack:** Next.js 15 App Router, TypeScript, Tailwind, and Supabase (Postgres, Auth, Storage, RLS). It is deployed on Vercel.
 
 `PROJECT_SPEC.md` covers the business rules, permissions and progress.
@@ -42,13 +44,22 @@ The migrations live in `supabase/migrations`. Apply them with the bundled CLI; n
 ```bash
 npm run db:push                     # applies pending migrations to SUPABASE_DB_URL
 npm run db:push -- --include-seed   # TEST project only: dev catalogue fixtures
+npm run db:catalogue                # TEST project only: provisional luxury catalogue (supabase/data/catalogue-luxe.sql)
 ```
+
+`db:catalogue` refuses any database other than `TEST_PROJECT_REF`. The file is idempotent by slug (run it again to update the same rows); its prices, stock and Unsplash photos are provisional and say so in each product's internal notes.
 
 - **Never** seed production. `supabase/seed.sql` contains placeholder prices and stock.
 - Production starts empty, and staff enter the approved catalogue in `/admin/inventory`.
 - Back up production before migrating, and prefer additive migrations.
 - `20261025120000_tnd_pro_programme_products.sql` makes the system TND-only (it cancels open France requests and removes France stock and prices), adds the pro programme and the detailed product fields.
 - `20261025120100_catalogue_cleanup.sql` retires the English demo items and the screenshot items, and strips their images. A retired piece is hidden, not deleted: upload real photos in `/admin/inventory` and set it back online.
+- 2026-10-26 migrations, applied in this order by `npm run db:push`:
+  - `20261026090000_product_image_fit.sql`: `products.image_fit` (`contain` cut-out, default, or `cover` ambiance photo).
+  - `20261026100000_customer_plus_role.sql`: the `customer_plus` role (alone, because a new enum value can't be used in the transaction that adds it).
+  - `20261026100100_customer_types.sql`: who reads prices (`private.can_see_retail`), signup with three types and an optional event type, existing approved customers become Particulier+.
+  - `20261026100200_anon_prices_empty.sql`: keeps the visitors' price query returning an empty list (RLS) instead of an error.
+- After a migration, open the home page and `/catalogue` signed out: an error there means the storefront's queries broke.
 - Rolling back the app on Vercel does not undo database changes.
 
 ### First administrator
