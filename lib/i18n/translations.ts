@@ -110,7 +110,7 @@ export interface Translations {
     proSection: string; proNote: string; fullName: string; phone: string; city: string; company: string; activity: string;
     activityPlaceholder: string; activities: Record<Activity, string>; vat: string; website: string; passwordHint: string;
     submitRegister: string; submitPro: string; haveAccount: string; checkEmailTitle: string; checkEmailText: string;
-    checkEmailPro: string; forgotTitle: string; forgotSubtitle: string; sendReset: string; resetSent: string;
+    checkEmailPro: string; forgotTitle: string; forgotSubtitle: string; identifier: string; sendReset: string; resetSent: string;
     resetTitle: string; newPassword: string; confirmPassword: string; updatePassword: string; linkInvalid: string;
     noStaffAccess: string;
     errors: { invalidCredentials: string; emailNotConfirmed: string; weakPassword: string; mismatch: string; rateLimited: string; proFields: string; plusFields: string; generic: string };

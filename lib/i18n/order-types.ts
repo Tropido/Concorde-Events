@@ -62,6 +62,11 @@ export interface OrderTranslations {
     repairFee: string; replacementValue: string; repairHint: string; found: string; foundPrompt: string;
   };
 
+  reset: {
+    title: string; channel: string; channels: { email: string; whatsapp: string }; destination: string; storedOnly: string; reason: string; confirmOther: (destination: string) => string;
+    validity: (minutes: number) => string; send: string; sent: string; opened: string; openWhatsapp: string; waMessage: (name: string, link: string, minutes: number) => string;
+  };
+
   kpi: { depositsPending: string; depositsCount: (n: number) => string; overdue: string; overdueNone: string; balances: string; balancesNone: string; dueOn: (date: string) => string };
   cms: { terms: string; termsHint: string };
 }

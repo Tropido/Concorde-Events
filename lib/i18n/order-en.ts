@@ -250,6 +250,22 @@ export const orderEn: OrderTranslations = {
     foundPrompt: "How many units were found?",
   },
 
+  reset: {
+    title: "Reset the password",
+    channel: "Send by",
+    channels: { email: "Email", whatsapp: "WhatsApp" },
+    destination: "Destination",
+    storedOnly: "Only stored contacts are possible. Another destination takes an administrator.",
+    reason: "Reason (required)",
+    confirmOther: (d) => `This isn't the stored contact. Confirm sending to ${d}?`,
+    validity: (m) => `The link lasts ${m} minutes and works once.`,
+    send: "Send the link",
+    sent: "Link sent.",
+    opened: "WhatsApp opened, the link is no longer shown.",
+    openWhatsapp: "Open WhatsApp with the link",
+    waMessage: (n, l, m) => `Hello ${n}, here's your link to choose a new password: ${l} It lasts ${m} minutes and works once.`,
+  },
+
   kpi: {
     depositsPending: "Deposits pending",
     depositsCount: (n) => `${n} order${n === 1 ? "" : "s"}`,

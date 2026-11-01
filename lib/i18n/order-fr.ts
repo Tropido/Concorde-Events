@@ -250,6 +250,22 @@ export const orderFr: OrderTranslations = {
     foundPrompt: "Combien d'unités retrouvées ?",
   },
 
+  reset: {
+    title: "Réinitialiser le mot de passe",
+    channel: "Envoyer par",
+    channels: { email: "E-mail", whatsapp: "WhatsApp" },
+    destination: "Destination",
+    storedOnly: "Seuls les contacts enregistrés sont possibles. Une autre destination demande un administrateur.",
+    reason: "Motif (obligatoire)",
+    confirmOther: (d) => `Ce n'est pas le contact enregistré. Confirmez-vous l'envoi à ${d} ?`,
+    validity: (m) => `Le lien est valable ${m} minutes et ne sert qu'une fois.`,
+    send: "Envoyer le lien",
+    sent: "Lien envoyé.",
+    opened: "WhatsApp ouvert, le lien n'est plus affiché.",
+    openWhatsapp: "Ouvrir WhatsApp avec le lien",
+    waMessage: (n, l, m) => `Bonjour ${n}, voici votre lien pour choisir un nouveau mot de passe : ${l} Il est valable ${m} minutes et ne sert qu'une fois.`,
+  },
+
   kpi: {
     depositsPending: "Acomptes en attente",
     depositsCount: (n) => `${n} commande${n > 1 ? "s" : ""}`,

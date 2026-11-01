@@ -155,7 +155,7 @@ export function ForgotForm() {
   if (state?.ok) return <p role="status" className="rounded-2xl bg-paper p-4 text-sm">{t.auth.resetSent}</p>;
   return (
     <form action={action} className="space-y-4">
-      <Field label={t.auth.email}><input name="email" type="email" required autoComplete="email" className="field" dir="ltr" /></Field>
+      <Field label={t.auth.identifier}><input name="identifier" required maxLength={254} autoComplete="username" className="field" dir="ltr" /></Field>
       <ErrorText state={state} />
       <button type="submit" disabled={pending} className="btn-ink h-12 w-full">{pending ? t.common.loading : t.auth.sendReset}</button>
     </form>

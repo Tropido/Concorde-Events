@@ -10,6 +10,7 @@ import { ActionButton, Avatar, ResultText, btnDanger, btnPrimary } from "@/compo
 import { ease } from "@/components/ui/kit";
 import { TierEmblem } from "@/components/ui/tier-emblem";
 import { ClientTags, TagPill, type ClientTag } from "./tags";
+import { ResetPassword, type AuditRow } from "./reset-password";
 import { cn, formatDateTime, formatNumber, formatTND } from "@/lib/utils/formatters";
 import type { AccountStatus, AppRole, EventType, ProTier } from "@/lib/types";
 
@@ -18,6 +19,7 @@ export type ClientRow = {
   activity: string | null; city: string | null; website: string | null; event_type: EventType | null; role: AppRole; status: AccountStatus; created_at: string;
   client_notes: { notes: string; level: string | null; deposit_rate_override: number | null } | null;
   client_tag_links: { tag_id: string }[];
+  admin_audit: (AuditRow & { action: string })[];
   pro_accounts: { tier_code: string; tier_locked: boolean; points: number; custom_discount_percent: number | null; extra_benefits: string[] } | null;
   stats: { requests: number; booked: number };
 };
@@ -81,6 +83,9 @@ export function ClientCard({ client: c, tiers, tags, isAdmin, selfId, defaultOpe
                 </dl>
                 <p className="text-xs text-ink/45">{a.joined} {formatDateTime(c.created_at, language)}</p>
                 {isAdmin && c.id !== selfId && <RoleSelect profileId={c.id} role={c.role} />}
+                {c.id !== selfId && (isClient || isAdmin) && (
+                  <ResetPassword profileId={c.id} email={c.email} phone={c.phone} isAdmin={isAdmin} history={c.admin_audit.filter((h) => h.action === "password_reset_link").sort((x, y) => y.created_at.localeCompare(x.created_at)).slice(0, 3)} />
+                )}
               </div>
 
               {c.role === "professional" && c.pro_accounts

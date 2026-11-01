@@ -3,7 +3,7 @@ import type { AccountStatus, AppRole, MessageChannel, MessageStatus, RequestStat
 export type AdminErrorCode =
   | "capacity_exceeded" | "quote_expired" | "invalid_transition" | "forbidden"
   | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "tag_exists"
-  | "company_incomplete" | "reacceptance_required" | "quote_superseded" | "terms_required" | "reason_required" | "invalid_amount" | "quote_not_accepted" | "inspection_sum" | "caution_unresolved" | "generic";
+  | "company_incomplete" | "reacceptance_required" | "quote_superseded" | "terms_required" | "reason_required" | "invalid_amount" | "quote_not_accepted" | "inspection_sum" | "caution_unresolved" | "reset_self" | "reset_staff" | "reset_destination" | "reset_limit" | "reset_unavailable" | "generic";
 
 type Level = "bronze" | "argent" | "or" | "platine" | "diamant" | "royal_elite";
 

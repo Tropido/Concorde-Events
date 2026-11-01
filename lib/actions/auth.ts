@@ -1,5 +1,6 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -83,16 +84,17 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   return { ok: true };
 }
 
+/** An email gets the usual link; a phone number becomes a ticket for staff, who check who is
+ *  asking. Whatever happens, the answer is the same, so nothing reveals whether an account exists. */
 export async function requestPasswordReset(_: AuthState, form: FormData): Promise<AuthState> {
-  const parsed = email.safeParse(form.get("email"));
-  if (parsed.success) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-      redirectTo: `${await siteOrigin()}/auth/confirm?next=/reset-password`,
-    });
-    if (error && authError(error) === "rateLimited") return { error: "rateLimited" };
+  const identifier = String(form.get("identifier") ?? "").trim().toLowerCase().slice(0, 254);
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const supabase = await createClient();
+  const { data: mayEmail } = await supabase.rpc("request_password_help", { p_identifier: identifier, p_ip_hash: createHash("sha256").update(ip).digest("hex") });
+  if (mayEmail && email.safeParse(identifier).success) {
+    await supabase.auth.resetPasswordForEmail(identifier, { redirectTo: `${await siteOrigin()}/auth/confirm?next=/reset-password` });
   }
-  // Same answer whether or not the account exists.
   return { ok: true };
 }
 
