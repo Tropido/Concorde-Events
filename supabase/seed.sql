@@ -67,3 +67,12 @@ insert into public.product_prices (product_id, country, tier, amount) values
   ('980ad66f-95b0-48cd-8aad-6de2ecaed2c7', 'TN', 'retail', 49),
   ('980ad66f-95b0-48cd-8aad-6de2ecaed2c7', 'TN', 'pro', 40);
 
+update public.categories set icon = v.icon, tone = v.tone
+from (values
+  ('seating-lounges', 'Sofa', 'almond'),
+  ('tables-dining', 'UtensilsCrossed', 'cream'),
+  ('lighting', 'LampCeiling', 'copper'),
+  ('bars-consoles', 'Martini', 'tan'),
+  ('outdoor-luxury', 'TreePalm', 'sand')
+) as v(slug, icon, tone)
+where categories.slug = v.slug;

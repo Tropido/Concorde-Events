@@ -9,17 +9,17 @@
 
 -- Categories (existing slugs renamed, three new ones).
 with cats as (
-insert into public.categories (slug, name_fr, name_ar, display_order) values
-  ('seating-lounges', 'Salons & assises', 'الصالونات والمقاعد', 1),
-  ('reception-chairs', 'Chaises de réception', 'كراسي الاستقبال', 2),
-  ('tables-dining', 'Tables & mange-debout', 'الطاولات وطاولات الوقوف', 3),
-  ('wedding-ceremony', 'Mariage & cérémonie', 'الزفاف والمراسم', 4),
-  ('decoration', 'Décoration & art de la table', 'الديكور وفن المائدة', 5),
-  ('lighting', 'Éclairage & lustres', 'الإنارة والثريات', 6),
-  ('bars-consoles', 'Bars & réception', 'البارات والاستقبال', 7),
-  ('outdoor-luxury', 'Extérieur & lounge', 'الفضاء الخارجي واللاونج', 8),
-  ('rugs-textiles', 'Tapis & textiles', 'الزرابي والمنسوجات', 9)
-on conflict (slug) do update set name_fr = excluded.name_fr, name_ar = excluded.name_ar, display_order = excluded.display_order
+insert into public.categories (slug, name_fr, name_en, name_ar, display_order, icon, tone) values
+  ('seating-lounges', 'Salons & assises', 'Seating & lounges', 'الصالونات والمقاعد', 1, 'Sofa', 'almond'),
+  ('reception-chairs', 'Chaises de réception', 'Reception chairs', 'كراسي الاستقبال', 2, 'Armchair', 'sand'),
+  ('tables-dining', 'Tables & mange-debout', 'Tables & high tables', 'الطاولات وطاولات الوقوف', 3, 'UtensilsCrossed', 'cream'),
+  ('wedding-ceremony', 'Mariage & cérémonie', 'Wedding & ceremony', 'الزفاف والمراسم', 4, 'Heart', 'tan'),
+  ('decoration', 'Décoration & art de la table', 'Decor & tableware', 'الديكور وفن المائدة', 5, 'Flower2', 'stone'),
+  ('lighting', 'Éclairage & lustres', 'Lighting & chandeliers', 'الإنارة والثريات', 6, 'LampCeiling', 'copper'),
+  ('bars-consoles', 'Bars & réception', 'Bars & reception', 'البارات والاستقبال', 7, 'Martini', 'tan'),
+  ('outdoor-luxury', 'Extérieur & lounge', 'Outdoor & lounge', 'الفضاء الخارجي واللاونج', 8, 'TreePalm', 'sand'),
+  ('rugs-textiles', 'Tapis & textiles', 'Rugs & textiles', 'الزرابي والمنسوجات', 9, 'Rows3', 'almond')
+on conflict (slug) do update set name_fr = excluded.name_fr, name_en = excluded.name_en, name_ar = excluded.name_ar, display_order = excluded.display_order, icon = excluded.icon, tone = excluded.tone
 returning id, slug
 ),
 

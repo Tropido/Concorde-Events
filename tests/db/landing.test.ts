@@ -45,6 +45,6 @@ describe("site-images bucket", () => {
 
   it("is public, limited to 5 MB of JPEG or WebP", async () => {
     const { rows } = await db.query("select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'site-images'");
-    expect(rows[0]).toEqual({ public: true, file_size_limit: "5242880", allowed_mime_types: ["image/jpeg", "image/webp"] });
+    expect(rows[0]).toEqual({ public: true, file_size_limit: 5242880, allowed_mime_types: ["image/jpeg", "image/webp"] });
   });
 });
