@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getPrefs } from "@/lib/i18n/server";
 import type { SubmitErrorCode } from "@/lib/i18n/translations";
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -60,6 +61,7 @@ export async function submitRequest(input: z.input<typeof RequestInput>): Promis
       guest_count: d.guests,
       delivery_mode: d.delivery,
       preferred_contact: d.contact,
+      language: (await getPrefs()).lang,
       lines: d.lines.map((l) => ({ product_id: l.productId, quantity: l.quantity, start_date: l.startDate, end_date: l.endDate })),
     },
   });

@@ -104,6 +104,16 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
               </select>
             </F>
           </div>
+          <details className="rounded-2xl bg-paper p-4">
+            <summary className="cursor-pointer text-sm font-medium">{a.englishGroup}</summary>
+            <div className="space-y-3 pt-3">
+              <p className="text-[11px] text-ink/55">{a.englishHint}</p>
+              <F label={a.titleEn}><input lang="en" maxLength={200} value={v.title_en ?? ""} onChange={(e) => set("title_en", e.target.value || null)} className="field bg-card" /></F>
+              <F label={a.descEn}><textarea lang="en" rows={4} maxLength={5000} value={v.description_en ?? ""} onChange={(e) => set("description_en", e.target.value || null)} className="field resize-y bg-card" /></F>
+              <ChipsInput label={a.highlightsEn} hint={a.highlightsHint} values={v.highlights_en} max={8} onChange={(x) => set("highlights_en", x)} />
+              <F label={a.careEn}><textarea lang="en" rows={3} maxLength={2000} value={v.care_en ?? ""} onChange={(e) => set("care_en", e.target.value || null)} className="field resize-y bg-card" placeholder={a.carePlaceholder} /></F>
+            </div>
+          </details>
           <div className="flex flex-wrap gap-4 pt-1 text-sm">
             <label className="flex items-center gap-2"><input type="checkbox" checked={v.featured} onChange={(e) => set("featured", e.target.checked)} className="h-4 w-4 accent-ink" />{a.featured}</label>
             <label className="flex items-center gap-2"><input type="checkbox" checked={v.status === "active"} onChange={(e) => set("status", e.target.checked ? "active" : "retired")} className="h-4 w-4 accent-ink" />{a.visible}</label>

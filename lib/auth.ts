@@ -14,7 +14,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
   if (!id) return null;
   const { data: p } = await supabase
     .from("profiles")
-    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, role, status")
+    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, language, role, status")
     .eq("id", id)
     .maybeSingle();
   if (!p) return null;
@@ -38,6 +38,7 @@ export const getViewer = cache(async (): Promise<Viewer | null> => {
     activity: p.activity,
     city: p.city,
     website: p.website,
+    language: p.language,
     role: p.role,
     status: p.status,
     pro,

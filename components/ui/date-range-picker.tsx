@@ -9,14 +9,13 @@ import { addMonths, dayBlock, keyStep, monthGrid, monthOf, selectDay, shiftMonth
 import { useAvailability } from "@/components/catalogue/use-availability";
 import { fmt, Legend, MonthGrid } from "@/components/ui/availability-calendar";
 import { CloseButton, ease } from "@/components/ui/kit";
-import { cn } from "@/lib/utils/formatters";
-import type { Translations } from "@/lib/i18n/translations";
+import { cn, localeOf } from "@/lib/utils/formatters";
+import type { Language, Translations } from "@/lib/i18n/translations";
 
 const EMPTY: Range = { start: "", end: "" };
-const localeOf = (lang: string) => (lang === "ar" ? "ar-TN-u-nu-latn" : "fr-FR");
 
 /** "14 → 16 nov. · 2 nuits" (the arrow follows the reading direction). */
-export function rangeSummary(r: Range, lang: string, t: Translations) {
+export function rangeSummary(r: Range, lang: Language, t: Translations) {
   const s = dayNumber(r.start);
   if (s === null) return null;
   const locale = localeOf(lang);

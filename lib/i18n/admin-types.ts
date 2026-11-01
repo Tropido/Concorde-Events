@@ -49,13 +49,13 @@ export interface AdminTranslations {
     piece: string; category: string; stock: string; retail: string; pro: string; inMaintenance: (n: number) => string;
     featured: string; retire: string; reactivate: string;
     sections: { title: string; general: string; media: string; look: string; specs: string; pricing: string; internal: string };
-    titleFr: string; titleAr: string; descFr: string; descAr: string; slug: string; slugHint: string; sku: string; skuHint: string;
+    titleFr: string; titleAr: string; titleEn: string; descFr: string; descAr: string; descEn: string; englishGroup: string; englishHint: string; slug: string; slugHint: string; sku: string; skuHint: string;
     noCategory: string; badge: string; noBadge: string; visible: string; uploadHint: string; imageFit: string; fitContain: string; fitCover: string; fitHint: string; cover: string; makeCover: string;
     removeImage: string; moveUp: string; moveDown: string; upload: string; uploading: string; tone: string;
     tones: Record<Tone, string>; color: string; colorHex: string; colorPlaceholder: string; material: string; finish: string;
-    style: string; stylePlaceholder: string; highlightsFr: string; highlightsAr: string; highlightsHint: string;
+    style: string; stylePlaceholder: string; highlightsFr: string; highlightsAr: string; highlightsEn: string; highlightsHint: string;
     tags: string; tagsHint: string; width: string; height: string; depth: string; unit: string; weight: string; seats: string;
-    setup: string; minNights: string; careFr: string; careAr: string; carePlaceholder: string; pricesHint: string;
+    setup: string; minNights: string; careFr: string; careAr: string; careEn: string; carePlaceholder: string; pricesHint: string;
     pricesAdminOnly: string; deposit: string; depositHint: string; tierPreview: string; owned: string; ownedHint: string;
     internalHint: string; purchaseCost: string; purchaseDate: string; condition: string;
     conditions: { new: string; excellent: string; good: string; fair: string }; supplier: string; storage: string;
@@ -89,8 +89,8 @@ export interface AdminTranslations {
     emptyFallback: string;
   };
   settings: {
-    subtitle: string; tiersTitle: string; tiersHint: string; adminOnly: string; color: string; nameFr: string; nameAr: string;
-    minPoints: string; discount: string; benefitsFr: string; benefitsAr: string; businessTitle: string; currency: string;
+    subtitle: string; tiersTitle: string; tiersHint: string; adminOnly: string; color: string; nameFr: string; nameAr: string; nameEn: string;
+    minPoints: string; discount: string; benefitsFr: string; benefitsAr: string; benefitsEn: string; businessTitle: string; currency: string;
     whatsapp: string; languages: string; businessHint: string; pointsTitle: string; pointsText: string;
   };
 }

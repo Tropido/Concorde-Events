@@ -1,13 +1,13 @@
 import type { Language, Translations } from "@/lib/i18n/translations";
 import type { QuoteSnapshot } from "@/lib/types";
-import { formatDateTime, formatDay, formatMoney } from "@/lib/utils/formatters";
+import { formatDateTime, formatDay, formatMoney, localeOf } from "@/lib/utils/formatters";
 import { BRAND_NAME } from "@/lib/brand";
 
 /** Renders an issued quote exactly as frozen in its snapshot. Every value is rendered as
  *  React text (escaped), never as HTML; nothing is recalculated here. */
 export function QuoteDocument({ snapshot: s, lang, t }: { snapshot: QuoteSnapshot; lang: Language; t: Translations }) {
   // Quotes are TND; documents issued before the TND-only switch keep their own currency.
-  const money = (v: number) => (s.currency === "TND" ? formatMoney(v, "TND", lang) : new Intl.NumberFormat(lang === "ar" ? "ar-TN-u-nu-latn" : "fr-FR", { style: "currency", currency: s.currency }).format(v));
+  const money = (v: number) => (s.currency === "TND" ? formatMoney(v, "TND", lang) : new Intl.NumberFormat(localeOf(lang), { style: "currency", currency: s.currency }).format(v));
   const ev = s.event;
   return (
     <article className="space-y-8 rounded-[1.75rem] bg-card p-8 text-sm text-ink shadow-lift print:rounded-none print:p-0 print:shadow-none sm:p-12">
@@ -58,7 +58,7 @@ export function QuoteDocument({ snapshot: s, lang, t }: { snapshot: QuoteSnapsho
           <tbody>
             {s.lines.map((l) => (
               <tr key={l.line_id} className="break-inside-avoid border-b border-line align-top">
-                <td className="py-3 pe-3 font-medium">{(lang === "ar" && l.title_ar) || l.title_fr}</td>
+                <td className="py-3 pe-3 font-medium">{(lang !== "fr" && l[`title_${lang}`]) || l.title_fr}</td>
                 <td className="whitespace-nowrap py-3 pe-3 text-ink/70"><bdi>{formatDay(l.start_date, lang)}</bdi> – <bdi>{formatDay(l.end_date, lang)}</bdi></td>
                 <td className="py-3 text-end tabular-nums">{l.quantity}</td>
                 <td className="py-3 text-end tabular-nums">{l.nights}</td>

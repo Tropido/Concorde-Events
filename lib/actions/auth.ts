@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/auth";
+import { getPrefs } from "@/lib/i18n/server";
 import { STAFF_ROLES, type AppRole } from "@/lib/types";
 import type { Translations } from "@/lib/i18n/translations";
 
@@ -76,7 +77,7 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   const { error } = await supabase.auth.signUp({
     email: e,
     password,
-    options: { emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/account`, data: profile },
+    options: { emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/account`, data: { ...profile, language: (await getPrefs()).lang } },
   });
   if (error) return { error: authError(error) };
   return { ok: true };

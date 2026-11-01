@@ -465,6 +465,7 @@ export const fr: Translations = {
     upgradeCta: "Demander Particulier+",
     upgradeSent: "Demande envoyée. Notre équipe vous répond rapidement.",
     upgradePending: "Votre demande Particulier+ est en cours d'examen.",
+    language: "Langue des e-mails et documents",
   },
   contact: {
     title: "Parlons de votre événement",

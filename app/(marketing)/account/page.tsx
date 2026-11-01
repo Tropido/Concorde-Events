@@ -6,13 +6,14 @@ import { cancelRequest } from "@/lib/actions/account";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { StatusPill, StatusTrack } from "@/components/ui/status";
 import { todayIn } from "@/lib/dates";
+import { localized } from "@/lib/i18n/localize";
 import { formatDateTime, formatDay, formatNumber, formatTND } from "@/lib/utils/formatters";
 import { PLUS_REQUEST_SUBJECT, pricesVisible, type RequestStatus } from "@/lib/types";
 import { UpgradeCard } from "./upgrade-card";
 
 type Row = {
   id: string; reference: string; status: RequestStatus; created_at: string; quote_valid_until: string | null; event_type: string | null;
-  request_lines: { id: string; quantity: number; start_date: string; end_date: string; nights: number; line_total: number; products: { title_fr: string; title_ar: string | null } | null }[];
+  request_lines: { id: string; quantity: number; start_date: string; end_date: string; nights: number; line_total: number; products: { title_fr: string; title_en: string | null; title_ar: string | null } | null }[];
   quotes: { id: string; revision: number; total: number }[];
 };
 
@@ -22,7 +23,7 @@ export default async function AccountRequestsPage() {
   // RLS already limits rows to this user; the explicit filter keeps the intent obvious.
   const { data, error } = await supabase
     .from("rental_requests")
-    .select("id, reference, status, created_at, quote_valid_until, event_type, request_lines(id, quantity, start_date, end_date, nights, line_total, products(title_fr, title_ar)), quotes(id, revision, total:snapshot->total)")
+    .select("id, reference, status, created_at, quote_valid_until, event_type, request_lines(id, quantity, start_date, end_date, nights, line_total, products(title_fr, title_en, title_ar)), quotes(id, revision, total:snapshot->total)")
     .eq("user_id", viewer.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
@@ -74,7 +75,7 @@ export default async function AccountRequestsPage() {
             <ul className="divide-y divide-line rounded-2xl bg-paper px-4 text-sm">
               {r.request_lines.map((l) => (
                 <li key={l.id} className="flex flex-wrap justify-between gap-2 py-2.5">
-                  <span>{l.quantity} × {(prefs.lang === "ar" && l.products?.title_ar) || l.products?.title_fr}</span>
+                  <span>{l.quantity} × {l.products && localized(l.products, "title", prefs.lang)}</span>
                   <span className="text-xs text-ink/55"><bdi>{formatDay(l.start_date, prefs.lang)}</bdi> – <bdi>{formatDay(l.end_date, prefs.lang)}</bdi> · {t.common.nights(l.nights)}</span>
                 </li>
               ))}

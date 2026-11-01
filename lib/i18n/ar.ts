@@ -469,6 +469,7 @@ export const ar: Translations = {
     upgradeCta: "طلب فرد+",
     upgradeSent: "تم إرسال الطلب. يرد عليكم فريقنا قريبا.",
     upgradePending: "طلبكم للانتقال إلى فرد+ قيد الدراسة.",
+    language: "لغة الرسائل والوثائق",
   },
   contact: {
     title: "لنتحدث عن مناسبتكم",

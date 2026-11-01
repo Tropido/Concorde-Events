@@ -2,38 +2,41 @@ import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { discounted } from "@/lib/pro";
 import { isApprovedPro, type CatalogueProduct, type Category, type ImageFit, type Price, type ProductBadge, type Tone, type Viewer } from "@/lib/types";
+import { localized, localizedList } from "@/lib/i18n/localize";
+import type { Language } from "@/lib/i18n/translations";
 import type { Prefs } from "@/lib/prefs";
 
 const PRODUCT_COLUMNS =
-  "id, slug, sku, category_id, title_fr, title_ar, description_fr, description_ar, width, height, depth, dimension_unit, " +
+  "id, slug, sku, category_id, title_fr, title_en, title_ar, description_fr, description_en, description_ar, width, height, depth, dimension_unit, " +
   "color, color_hex, material, finish, style, weight_kg, seating_capacity, setup_minutes, deposit_amount, " +
-  "highlights_fr, highlights_ar, care_fr, care_ar, tags, badge, tone, minimum_nights, featured, images, image_fit, " +
-  "categories(id, slug, name_fr, name_ar)";
+  "highlights_fr, highlights_en, highlights_ar, care_fr, care_en, care_ar, tags, badge, tone, minimum_nights, featured, images, image_fit, " +
+  "categories(id, slug, name_fr, name_en, name_ar)";
 
 type ProductRow = {
   id: string; slug: string; sku: string | null; category_id: string | null;
-  title_fr: string; title_ar: string | null; description_fr: string; description_ar: string | null;
+  title_fr: string; title_en: string | null; title_ar: string | null; description_fr: string; description_en: string | null; description_ar: string | null;
   width: number | null; height: number | null; depth: number | null; dimension_unit: "cm" | "m";
   color: string | null; color_hex: string | null; material: string | null; finish: string | null; style: string | null;
   weight_kg: number | null; seating_capacity: number | null; setup_minutes: number | null; deposit_amount: number | null;
-  highlights_fr: string[]; highlights_ar: string[]; care_fr: string | null; care_ar: string | null;
+  highlights_fr: string[]; highlights_en: string[]; highlights_ar: string[]; care_fr: string | null; care_en: string | null; care_ar: string | null;
   tags: string[]; badge: ProductBadge | null; tone: Tone; minimum_nights: number; featured: boolean; images: string[]; image_fit: ImageFit | null;
-  categories: { id: string; slug: string; name_fr: string; name_ar: string | null } | null;
+  categories: { id: string; slug: string; name_fr: string; name_en: string | null; name_ar: string | null } | null;
 };
 
 const num = (v: number | string | null) => (v === null ? null : Number(v));
 
 function mapProduct(row: ProductRow, prefs: Prefs, stock: number, price: Price | null): CatalogueProduct {
-  const ar = prefs.lang === "ar" && !!row.title_ar;
+  // A translated title decides the language of the whole card, so text never mixes languages.
+  const lang: Language = localized(row, "title", prefs.lang) !== row.title_fr ? prefs.lang : "fr";
   return {
     id: row.id,
     slug: row.slug,
     sku: row.sku,
-    title: ar ? row.title_ar! : row.title_fr,
-    description: ar ? row.description_ar ?? row.description_fr : row.description_fr,
-    lang: ar ? "ar" : "fr",
+    title: localized(row, "title", lang) ?? row.title_fr,
+    description: localized(row, "description", lang) ?? row.description_fr,
+    lang,
     category: row.categories
-      ? { id: row.categories.id, slug: row.categories.slug, name: (prefs.lang === "ar" && row.categories.name_ar) || row.categories.name_fr }
+      ? { id: row.categories.id, slug: row.categories.slug, name: localized(row.categories, "name", prefs.lang) ?? row.categories.name_fr }
       : null,
     dimensions: { width: num(row.width), height: num(row.height), depth: num(row.depth), unit: row.dimension_unit },
     color: row.color,
@@ -45,8 +48,8 @@ function mapProduct(row: ProductRow, prefs: Prefs, stock: number, price: Price |
     seatingCapacity: row.seating_capacity,
     setupMinutes: row.setup_minutes,
     deposit: num(row.deposit_amount),
-    highlights: ar && row.highlights_ar?.length ? row.highlights_ar : row.highlights_fr ?? [],
-    care: (ar && row.care_ar) || row.care_fr,
+    highlights: localizedList(row, "highlights", lang),
+    care: localized(row, "care", lang),
     tags: row.tags ?? [],
     badge: row.badge,
     tone: row.tone ?? "almond",
@@ -67,7 +70,7 @@ export async function getCatalogue(prefs: Prefs, viewer: Viewer | null, opts: { 
     supabase.from("product_stock").select("product_id, quantity_owned, quantity_maintenance").eq("country", "TN"),
     // RLS only returns pro rows to approved professionals and staff.
     supabase.from("product_prices").select("product_id, tier, amount").eq("country", "TN"),
-    supabase.from("categories").select("id, slug, name_fr, name_ar, description_fr, description_ar, image_url, display_order").order("display_order"),
+    supabase.from("categories").select("id, slug, name_fr, name_en, name_ar, description_fr, description_en, description_ar, image_url, display_order").order("display_order"),
   ]);
   for (const r of [products, stock, prices, categories]) if (r.error) throw r.error;
 
@@ -99,8 +102,8 @@ export async function getCatalogue(prefs: Prefs, viewer: Viewer | null, opts: { 
   const cats: Category[] = (categories.data ?? []).map((c) => ({
     id: c.id,
     slug: c.slug,
-    name: (prefs.lang === "ar" && c.name_ar) || c.name_fr,
-    description: (prefs.lang === "ar" && c.description_ar) || c.description_fr,
+    name: localized(c, "name", prefs.lang) ?? c.name_fr,
+    description: localized(c, "description", prefs.lang),
     imageUrl: c.image_url,
     count: counts.get(c.id) ?? 0,
   }));

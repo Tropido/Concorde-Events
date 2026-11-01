@@ -1,25 +1,25 @@
+import { localized, localizedList } from "@/lib/i18n/localize";
 import type { Language } from "@/lib/i18n/translations";
 import type { ProStatus, ProTier } from "@/lib/types";
 
 export type TierRow = {
-  code: string; rank: number; name_fr: string; name_ar: string | null; min_points: number;
-  discount_percent: number | string; benefits_fr: string[]; benefits_ar: string[]; color: string;
+  code: string; rank: number; name_fr: string; name_en: string | null; name_ar: string | null; min_points: number;
+  discount_percent: number | string; benefits_fr: string[]; benefits_en: string[]; benefits_ar: string[]; color: string;
 };
 export type ProAccountRow = {
   tier_code: string; tier_locked: boolean; points: number; custom_discount_percent: number | string | null; extra_benefits: string[];
 };
 
-export const TIER_COLUMNS = "code, rank, name_fr, name_ar, min_points, discount_percent, benefits_fr, benefits_ar, color";
+export const TIER_COLUMNS = "code, rank, name_fr, name_en, name_ar, min_points, discount_percent, benefits_fr, benefits_en, benefits_ar, color";
 
 export function mapTier(row: TierRow, lang: Language): ProTier {
-  const ar = lang === "ar";
   return {
     code: row.code,
     rank: row.rank,
-    name: (ar && row.name_ar) || row.name_fr,
+    name: localized(row, "name", lang) ?? row.name_fr,
     minPoints: row.min_points,
     discount: Number(row.discount_percent),
-    benefits: ar && row.benefits_ar.length ? row.benefits_ar : row.benefits_fr,
+    benefits: localizedList(row, "benefits", lang),
     color: row.color,
   };
 }

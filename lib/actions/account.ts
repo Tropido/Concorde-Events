@@ -108,6 +108,7 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
     city: opt(80),
     activity: opt(80),
     website: opt(200),
+    language: z.enum(["fr", "en", "ar"]),
   }).safeParse(Object.fromEntries(form));
   if (!viewer || !parsed.success) return { error: true };
   const supabase = await createClient();

@@ -10,16 +10,16 @@ import { cn, initials } from "@/lib/utils/formatters";
 import { CloseButton, Drawer, Logo } from "@/components/ui/kit";
 import { BRAND_NAME } from "@/lib/brand";
 import { THEMES, type Theme } from "@/lib/prefs";
-import type { Language } from "@/lib/i18n/translations";
+import { LANGUAGES } from "@/lib/i18n/translations";
 
 export function LanguageSwitch({ className }: { className?: string }) {
   const { t, language, setLanguage } = useApp();
   return (
     <div role="group" aria-label={t.nav.language} className={cn("flex rounded-full bg-paper p-0.5 text-xs font-semibold", className)}>
-      {(["fr", "ar"] as Language[]).map((l) => (
+      {LANGUAGES.map((l) => (
         <button key={l} type="button" lang={l} aria-pressed={language === l} onClick={() => language !== l && setLanguage(l)}
           className={cn("h-7 min-w-8 rounded-full px-2 transition-colors", language === l ? "bg-card text-ink shadow-inset" : "text-ink/50 hover:text-ink")}>
-          {l === "fr" ? "FR" : "ع"}
+          {{ fr: "FR", en: "EN", ar: "ع" }[l]}
         </button>
       ))}
     </div>

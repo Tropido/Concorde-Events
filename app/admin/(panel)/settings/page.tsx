@@ -29,7 +29,7 @@ export default async function AdminSettingsPage() {
           <dl className="space-y-3 text-sm">
             <div className="flex justify-between gap-4"><dt className="text-ink/55">{a.currency}</dt><dd className="font-medium">TND · Dinar tunisien</dd></div>
             <div className="flex justify-between gap-4"><dt className="text-ink/55">{a.whatsapp}</dt><dd className="font-medium"><bdi dir="ltr">{BUSINESS_WHATSAPP_DISPLAY}</bdi></dd></div>
-            <div className="flex justify-between gap-4"><dt className="text-ink/55">{a.languages}</dt><dd className="font-medium">Français · العربية</dd></div>
+            <div className="flex justify-between gap-4"><dt className="text-ink/55">{a.languages}</dt><dd className="font-medium">Français · English · العربية</dd></div>
           </dl>
           <p className="mt-4 text-xs text-ink/50">{a.businessHint}</p>
         </Panel>

@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { useApp } from "@/lib/context/app-context";
-import { translations } from "@/lib/i18n/translations";
+import { translations, type Language } from "@/lib/i18n/translations";
 import { publishCms, type AdminResult, type CmsInput } from "@/lib/actions/admin";
 import { btnGhost, btnPrimary, field, ResultText } from "@/components/admin/ui";
 
-export function CmsForm({ locale, initial }: { locale: "fr" | "ar"; initial: CmsInput }) {
+export function CmsForm({ locale, initial }: { locale: Language; initial: CmsInput }) {
   const { t } = useApp();
   const a = t.admin.cms;
   const [c, setC] = useState(initial);

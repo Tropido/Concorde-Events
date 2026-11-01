@@ -1,6 +1,6 @@
 import type { Language } from "@/lib/i18n/translations";
 
-// Visitor preferences: the language (French first, Arabic second) and the colour theme.
+// Visitor preferences: the language (French first, then English and Arabic) and the colour theme.
 // They live in cookies so the server renders the right language, direction and theme on
 // the first paint. Stock, prices and documents are always Tunisia / TND.
 export const PREF_COOKIES = { lang: "ce_lang", theme: "ce_theme" } as const;
@@ -8,7 +8,7 @@ export const PREF_COOKIES = { lang: "ce_lang", theme: "ce_theme" } as const;
 export type Theme = "light" | "dark" | "system";
 export const THEMES: Theme[] = ["light", "dark", "system"];
 
-export const parseLang = (v?: string | null): Language => (v === "ar" ? "ar" : "fr");
+export const parseLang = (v?: string | null): Language => (v === "ar" || v === "en" ? v : "fr");
 export const parseTheme = (v?: string | null): Theme => (v === "light" || v === "dark" ? v : "system");
 
 export interface Prefs {

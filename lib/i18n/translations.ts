@@ -4,9 +4,11 @@ import type { Theme } from "@/lib/prefs";
 import type { DayBlock } from "@/lib/date-range";
 import type { AdminTranslations } from "./admin-types";
 import { fr } from "./fr";
+import { en } from "./en";
 import { ar } from "./ar";
 
-export type Language = "fr" | "ar";
+export type Language = "fr" | "en" | "ar";
+export const LANGUAGES: Language[] = ["fr", "en", "ar"];
 
 /** Error codes raised by public.submit_request / submit_contact (see migrations). */
 export type SubmitErrorCode =
@@ -18,7 +20,7 @@ export type Activity = "wedding_planner" | "agency" | "venue" | "caterer" | "des
 type Sort = "featured" | "price_asc" | "price_desc" | "name";
 type Item = { title: string; text: string };
 
-// Record<Language, Translations> makes the compiler reject a missing key in either language.
+// Record<Language, Translations> makes the compiler reject a missing key in any language.
 export interface Translations {
   meta: { title: string; description: string };
   nav: {
@@ -123,6 +125,7 @@ export interface Translations {
     calcProduct: string; marginLabel: string; clientPrice: string; costPrice: string; profit: string; pendingBanner: string;
     pendingBannerPlus: string; types: Record<"customer" | "customer_plus" | "professional", string>;
     upgradeTitle: string; upgradeText: string; upgradeCta: string; upgradeSent: string; upgradePending: string;
+    language: string;
   };
   contact: {
     title: string; subtitle: string; name: string; email: string; phone: string; subject: string; message: string;
@@ -143,4 +146,4 @@ export interface Translations {
   admin: AdminTranslations;
 }
 
-export const translations: Record<Language, Translations> = { fr, ar };
+export const translations: Record<Language, Translations> = { fr, en, ar };

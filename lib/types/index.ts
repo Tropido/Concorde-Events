@@ -68,6 +68,8 @@ export interface Viewer {
   activity: string | null;
   city: string | null;
   website: string | null;
+  /** Language of emails and documents. */
+  language: Language;
   role: AppRole;
   status: AccountStatus;
   pro: ProStatus | null;
@@ -99,7 +101,7 @@ export interface CatalogueProduct {
   sku: string | null;
   title: string;
   description: string;
-  /** Language the title/description are actually in (AR falls back to FR). */
+  /** Language the title/description are actually in (AR and EN fall back to FR). */
   lang: Language;
   category: { id: string; slug: string; name: string } | null;
   dimensions: { width: number | null; height: number | null; depth: number | null; unit: "cm" | "m" };
@@ -159,6 +161,8 @@ export interface QuoteLine {
   slug: string;
   title_fr: string;
   title_ar: string | null;
+  /** Absent on quotes issued before English existed. */
+  title_en?: string | null;
   quantity: number;
   start_date: string;
   end_date: string;

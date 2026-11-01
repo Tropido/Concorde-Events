@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { assertStaff } from "@/lib/auth";
 import { supabaseEnv } from "@/lib/supabase/env";
 import type { AdminErrorCode } from "@/lib/i18n/admin-types";
+import { LANGUAGES, type Language } from "@/lib/i18n/translations";
 import type { AppRole } from "@/lib/types";
 
 export type AdminResult = { ok: true } | { ok: false; error: AdminErrorCode };
@@ -141,8 +142,10 @@ const ProductInput = z.object({
   sku: optText(40),
   title_fr: text(200).min(1),
   title_ar: optText(200),
+  title_en: optText(200),
   description_fr: text(5000),
   description_ar: optText(5000),
+  description_en: optText(5000),
   category_id: uuid.nullable(),
   badge: z.enum(["new", "bestseller", "limited"]).nullable(),
   tone: z.enum(["almond", "sand", "tan", "copper", "cream", "stone"]),
@@ -161,8 +164,10 @@ const ProductInput = z.object({
   deposit_amount: z.number().min(0).max(1_000_000).nullable(),
   highlights_fr: z.array(text(60).min(1)).max(8),
   highlights_ar: z.array(text(60).min(1)).max(8),
+  highlights_en: z.array(text(60).min(1)).max(8),
   care_fr: optText(2000),
   care_ar: optText(2000),
+  care_en: optText(2000),
   tags: z.array(text(40).min(1)).max(20),
   minimum_nights: z.number().int().min(1).max(365),
   featured: z.boolean(),
@@ -306,10 +311,12 @@ const TierInput = z.object({
   code: z.string().regex(/^[a-z0-9_]{2,30}$/),
   name_fr: z.string().trim().min(1).max(60),
   name_ar: z.string().trim().max(60).nullable(),
+  name_en: z.string().trim().max(60).nullable(),
   min_points: z.number().int().min(0).max(10_000_000),
   discount_percent: z.number().min(0).max(50),
   benefits_fr: z.array(z.string().trim().min(1).max(120)).max(12),
   benefits_ar: z.array(z.string().trim().min(1).max(120)).max(12),
+  benefits_en: z.array(z.string().trim().min(1).max(120)).max(12),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 export type TierInput = z.infer<typeof TierInput>;
@@ -332,9 +339,9 @@ const CmsInput = z.object({
 });
 export type CmsInput = z.infer<typeof CmsInput>;
 
-export async function publishCms(locale: "fr" | "ar", content: CmsInput): Promise<AdminResult> {
+export async function publishCms(locale: Language, content: CmsInput): Promise<AdminResult> {
   const p = CmsInput.safeParse(content);
-  if (!["fr", "ar"].includes(locale) || !p.success) return { ok: false, error: "invalid" };
+  if (!LANGUAGES.includes(locale) || !p.success) return { ok: false, error: "invalid" };
   const result = await run(["editor", "manager", "admin"], (db, me) =>
     db.from("cms_content").upsert({ locale, content: p.data, updated_by: me }));
   if (result.ok) revalidatePath("/");

@@ -1,6 +1,8 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, todayIn } from "@/lib/dates";
+import { localized } from "@/lib/i18n/localize";
+import type { Language } from "@/lib/i18n/translations";
 import type { RequestStatus } from "@/lib/types";
 
 export type OverviewData = Awaited<ReturnType<typeof loadOverview>>;
@@ -16,7 +18,7 @@ const LIVE: RequestStatus[] = ["submitted", "validated", "confirmed", "dispatche
 const tunisDay = (ts: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Tunis" }).format(new Date(ts));
 
 /** Every figure comes from stored requests, lines and stock; nothing is estimated. */
-export async function loadOverview(lang: "fr" | "ar" = "fr") {
+export async function loadOverview(lang: Language = "fr") {
   const db = await createClient();
   const today = todayIn("TN");
   const since = addDays(today, -59);
@@ -28,7 +30,7 @@ export async function loadOverview(lang: "fr" | "ar" = "fr") {
       .select("id, reference, customer_name, company_name, status, tier, created_at, event_type, request_lines(quantity, start_date, end_date, line_total, products(title_fr, category_id))")
       .in("status", LIVE).lt("created_at", `${since}T00:00:00+01:00`).limit(2000),
     db.from("product_stock").select("quantity_owned, quantity_maintenance").eq("country", "TN"),
-    db.from("categories").select("id, name_fr, name_ar"),
+    db.from("categories").select("id, name_fr, name_en, name_ar"),
     db.rpc("capacity_conflicts"),
     db.from("profiles").select("id, full_name, company_name, activity, created_at").eq("status", "pending").order("created_at", { ascending: false }).limit(5),
   ]);
@@ -72,7 +74,7 @@ export async function loadOverview(lang: "fr" | "ar" = "fr") {
   }
 
   // Booked value by category (last 60 days of requests).
-  const catName = new Map((categories.data ?? []).map((c) => [c.id, (lang === "ar" && c.name_ar) || c.name_fr]));
+  const catName = new Map((categories.data ?? []).map((c) => [c.id, localized(c, "name", lang)]));
   const byCat = new Map<string, number>();
   for (const r of recent) if (BOOKED.includes(r.status)) for (const l of r.request_lines) {
     const k = (l.products?.category_id && catName.get(l.products.category_id)) || "—";

@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: { default: m.title, template: `%s · ${BRAND_NAME}` },
     description: m.description,
-    openGraph: { title: BRAND_NAME, siteName: BRAND_NAME, description: m.description, locale: lang === "ar" ? "ar_TN" : "fr_TN" },
+    openGraph: { title: BRAND_NAME, siteName: BRAND_NAME, description: m.description, locale: { fr: "fr_TN", en: "en_GB", ar: "ar_TN" }[lang] },
   };
 }
 

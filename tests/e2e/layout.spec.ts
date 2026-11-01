@@ -3,7 +3,7 @@ import { enabled } from "./helpers";
 
 test.skip(!enabled, "needs .env.local + .env.test.local for the TEST Supabase project");
 
-for (const lang of ["fr", "ar"] as const) {
+for (const lang of ["fr", "en", "ar"] as const) {
   test.describe(`${lang} layout`, () => {
     test.beforeEach(async ({ context, baseURL }) => {
       await context.addCookies([{ name: "ce_lang", value: lang, url: baseURL! }]);
