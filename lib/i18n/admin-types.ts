@@ -2,9 +2,8 @@ import type { AccountStatus, AppRole, MessageChannel, MessageStatus, RequestStat
 
 export type AdminErrorCode =
   | "capacity_exceeded" | "quote_expired" | "invalid_transition" | "forbidden"
-  | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "generic";
+  | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "tag_exists" | "generic";
 
-type Flag = "vip" | "big_account" | "reliable_payer" | "watch" | "new_partner" | "dispute_resolved";
 type Level = "bronze" | "argent" | "or" | "platine" | "diamant" | "royal_elite";
 
 export interface AdminTranslations {
@@ -72,12 +71,14 @@ export interface AdminTranslations {
     subtitle: string; views: { label: string; pending: string; pros: string; plus: string; customers: string; staff: string; inactive: string };
     searchPlaceholder: string; noPending: string; empty: string; approve: string; reject: string; suspend: string;
     reactivate: string; changeRole: string; statusLabels: Record<AccountStatus, string>; roleLabels: Record<AppRole, string>;
-    flagLabels: Record<Flag, string>; identity: string; requestsCount: string; bookedValue: string; joined: string;
+    identity: string; requestsCount: string; bookedValue: string; joined: string;
     programme: string; lockTier: string; tierLocked: string; tierAuto: string; nextAt: (tier: string, points: string) => string;
     customDiscount: string; extraBenefits: string; benefitPlaceholder: string; addBenefit: string; saveProgramme: string;
     adjustPoints: string; reason: string; reasonPlaceholder: string; applyPoints: string; particulierTitle: string;
     particulierText: string; notesTitle: string; flags: string; level: string; levelLabels: Record<Level, string>;
     notes: string; notesPlaceholder: string; notesPrivate: string; saveNotes: string;
+    tagAdd: string; tagSearch: string; tagCreate: (label: string) => string; tagColor: string; tagTranslations: string; tagFilter: string;
+    tagsTitle: string; tagsHint: string; tagSystem: string; tagArchived: string; tagArchive: string; tagRestore: string;
   };
   analytics: {
     subtitle: string; bookedYear: string; conversion: string; conversionHint: string; proShare: string; retailShare: string;

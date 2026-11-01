@@ -5,12 +5,17 @@ import { TIER_COLUMNS, type TierRow } from "@/lib/pro";
 import { PageHeader, Panel } from "@/components/admin/ui";
 import { BUSINESS_WHATSAPP_DISPLAY } from "@/lib/utils/whatsapp";
 import { TierEditor } from "./tier-editor";
+import { TagsPanel } from "./tags-panel";
+import type { ClientTag } from "../clients/tags";
 
 export default async function AdminSettingsPage() {
   const [{ t }, viewer] = await Promise.all([getT(), requireStaff()]);
   const a = t.admin.settings;
   const db = await createClient();
-  const { data, error } = await db.from("pro_tiers").select(TIER_COLUMNS).order("rank");
+  const [{ data, error }, { data: tags }] = await Promise.all([
+    db.from("pro_tiers").select(TIER_COLUMNS).order("rank"),
+    db.from("client_tags").select("id, slug, label_fr, label_en, label_ar, color, is_system, created_by, archived_at").order("is_system", { ascending: false }).order("label_fr"),
+  ]);
   if (error) throw error;
   const isAdmin = viewer.role === "admin";
 
@@ -23,6 +28,10 @@ export default async function AdminSettingsPage() {
           {((data ?? []) as TierRow[]).map((tier) => <TierEditor key={tier.code} tier={tier} readOnly={!isAdmin} />)}
         </div>
         {!isAdmin && <p className="mt-3 text-xs text-ink/50">{a.adminOnly}</p>}
+      </Panel>
+      <Panel title={t.admin.clients.tagsTitle}>
+        <p className="mb-2 max-w-2xl text-sm text-ink/60">{t.admin.clients.tagsHint}</p>
+        <TagsPanel tags={(tags ?? []) as ClientTag[]} selfId={viewer.id} isAdmin={isAdmin} />
       </Panel>
       <div className="grid gap-2.5 lg:grid-cols-2">
         <Panel title={a.businessTitle}>

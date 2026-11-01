@@ -8,29 +8,31 @@ import { adjustPoints, saveClientNotes, saveProProgramme, setAccountStatus, setR
 import { ActionButton, Avatar, ResultText, btnDanger, btnPrimary } from "@/components/admin/ui";
 import { ease } from "@/components/ui/kit";
 import { TierEmblem } from "@/components/ui/tier-emblem";
+import { ClientTags, TagPill, type ClientTag } from "./tags";
 import { cn, formatDateTime, formatNumber, formatTND } from "@/lib/utils/formatters";
 import type { AccountStatus, AppRole, EventType, ProTier } from "@/lib/types";
 
 export type ClientRow = {
   id: string; email: string; full_name: string | null; company_name: string | null; phone: string | null; vat_number: string | null;
   activity: string | null; city: string | null; website: string | null; event_type: EventType | null; role: AppRole; status: AccountStatus; created_at: string;
-  client_notes: { notes: string; flags: string[]; level: string | null } | null;
+  client_notes: { notes: string; level: string | null } | null;
+  client_tag_links: { tag_id: string }[];
   pro_accounts: { tier_code: string; tier_locked: boolean; points: number; custom_discount_percent: number | null; extra_benefits: string[] } | null;
   stats: { requests: number; booked: number };
 };
 
 const ROLES: AppRole[] = ["customer", "customer_plus", "professional", "editor", "manager", "admin"];
-const FLAGS = ["vip", "big_account", "reliable_payer", "watch", "new_partner", "dispute_resolved"] as const;
 const LEVELS = ["bronze", "argent", "or", "platine", "diamant", "royal_elite"] as const;
 const statusTone: Record<AccountStatus, string> = { pending: "bg-warn-soft text-warn", approved: "bg-ok-soft text-ok", rejected: "bg-bad-soft text-bad", suspended: "bg-bad-soft text-bad" };
 
-export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: { client: ClientRow; tiers: ProTier[]; isAdmin: boolean; selfId: string; defaultOpen: boolean }) {
+export function ClientCard({ client: c, tiers, tags, isAdmin, selfId, defaultOpen }: { client: ClientRow; tiers: ProTier[]; tags: ClientTag[]; isAdmin: boolean; selfId: string; defaultOpen: boolean }) {
   const { t, language } = useApp();
   const a = t.admin.clients;
   const [open, setOpen] = useState(defaultOpen);
   const isClient = c.role === "customer" || c.role === "customer_plus" || c.role === "professional";
   const tier = c.pro_accounts && tiers.find((x) => x.code === c.pro_accounts!.tier_code);
-  const flags = c.client_notes?.flags ?? [];
+  const tagIds = c.client_tag_links.map((l) => l.tag_id);
+  const clientTags = tags.filter((x) => tagIds.includes(x.id));
 
   return (
     <article className="card overflow-hidden">
@@ -41,7 +43,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
             <p className="flex flex-wrap items-center gap-2 font-semibold tracking-tight">
               {c.full_name ?? c.email}
               {c.role === "professional" && tier && <span className="inline-flex items-center gap-1 rounded-full bg-paper py-0.5 pe-2 ps-1 text-[11px] font-medium"><TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={16} />{tier.name}</span>}
-              {flags.slice(0, 3).map((f) => <span key={f} className="rounded-full bg-tone-sand px-2 py-0.5 text-[11px] font-normal">{a.flagLabels[f as keyof typeof a.flagLabels] ?? f}</span>)}
+              {clientTags.slice(0, 4).map((x) => <TagPill key={x.id} tag={x} />)}
             </p>
             <p className="truncate text-xs text-ink/55">
               {[c.company_name, c.activity && (t.auth.activities[c.activity as keyof typeof t.auth.activities] ?? c.activity), c.city].filter(Boolean).join(" · ") || c.email}
@@ -84,7 +86,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
                 ? <Programme profileId={c.id} account={c.pro_accounts} tiers={tiers} />
                 : isClient ? <LevelOnly /> : <div className="hidden xl:block" />}
 
-              {isClient && <Notes profileId={c.id} initial={c.client_notes} showLevel={c.role === "customer" || c.role === "customer_plus"} />}
+              {isClient && <Notes profileId={c.id} initial={c.client_notes} tags={tags} tagIds={tagIds} showLevel={c.role === "customer" || c.role === "customer_plus"} />}
             </div>
           </motion.div>
         )}
@@ -196,10 +198,9 @@ function LevelOnly() {
   );
 }
 
-function Notes({ profileId, initial, showLevel }: { profileId: string; initial: ClientRow["client_notes"]; showLevel: boolean }) {
+function Notes({ profileId, initial, tags, tagIds, showLevel }: { profileId: string; initial: ClientRow["client_notes"]; tags: ClientTag[]; tagIds: string[]; showLevel: boolean }) {
   const { t } = useApp();
   const a = t.admin.clients;
-  const [flags, setFlags] = useState<string[]>(initial?.flags ?? []);
   const [level, setLevel] = useState(initial?.level ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [state, setState] = useState<AdminResult | null>(null);
@@ -207,18 +208,7 @@ function Notes({ profileId, initial, showLevel }: { profileId: string; initial: 
   return (
     <div className="space-y-4 rounded-2xl bg-card p-4">
       <p className="text-sm font-semibold">{a.notesTitle}</p>
-      <fieldset>
-        <legend className="field-label">{a.flags}</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {FLAGS.map((f) => {
-            const on = flags.includes(f);
-            return (
-              <button key={f} type="button" aria-pressed={on} onClick={() => setFlags(on ? flags.filter((x) => x !== f) : [...flags, f])}
-                className={cn("rounded-full px-3 py-1.5 text-xs ring-1 transition", on ? "bg-ink text-card ring-ink" : "bg-paper ring-transparent hover:ring-line")}>{a.flagLabels[f]}</button>
-            );
-          })}
-        </div>
-      </fieldset>
+      <ClientTags profileId={profileId} tags={tags} initial={tagIds} />
       {showLevel && (
         <label className="block"><span className="field-label">{a.level}</span>
           <select value={level} onChange={(e) => setLevel(e.target.value)} className="field">
@@ -232,7 +222,7 @@ function Notes({ profileId, initial, showLevel }: { profileId: string; initial: 
       </label>
       <p className="text-[11px] text-ink/45">{a.notesPrivate}</p>
       <div className="flex items-center gap-2">
-        <button type="button" disabled={pending} className="btn-ink btn-sm" onClick={() => start(async () => setState(await saveClientNotes(profileId, { notes, flags, level: level || null })))}>{a.saveNotes}</button>
+        <button type="button" disabled={pending} className="btn-ink btn-sm" onClick={() => start(async () => setState(await saveClientNotes(profileId, { notes, level: level || null })))}>{a.saveNotes}</button>
         <ResultText state={state} />
       </div>
     </div>

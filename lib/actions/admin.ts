@@ -23,6 +23,7 @@ function dbError(e: { message: string; code?: string }): AdminResult {
     : m.startsWith("quote expired") ? "quote_expired"
     : m.startsWith("invalid status transition") || m.startsWith("use issue_quote") || m.startsWith("cannot quote") ? "invalid_transition"
     : m.includes("last approved admin") ? "last_admin"
+    : /client_tags_(label|slug)_key/.test(m) ? "tag_exists"
     : e.code === "23505" ? "slug_taken"
     : e.code === "42501" ? "forbidden"
     : "generic";
@@ -317,17 +318,62 @@ export async function setRole(profileId: string, role: AppRole) {
   return run(["admin"], (db) => db.from("profiles").update({ role: p.data }).eq("id", profileId));
 }
 
-export async function saveClientNotes(profileId: string, input: { notes: string; flags: string[]; level: string | null }): Promise<AdminResult> {
+export async function saveClientNotes(profileId: string, input: { notes: string; level: string | null }): Promise<AdminResult> {
   const p = z.object({
     profileId: uuid,
     notes: z.string().max(5000),
-    flags: z.array(z.string().trim().min(1).max(40)).max(20),
     level: z.string().trim().max(40).nullable(),
   }).safeParse({ profileId, ...input });
   if (!p.success) return { ok: false, error: "invalid" };
   return run(undefined, (db, me) => db.from("client_notes").upsert({
-    profile_id: p.data.profileId, notes: p.data.notes, flags: p.data.flags, level: p.data.level || null, updated_by: me,
+    profile_id: p.data.profileId, notes: p.data.notes, level: p.data.level || null, updated_by: me,
   }));
+}
+
+// ---------- Client labels ----------
+
+const TagInput = z.object({
+  label_fr: z.string().trim().min(1).max(40),
+  label_en: z.string().trim().min(1).max(40).nullable(),
+  label_ar: z.string().trim().min(1).max(40).nullable(),
+  color: z.enum(["almond", "sand", "tan", "copper", "cream", "stone", "ok", "warn", "bad"]),
+});
+type TagInput = z.infer<typeof TagInput>;
+
+export async function toggleClientTag(profileId: string, tagId: string, on: boolean): Promise<AdminResult> {
+  if (!uuid.safeParse(profileId).success || !uuid.safeParse(tagId).success) return { ok: false, error: "invalid" };
+  return run(undefined, (db, me) => on
+    ? db.from("client_tag_links").upsert({ profile_id: profileId, tag_id: tagId, added_by: me }, { ignoreDuplicates: true })
+    : db.from("client_tag_links").delete().eq("profile_id", profileId).eq("tag_id", tagId));
+}
+
+/** Creates a label and applies it to the client whose card it was created from. */
+export async function createClientTag(profileId: string, input: TagInput): Promise<{ ok: true; id: string } | { ok: false; error: AdminErrorCode }> {
+  const p = TagInput.safeParse(input);
+  if (!uuid.safeParse(profileId).success || !p.success) return { ok: false, error: "invalid" };
+  let id = "";
+  const result = await run(undefined, async (db, me) => {
+    const created = await db.from("client_tags").insert(p.data).select("id").single();
+    if (created.error) return created;
+    id = created.data.id;
+    return db.from("client_tag_links").insert({ profile_id: profileId, tag_id: id, added_by: me });
+  });
+  return result.ok ? { ok: true, id } : result;
+}
+
+export async function renameClientTag(id: string, input: TagInput): Promise<AdminResult> {
+  const p = TagInput.safeParse(input);
+  if (!uuid.safeParse(id).success || !p.success) return { ok: false, error: "invalid" };
+  return run(undefined, async (db) => {
+    const r = await db.from("client_tags").update(p.data).eq("id", id).select("id");
+    // RLS hides the row from a manager who didn't create it: zero rows, no error.
+    return r.error || r.data.length ? r : { error: { message: "forbidden", code: "42501" } };
+  });
+}
+
+export async function archiveClientTag(id: string, archived: boolean): Promise<AdminResult> {
+  if (!uuid.safeParse(id).success) return { ok: false, error: "invalid" };
+  return run(["admin"], (db) => db.from("client_tags").update({ archived_at: archived ? new Date().toISOString() : null }).eq("id", id));
 }
 
 // ---------- Professional programme ----------
