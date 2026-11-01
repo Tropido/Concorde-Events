@@ -74,6 +74,8 @@ export const orderAr: OrderTranslations = {
     kind: "النوع",
     method: "الطريقة",
     amount: "المبلغ (د.ت)",
+    amountShort: "المبلغ",
+    referenceShort: "المرجع",
     receivedAt: "تاريخ الاستلام",
     reference: "المرجع (شيك، تحويل)",
     proof: "الإثبات",

@@ -23,7 +23,7 @@ export interface OrderTranslations {
   termsTitle: string; termsPending: string; termsSections: { title: string; text: string }[]; extraLine: string;
 
   panel: {
-    payments: string; record: string; kind: string; method: string; amount: string; receivedAt: string; reference: string; proof: string; proofHint: string; note: string;
+    payments: string; record: string; kind: string; method: string; amount: string; amountShort: string; referenceShort: string; receivedAt: string; reference: string; proof: string; proofHint: string; note: string;
     date: string; recordedBy: string; voided: string; voidAction: string; voidPrompt: string; viewProof: string; empty: string; caution: string;
     depositProgress: string; totalProgress: string; deadline: string; timeLeft: (days: number, hours: number) => string; overdueBy: (days: number, hours: number) => string;
     overpaid: (amount: string) => string; waInstructions: (name: string, ref: string, amount: string, rib: string) => string;

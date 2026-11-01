@@ -64,8 +64,8 @@ export function PaymentsPanel({ r, payments, isAdmin }: { r: Summary; payments: 
         <div className="mt-4 overflow-x-auto">
           <table className="w-full min-w-[620px] text-sm">
             <thead><tr className="border-b border-line">
-              {[a.date, a.kind, a.method, a.reference, a.recordedBy].map((h) => <th key={h} scope="col" className="label py-2 pe-3 text-start">{h}</th>)}
-              <th scope="col" className="label py-2 text-end">{a.amount}</th><th />
+              {[a.date, a.kind, a.method, a.referenceShort, a.recordedBy].map((h) => <th key={h} scope="col" className="label py-2 pe-3 text-start">{h}</th>)}
+              <th scope="col" className="label py-2 text-end">{a.amountShort}</th><th />
             </tr></thead>
             <tbody>
               {payments.map((p) => (

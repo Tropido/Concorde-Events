@@ -74,6 +74,8 @@ export const orderFr: OrderTranslations = {
     kind: "Type",
     method: "Mode",
     amount: "Montant (DT)",
+    amountShort: "Montant",
+    referenceShort: "Référence",
     receivedAt: "Reçu le",
     reference: "Référence (chèque, virement)",
     proof: "Preuve",
