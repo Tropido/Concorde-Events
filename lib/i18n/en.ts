@@ -299,7 +299,7 @@ export const en: Translations = {
     mySpace: "My pro space",
     howPointsLabel: "Points",
     pointsRule: "1 point for every 10 DT hired.",
-    pointsText: "Points are credited when a hire is completed. Your tier rises automatically with your points.",
+    pointsText: "Points are credited when a hire is completed and fully paid. Your tier rises automatically with your points.",
     compareTitle: "Individual, Individual+ or professional",
     feature: "What you get",
     compare: [

@@ -1,6 +1,6 @@
 import type { EmailKind } from "@/lib/email/copy";
 import type { InvoiceType } from "@/lib/invoicing/types";
-import type { PaymentKind, PaymentMethod, PaymentStatus } from "@/lib/types";
+import type { InspectionCondition, LogisticsStatus, PaymentKind, PaymentMethod, PaymentStatus } from "@/lib/types";
 
 export type AcceptError = "quote_superseded" | "quote_expired" | "terms_required" | "company_incomplete" | "not_found" | "generic";
 export type EmailStatus = "queued" | "sent" | "failed" | "skipped";
@@ -48,6 +48,18 @@ export interface OrderTranslations {
     taxId: string; rne: string; phone: string; email: string; bankName: string; rib: string; iban: string; logo: string; pricesIncludeVat: string; pricesIncludeVatHint: string; defaultVat: string;
     stamp: string; depositRate: string; depositDeadline: string; dueDeposit: string; dueBalance: string; mentionsFr: string; mentionsEn: string; incomplete: string; openSettings: string;
     clientDepositRate: string; clientDepositHint: string;
+  };
+
+  inspection: {
+    logistics: Record<LogisticsStatus, string>; conditions: Record<InspectionCondition, string>; chips: Record<InspectionCondition, (n: number) => string>;
+    returnButton: string; receiveTitle: string; sent: string; received: string; allReceived: string; confirmReceive: string; inspectTitle: string; remainder: (n: number) => string;
+    fee: string; feeReason: string; suggested: (amount: string) => string; note: string; photos: (n: number, max: number) => string; photosVisible: string; viewPhoto: string;
+    cautionTitle: string; cautionOutcomes: Record<"refund" | "retain" | "none", string>; totalFees: string; saveDraft: string; close: string; closeConfirm: string;
+    reportTitle: string; heads: Record<"sent" | "received" | InspectionCondition, string>; feesHead: string; finalInvoice: string;
+    cautionResult: (outcome: "refund" | "retain" | "none", refunded: string, retained: string) => string;
+    underInspection: string; none: string; age: (hours: number) => string; lateLabel: string; movements: string; movementsEmpty: string;
+    reasons: Record<"touch_up" | "to_repair" | "to_write_off" | "lost" | "found" | "repaired" | "written_off", string>;
+    repairFee: string; replacementValue: string; repairHint: string; found: string; foundPrompt: string;
   };
 
   kpi: { depositsPending: string; depositsCount: (n: number) => string; overdue: string; overdueNone: string; balances: string; balancesNone: string; dueOn: (date: string) => string };

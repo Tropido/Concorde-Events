@@ -53,12 +53,6 @@ export async function rescheduleRequest(id: string, lines: { id: string; start_d
   return run(undefined, (db) => db.rpc("reschedule_request", { p_request: id, p_lines: p.data }));
 }
 
-export async function returnRequest(id: string, damaged: { line_id: string; quantity: number }[]) {
-  const p = z.array(z.object({ line_id: uuid, quantity: z.number().int().min(0).max(10000) })).max(50).safeParse(damaged);
-  if (!uuid.safeParse(id).success || !p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.rpc("return_request", { p_request: id, p_damaged: p.data.filter((d) => d.quantity > 0) }));
-}
-
 export async function assignRequestToMe(id: string) {
   if (!uuid.safeParse(id).success) return { ok: false, error: "invalid" } as AdminResult;
   return run(undefined, (db, me) => db.from("rental_requests").update({ assignee_id: me }).eq("id", id));
@@ -172,6 +166,8 @@ const ProductInput = z.object({
     storage_location: optText(120),
     condition: z.enum(["new", "excellent", "good", "fair"]).nullable(),
     internal_notes: optText(2000),
+    repair_fee: z.number().min(0).max(10_000_000).nullable(),
+    replacement_value: z.number().min(0).max(10_000_000).nullable(),
   }),
 });
 export type ProductInput = z.infer<typeof ProductInput>;
@@ -276,20 +272,9 @@ export async function setProductStatus(id: string, status: "active" | "retired")
 
 /** Repaired units return to service; written-off units leave the owned stock too. */
 export async function resolveMaintenance(productId: string, qty: number, outcome: "repaired" | "written_off") {
-  const country = "TN";
-  const p = z.object({ productId: uuid, country: z.literal("TN"), qty: z.number().int().min(1).max(100000), outcome: z.enum(["repaired", "written_off"]) })
-    .safeParse({ productId, country, qty, outcome });
+  const p = z.object({ productId: uuid, qty: z.number().int().min(1).max(100000), outcome: z.enum(["repaired", "written_off"]) }).safeParse({ productId, qty, outcome });
   if (!p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, async (db) => {
-    const { data: s, error } = await db.from("product_stock").select("quantity_owned, quantity_maintenance")
-      .eq("product_id", productId).eq("country", country).single();
-    if (error) return { error };
-    if (qty > s.quantity_maintenance) return { error: { message: "invalid", code: "22023" } };
-    return db.from("product_stock").update({
-      quantity_maintenance: s.quantity_maintenance - qty,
-      quantity_owned: outcome === "written_off" ? s.quantity_owned - qty : s.quantity_owned,
-    }).eq("product_id", productId).eq("country", country);
-  });
+  return run(undefined, (db) => db.rpc("resolve_maintenance", { p_product: productId, p_qty: qty, p_outcome: outcome }));
 }
 
 // ---------- Clients ----------

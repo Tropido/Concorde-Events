@@ -299,7 +299,7 @@ export const fr: Translations = {
     mySpace: "Mon espace pro",
     howPointsLabel: "Les points",
     pointsRule: "1 point pour chaque 10 DT loués.",
-    pointsText: "Les points sont crédités quand une location est terminée. Votre niveau monte automatiquement avec vos points.",
+    pointsText: "Les points sont crédités quand une location est terminée et soldée. Votre niveau monte automatiquement avec vos points.",
     compareTitle: "Particulier, Particulier+ ou professionnel",
     feature: "Ce que vous obtenez",
     compare: [

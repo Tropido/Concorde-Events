@@ -15,7 +15,7 @@ const EMPTY: ProductFormValue = {
   width: null, height: null, depth: null, dimension_unit: "cm", weight_kg: null, seating_capacity: null, setup_minutes: null,
   deposit_amount: null, highlights_fr: [], highlights_en: [], highlights_ar: [], care_fr: null, care_en: null, care_ar: null, tags: [],
   minimum_nights: 1, featured: false, status: "active", images: [], image_fit: "contain", owned: 0, prices: { retail: null, pro: null },
-  internal: { purchase_cost: null, purchase_date: null, supplier: null, storage_location: null, condition: null, internal_notes: null },
+  internal: { purchase_cost: null, purchase_date: null, supplier: null, storage_location: null, condition: null, internal_notes: null, repair_fee: null, replacement_value: null },
 };
 
 const n = (v: unknown) => (v === null || v === undefined ? null : Number(v));
@@ -55,6 +55,7 @@ export default async function AdminProductPage({ params }: { params: Promise<{ i
         purchase_cost: n(internal.purchase_cost), purchase_date: (internal.purchase_date as string) ?? null, supplier: (internal.supplier as string) ?? null,
         storage_location: (internal.storage_location as string) ?? null, condition: (internal.condition as ProductFormValue["internal"]["condition"]) ?? null,
         internal_notes: (internal.internal_notes as string) ?? null,
+        repair_fee: n(internal.repair_fee), replacement_value: n(internal.replacement_value),
       },
     };
   }

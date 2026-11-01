@@ -111,6 +111,24 @@ export async function confirmRequest(db: PGlite, staff: string, requestId: strin
   return pay(db, staff, requestId, "deposit", Number(accepted.deposit_required));
 }
 
+export async function dispatch(db: PGlite, staff: string, requestId: string) {
+  await as(db, staff, (tx) => tx.query("update public.rental_requests set status = 'dispatched' where id = $1", [requestId]));
+}
+
+export async function receiveReturn(db: PGlite, staff: string, requestId: string, lines: { line_id: string; received: number }[] = []) {
+  await as(db, staff, (tx) => tx.query("select public.receive_return($1, $2)", [requestId, JSON.stringify(lines)]));
+}
+
+export const linesOf = async (db: PGlite, requestId: string) =>
+  (await db.query<{ id: string; quantity: number; product_id: string }>("select id, quantity, product_id from public.request_lines where request_id = $1", [requestId])).rows;
+
+/** Closes the inspection; unless a line says otherwise, every unit is fine. */
+export async function closeInspection(db: PGlite, staff: string, requestId: string, over: Record<string, unknown>[] = [], caution: Record<string, unknown> = { outcome: "none" }) {
+  const lines = (await linesOf(db, requestId)).map((l, i) => ({ line_id: l.id, ok: l.quantity, ...over[i] }));
+  return as(db, staff, async (tx) =>
+    (await tx.query<{ r: Record<string, unknown> }>("select public.close_inspection($1, $2, $3) as r", [requestId, JSON.stringify(lines), JSON.stringify(caution)])).rows[0].r);
+}
+
 export async function issueQuote(db: PGlite, staff: string, requestId: string, currency: "EUR" | "TND" = "TND") {
   return as(db, staff, async (tx) =>
     (await tx.query<{ id: string }>("select public.issue_quote($1, $2) as id", [requestId, currency])).rows[0].id,

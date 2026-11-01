@@ -51,8 +51,8 @@ describe("returns", () => {
     await confirmRequest(db, manager, r.id);
     await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'dispatched' where id = $1", [r.id]));
     const line = (await db.query<{ id: string }>("select id from public.request_lines where request_id = $1", [r.id])).rows[0].id;
-    const dup = JSON.stringify([{ line_id: line, quantity: 2 }, { line_id: line, quantity: 2 }]);
-    await expect(as(db, manager, (tx) => tx.query("select public.return_request($1, $2)", [r.id, dup]))).rejects.toThrow(/duplicate_or_invalid_lines/);
+    const dup = JSON.stringify([{ line_id: line, received: 2 }, { line_id: line, received: 2 }]);
+    await expect(as(db, manager, (tx) => tx.query("select public.receive_return($1, $2)", [r.id, dup]))).rejects.toThrow(/duplicate_or_invalid_lines/);
   });
 });
 

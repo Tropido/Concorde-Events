@@ -4,7 +4,10 @@ import { serviceClient } from "@/lib/supabase/service";
 import { formatDay } from "@/lib/utils/formatters";
 import { parseLang } from "@/lib/prefs";
 import { translations, type Language } from "@/lib/i18n/translations";
-import type { PaymentMethod } from "@/lib/types";
+import { localized } from "@/lib/i18n/localize";
+import { breakdownOf } from "@/lib/order";
+import { formatTND } from "@/lib/utils/formatters";
+import type { InspectionView, PaymentMethod } from "@/lib/types";
 import type { EmailData, EmailKind } from "./copy";
 import { sendEmail, type Attachment } from "./send";
 
@@ -30,6 +33,7 @@ async function bank(db: SupabaseClient) {
 export async function notifyRequest(kind: EmailKind, requestId: string, opts: {
   dedupe?: string; extra?: Partial<EmailData>; attachments?: Attachment[]; staff?: string; withBank?: boolean;
   receipt?: { id: string; method: PaymentMethod; remaining: number };
+  inspection?: InspectionView;
 } = {}) {
   const db = serviceClient();
   if (!db) return;
@@ -39,6 +43,11 @@ export async function notifyRequest(kind: EmailKind, requestId: string, opts: {
     const r = data as unknown as Request;
     const lang = parseLang(r.profiles?.language ?? r.language);
     const method = opts.receipt && translations[lang].order.methods[opts.receipt.method];
+    const i = translations[lang].order.inspection;
+    const report = opts.inspection && {
+      breakdown: opts.inspection.lines.map((l) => `${localized(l, "title", lang)} : ${breakdownOf(l, i.chips).join(" · ")}`),
+      caution: i.cautionResult(opts.inspection.caution_outcome, formatTND(opts.inspection.caution_refunded, lang), formatTND(opts.inspection.caution_retained, lang)),
+    };
     const base: EmailData = {
       reference: r.reference, name: r.customer_name, dates: dates(r, lang), validUntil: r.quote_valid_until ?? undefined,
       ...(r.total_ttc != null ? { total: Number(r.total_ttc) } : {}),
@@ -46,6 +55,7 @@ export async function notifyRequest(kind: EmailKind, requestId: string, opts: {
       ...(r.deposit_due_at ? { dueAt: r.deposit_due_at } : {}),
       ...(opts.withBank ? { bank: await bank(db) } : {}),
       ...opts.extra,
+      ...report,
       ...(method ? { method } : {}),
     };
     await sendEmail({

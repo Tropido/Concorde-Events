@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Download } from "lucide-react";
 import { ProgressBar, StatusPill, StatusTrack } from "@/components/ui/status";
 import { AcceptQuote } from "@/components/order/accept-quote";
+import { ReturnReport } from "@/components/order/return-report";
 import { localized } from "@/lib/i18n/localize";
 import { formatDateTime, formatDay, formatTND } from "@/lib/utils/formatters";
 import type { Language, Translations } from "@/lib/i18n/translations";
@@ -17,6 +18,7 @@ export function OrderView({ view: v, t, lang, token }: { view: Order; t: Transla
   const accepted = v.payment_status !== "unpaid" || v.deposit.paid > 0;
   const depositDue = v.status === "accepted" && v.deposit.paid < v.deposit.required;
   const payable = depositDue || v.payment_status === "balance_due";
+  const finalInvoice = v.invoices.find((i) => i.type === "final");
 
   return (
     <div className="space-y-2.5">
@@ -42,13 +44,15 @@ export function OrderView({ view: v, t, lang, token }: { view: Order; t: Transla
         )}
       </header>
 
+      {v.inspection && <ReturnReport report={v.inspection} invoiceHref={finalInvoice && `/api/invoices/${finalInvoice.id}/pdf${token ? `?t=${token}` : ""}`} />}
+
       <div className="grid items-start gap-2.5 lg:grid-cols-2">
         <section className="card space-y-3 p-6" aria-labelledby="pieces-title">
           <h2 id="pieces-title" className="text-lg font-semibold tracking-tight">{o.piecesTitle}</h2>
           <ul className="divide-y divide-line text-sm">
             {v.lines.map((l) => (
               <li key={l.id} className="flex flex-wrap justify-between gap-2 py-2.5">
-                <span>{l.quantity} × {localized(l, "title", lang)}</span>
+                <span>{l.quantity} × {localized(l, "title", lang)} <span className="ms-1 rounded-full bg-paper px-2 py-0.5 text-[11px] text-ink/70">{o.inspection.logistics[l.logistics_status]}</span></span>
                 <span className="text-xs text-ink/60"><bdi>{formatDay(l.start_date, lang)}</bdi> – <bdi>{formatDay(l.end_date, lang)}</bdi> · {t.common.nights(l.nights)}</span>
               </li>
             ))}

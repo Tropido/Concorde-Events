@@ -6,6 +6,7 @@ import { getT } from "@/lib/i18n/server";
 import { requireViewer } from "@/lib/auth";
 import { createClient } from "@/lib/supabase/server";
 import { OrderView } from "@/components/order/order-view";
+import { withSignedPhotos } from "@/lib/order-photos";
 import type { OrderView as Order } from "@/lib/types";
 
 export default async function AccountRequestPage({ params }: { params: Promise<{ id: string }> }) {
@@ -19,7 +20,7 @@ export default async function AccountRequestPage({ params }: { params: Promise<{
   return (
     <>
       <Link href="/account" className="inline-flex items-center gap-1 px-1 text-xs text-ink/60 hover:text-ink"><ChevronLeft className="h-3.5 w-3.5 rtl:rotate-180" aria-hidden />{t.account.requests}</Link>
-      <OrderView view={data as Order} t={t} lang={prefs.lang} />
+      <OrderView view={await withSignedPhotos(data as Order)} t={t} lang={prefs.lang} />
     </>
   );
 }

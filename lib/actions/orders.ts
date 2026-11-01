@@ -9,7 +9,7 @@ import { notifyRequest } from "@/lib/email/notify";
 import { deliver, type EmailRow } from "@/lib/email/send";
 import { serviceClient } from "@/lib/supabase/service";
 import { run, type AdminResult } from "./run";
-import type { PaymentMethod } from "@/lib/types";
+import type { InspectionView, OrderView, PaymentMethod } from "@/lib/types";
 
 const uuid = z.string().uuid();
 const METHODS = ["virement", "especes", "cheque", "d17", "flouci", "konnect", "carte", "autre"] as const;
@@ -156,6 +156,65 @@ export async function cancelOrder(requestId: string, reason: string, credit: num
   });
   if (result.ok) await notifyRequest("cancelled", requestId, { extra: { reason: p.data.reason }, attachments: note ? [{ type: "invoice", id: note }] : [] });
   return result;
+}
+
+const Received = z.array(z.object({ line_id: uuid, received: z.number().int().min(0).max(10000) })).min(1).max(50);
+
+export async function receiveReturn(requestId: string, lines: z.input<typeof Received>): Promise<AdminResult> {
+  const p = Received.safeParse(lines);
+  if (!uuid.safeParse(requestId).success || !p.success) return { ok: false, error: "invalid" };
+  const result = await run(undefined, (db) => db.rpc("receive_return", { p_request: requestId, p_lines: p.data }));
+  if (result.ok) await notifyRequest("return_received", requestId, { staff: "Retour reçu" });
+  return result;
+}
+
+/** Work in progress: any shape the panel keeps, up to a sensible size. */
+export async function saveInspectionDraft(requestId: string, draft: unknown): Promise<AdminResult> {
+  if (!uuid.safeParse(requestId).success || JSON.stringify(draft).length > 50_000) return { ok: false, error: "invalid" };
+  return run(undefined, (db, me) => db.from("inspection_drafts").upsert({ request_id: requestId, draft, updated_by: me }));
+}
+
+const InspectionInput = z.array(z.object({
+  line_id: uuid,
+  ok: z.number().int().min(0), minor: z.number().int().min(0), damaged: z.number().int().min(0), broken: z.number().int().min(0), missing: z.number().int().min(0),
+  fee: z.number().min(0).max(10_000_000),
+  fee_reason: z.string().trim().max(300),
+  note: z.string().trim().max(1000),
+  photos: z.array(z.string().max(300)).max(6),
+  photos_visible: z.boolean(),
+})).min(1).max(50);
+
+type Closed = { invoice_id: string; total_fees: number; payment_status: string; net_to_pay: number };
+
+export async function closeInspection(requestId: string, lines: z.input<typeof InspectionInput>, caution: { outcome: "refund" | "retain" | "none"; amount: number }): Promise<AdminResult> {
+  const p = InspectionInput.safeParse(lines);
+  if (!uuid.safeParse(requestId).success || !p.success) return { ok: false, error: "invalid" };
+  let out: Closed | null = null;
+  let report: InspectionView | null = null;
+  let invoice: string | undefined;
+  const result = await run(undefined, async (db) => {
+    const r = await db.rpc("close_inspection", { p_request: requestId, p_lines: p.data, p_caution: caution });
+    out = r.data as Closed;
+    if (!r.error) {
+      const view = (await db.rpc("my_request_view", { p_request: requestId })).data as OrderView | null;
+      report = view?.inspection ?? null;
+      invoice = view?.invoices.find((i) => i.type === "final")?.number;
+    }
+    return r;
+  });
+  if (!result.ok || !out) return result;
+  const done = out as Closed;
+  await notifyRequest("inspection_closed", requestId, {
+    withBank: done.net_to_pay > 0, inspection: report ?? undefined,
+    extra: { fees: done.total_fees, netToPay: Math.max(0, done.net_to_pay), invoice }, attachments: [{ type: "invoice", id: done.invoice_id }],
+  });
+  if (done.payment_status === "paid") await settled(requestId);
+  return result;
+}
+
+export async function recordFound(productId: string, qty: number): Promise<AdminResult> {
+  if (!uuid.safeParse(productId).success || !Number.isInteger(qty) || qty < 1) return { ok: false, error: "invalid" };
+  return run(["admin"], (db) => db.rpc("record_found", { p_product: productId, p_qty: qty }));
 }
 
 const ExtraInput = z.object({

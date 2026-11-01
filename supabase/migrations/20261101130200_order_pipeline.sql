@@ -190,7 +190,7 @@ begin
       when 'validated' then new.status in ('submitted', 'accepted', 'rejected', 'cancelled')
       when 'accepted' then new.status in ('confirmed', 'cancelled')
       when 'confirmed' then new.status in ('accepted', 'dispatched', 'cancelled')
-      when 'dispatched' then new.status in ('returned', 'completed')
+      when 'dispatched' then new.status = 'returned'
       when 'returned' then new.status = 'completed'
       else false
     end) then
@@ -988,7 +988,7 @@ begin
     'quote_valid_until', r.quote_valid_until, 'can_accept', v_can_accept, 'reacceptance_required', r.reacceptance_required,
     'lines', (select coalesce(jsonb_agg(jsonb_build_object(
         'id', l.id, 'title_fr', p.title_fr, 'title_en', p.title_en, 'title_ar', p.title_ar, 'quantity', l.quantity,
-        'start_date', l.start_date, 'end_date', l.end_date, 'nights', l.nights) order by l.start_date, p.title_fr), '[]'::jsonb)
+        'start_date', l.start_date, 'end_date', l.end_date, 'nights', l.nights, 'logistics_status', l.logistics_status) order by l.start_date, p.title_fr), '[]'::jsonb)
       from public.request_lines l join public.products p on p.id = l.product_id where l.request_id = p_request),
     'invoices', (select coalesce(jsonb_agg(jsonb_build_object(
         'id', i.id, 'type', i.type, 'number', i.number, 'issued_at', i.issued_at, 'due_at', i.due_at, 'ttc', i.ttc, 'total_due', i.total_due
@@ -996,6 +996,7 @@ begin
     'payments', (select coalesce(jsonb_agg(jsonb_build_object(
         'id', x.id, 'kind', x.kind, 'method', x.method, 'amount', x.amount, 'received_at', x.received_at, 'reference', x.reference
       ) order by x.received_at), '[]'::jsonb) from public.payments x where x.request_id = p_request and x.voided_at is null),
+    'inspection', private.inspection_view(p_request),
     'company', public.company_payment_info()
   );
 end;

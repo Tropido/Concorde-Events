@@ -41,6 +41,8 @@ export const adminAr: AdminTranslations = {
     reason_required: "السبب إجباري.",
     invalid_amount: "هذا المبلغ غير صالح.",
     quote_not_accepted: "يجب قبول العرض أولاً.",
+    inspection_sum: "يجب تحديد حالة كل وحدة في كل الأسطر.",
+    caution_unresolved: "حددوا مصير الضمان قبل الإغلاق.",
     generic: "تعذّر تنفيذ الإجراء. حاولوا مجدداً.",
   },
   saved: "تم الحفظ.",

@@ -23,6 +23,8 @@ const MESSAGES: [string, AdminErrorCode][] = [
   ["invalid_amount", "invalid_amount"],
   ["quote_not_accepted", "quote_not_accepted"],
   ["invalid_total", "invalid_amount"],
+  ["inspection_sum_mismatch", "inspection_sum"],
+  ["caution_unresolved", "caution_unresolved"],
 ];
 
 export function dbError(e: { message: string; code?: string }): { ok: false; error: AdminErrorCode } {

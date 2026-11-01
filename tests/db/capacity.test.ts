@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { acceptQuote, as, confirmRequest, freshDb, isoDate, issueQuote, pay, productId, submit, user } from "./harness";
+import { acceptQuote, as, closeInspection, confirmRequest, dispatch, freshDb, isoDate, issueQuote, pay, productId, receiveReturn, submit, user } from "./harness";
 
 let db: PGlite;
 let client: string, manager: string;
@@ -128,8 +128,8 @@ describe("capacity", () => {
     await expect(setStatus(r.id, "cancelled")).rejects.toThrow(/use cancel_order/);
     await pay(db, manager, r.id, "deposit", 575);
     await expect(setStatus(r.id, "completed")).rejects.toThrow(/invalid status transition/);
-    await setStatus(r.id, "dispatched");
-    await expect(setStatus(r.id, "completed")).rejects.toThrow(/dedicated function/);
+    await dispatch(db, manager, r.id);
+    await expect(setStatus(r.id, "completed")).rejects.toThrow(/invalid status transition/);
     await expect(setStatus(r.id, "returned")).rejects.toThrow(/dedicated function/);
     await expect(setStatus(r.id, "cancelled")).rejects.toThrow(/invalid status transition/);
   });
@@ -163,16 +163,14 @@ describe("capacity", () => {
     await as(db, manager, (tx) => tx.query("select public.cancel_order($1, 'test cleanup')", [r.id]));
   });
 
-  it("handles returns idempotently and keeps damaged units out until repaired", async () => {
+  it("keeps damaged units out until repaired", async () => {
     const r = await submit(db, client, [line(4, 1, 3)]);
     await confirmRequest(db, manager, r.id);
     await setStatus(r.id, "dispatched");
-    const lineId = (await db.query<{ id: string }>("select id from public.request_lines where request_id = $1", [r.id])).rows[0].id;
-    const ret = () => as(db, manager, (tx) => tx.query("select public.return_request($1, $2)", [r.id, JSON.stringify([{ line_id: lineId, quantity: 1 }])]));
     const stock = async () => (await db.query("select quantity_owned, quantity_maintenance from public.product_stock where product_id = $1 and country = 'TN'", [sofa])).rows[0];
 
-    await ret();
-    await ret(); // second click: no effect
+    await receiveReturn(db, manager, r.id);
+    await closeInspection(db, manager, r.id, [{ ok: 3, damaged: 1 }]);
     expect(await stock()).toEqual({ quantity_owned: 12, quantity_maintenance: 1 });
     expect(await available(sofa, "TN", 5)).toBe(11);
 
@@ -191,7 +189,9 @@ describe("capacity", () => {
     await db.exec("alter table public.request_lines enable trigger guard_line");
     expect(await available(sofa, "TN", 0)).toBe(0); // still out today
     expect(await available(sofa, "TN", 1)).toBe(12); // expected back by tomorrow
-    await as(db, manager, (tx) => tx.query("select public.return_request($1)", [r.id]));
+    await receiveReturn(db, manager, r.id);
+    expect(await available(sofa, "TN", 0)).toBe(0); // back, but held until inspected
+    await closeInspection(db, manager, r.id);
     expect(await available(sofa, "TN", 0)).toBe(12);
   });
 

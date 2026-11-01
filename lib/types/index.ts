@@ -21,6 +21,8 @@ export type RequestStatus =
 export type PaymentStatus = "unpaid" | "deposit_due" | "deposit_paid" | "balance_due" | "paid" | "refunded";
 export type PaymentKind = "deposit" | "balance" | "caution_held" | "caution_refund" | "caution_retained" | "refund";
 export type PaymentMethod = "virement" | "especes" | "cheque" | "d17" | "flouci" | "konnect" | "carte" | "autre";
+export type InspectionCondition = "ok" | "minor" | "damaged" | "broken" | "missing";
+export type LogisticsStatus = "reserved" | "delivered" | "under_inspection" | "inspected";
 export type MessageChannel = "site" | "contact" | "whatsapp";
 export type MessageStatus = "open" | "in_progress" | "resolved";
 export type EventType = "wedding" | "engagement" | "birthday" | "corporate" | "gala" | "private" | "other";
@@ -211,15 +213,26 @@ export interface QuoteSnapshot {
   total: number;
 }
 
+export interface InspectionLine extends Record<InspectionCondition, number> {
+  line_id: string; title_fr: string; title_en: string | null; title_ar: string | null; sent: number; received: number; fee: number; fee_reason: string | null;
+  /** Photo paths from the database, signed links once they reach a page. */
+  photos: string[];
+}
+
+export interface InspectionView {
+  closed_at: string; caution_outcome: "refund" | "retain" | "none"; caution_retained: number; caution_refunded: number; total_fees: number; lines: InspectionLine[];
+}
+
 /** private.client_view: an order as its client may see it. */
 export interface OrderView {
   id: string; reference: string; status: RequestStatus; created_at: string; customer_name: string; event_type: EventType | null; event_venue: string | null;
   guest_count: number | null; delivery_mode: DeliveryMode | null; user_id: string | null; payment_status: PaymentStatus; total_ttc: number | null; paid_total: number; owed: number;
   deposit: { rate: number; required: number; paid: number; due_at: string | null; deadline_hours: number };
   quote: { id: string; revision: number; snapshot: QuoteSnapshot } | null; quote_valid_until: string | null; can_accept: boolean; reacceptance_required: boolean;
-  lines: { id: string; title_fr: string; title_en: string | null; title_ar: string | null; quantity: number; start_date: string; end_date: string; nights: number }[];
+  lines: { id: string; title_fr: string; title_en: string | null; title_ar: string | null; quantity: number; start_date: string; end_date: string; nights: number; logistics_status: LogisticsStatus }[];
   invoices: { id: string; type: "deposit" | "final" | "credit_note"; number: string; issued_at: string; due_at: string | null; ttc: number; total_due: number }[];
   payments: { id: string; kind: PaymentKind; method: PaymentMethod; amount: number; received_at: string; reference: string | null }[];
+  inspection: InspectionView | null;
   company: { legal_name: string; bank_name: string | null; rib: string | null; iban: string | null; phone: string | null; email: string | null };
 }
 

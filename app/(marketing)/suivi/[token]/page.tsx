@@ -3,6 +3,7 @@ import Link from "next/link";
 import { getT } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import { OrderView } from "@/components/order/order-view";
+import { withSignedPhotos } from "@/lib/order-photos";
 import { waLink } from "@/lib/utils/whatsapp";
 import type { OrderView as Order } from "@/lib/types";
 
@@ -33,7 +34,7 @@ export default async function TrackPage({ params }: { params: Promise<{ token: s
         <p>{t.order.trackIntro}</p>
         <Link href="/register" className="underline underline-offset-2">{t.order.createAccount}</Link>
       </div>
-      <OrderView view={data as Order} t={t} lang={prefs.lang} token={token} />
+      <OrderView view={await withSignedPhotos(data as Order)} t={t} lang={prefs.lang} token={token} />
     </div>
   );
 }

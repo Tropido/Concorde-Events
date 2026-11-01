@@ -74,7 +74,7 @@ const COPY = {
     deposit: "Facture d'acompte", final: "Facture", credit_note: "Avoir", number: "N°", issued: "Émise le", due: "Échéance", ref: "Référence",
     seller: "Émetteur", buyer: "Client", mf: "Matricule fiscal", rne: "RNE", designation: "Désignation", qty: "Qté", unit: "P.U.", vat: "TVA", amount: "Montant TTC",
     ht: "Total HT", tva: "TVA", ttc: "Total TTC", stamp: "Droit de timbre", due_total: "Total à payer", rate: "Taux", base: "Base HT", tax: "TVA",
-    deposits: "Acompte(s) facturé(s)", paid: "Déjà réglé", net: "Net à payer", credit: "Trop-perçu", caution: "Caution retenue (frais de remise en état)",
+    deposits: "Acompte(s) facturé(s)", paid: "Déjà réglé", depositLeft: "Reste dû sur acompte(s)", net: "Net à payer", credit: "Trop-perçu", caution: "Caution retenue (frais de remise en état)",
     words: "Arrêtée la présente facture à la somme de :", wordsCredit: "Arrêté le présent avoir à la somme de :", payTitle: "Règlement", bank: "Banque", rib: "RIB", iban: "IBAN", mention: "À mentionner", page: "Page",
     cancels: "Annule partiellement ou totalement la facture", reason: "Motif", quote: "Devis", proforma: "Facture proforma", validUntil: "Valable jusqu'au", event: "Événement", nights: "nuits",
     notInvoice: "Ce document n'est pas une facture.", receipt: "Reçu de paiement", received: "Reçu le", method: "Mode", remaining: "Reste à payer", paidAmount: "Montant reçu",
@@ -84,7 +84,7 @@ const COPY = {
     deposit: "Deposit invoice", final: "Invoice", credit_note: "Credit note", number: "No.", issued: "Issued on", due: "Due", ref: "Reference",
     seller: "From", buyer: "Client", mf: "Tax ID", rne: "RNE", designation: "Description", qty: "Qty", unit: "Unit", vat: "VAT", amount: "Amount incl. VAT",
     ht: "Total excl. VAT", tva: "VAT", ttc: "Total incl. VAT", stamp: "Stamp duty", due_total: "Total due", rate: "Rate", base: "Base", tax: "VAT",
-    deposits: "Deposit invoice(s)", paid: "Already paid", net: "Net to pay", credit: "Overpaid", caution: "Security deposit kept (repair costs)",
+    deposits: "Deposit invoice(s)", paid: "Already paid", depositLeft: "Still due on deposit(s)", net: "Net to pay", credit: "Overpaid", caution: "Security deposit kept (repair costs)",
     words: "This invoice amounts to:", wordsCredit: "This credit note amounts to:", payTitle: "Payment", bank: "Bank", rib: "RIB", iban: "IBAN", mention: "Reference to quote", page: "Page",
     cancels: "Credits in part or in full invoice", reason: "Reason", quote: "Quote", proforma: "Pro forma invoice", validUntil: "Valid until", event: "Event", nights: "nights",
     notInvoice: "This document is not an invoice.", receipt: "Payment receipt", received: "Received on", method: "Method", remaining: "Still to pay", paidAmount: "Amount received",
@@ -225,7 +225,7 @@ function InvoiceDocument({ i, logo }: { i: InvoiceSnapshot; logo?: string | null
             {finalInvoice ? (
               <View style={{ marginTop: 5 }}>
                 {i.caution_retained ? <TotalRow label={c.caution} value={`− ${m(i.caution_retained)}`} /> : null}
-                {i.paid ? <TotalRow label={c.paid} value={`− ${m(i.paid)}`} /> : null}
+                {i.paid ? <TotalRow label={i.paid < 0 ? c.depositLeft : c.paid} value={i.paid < 0 ? `+ ${m(-i.paid)}` : `− ${m(i.paid)}`} /> : null}
                 <TotalRow bold label={(i.net_to_pay ?? 0) < 0 ? c.credit : c.net} value={m(Math.abs(i.net_to_pay ?? 0))} />
               </View>
             ) : null}

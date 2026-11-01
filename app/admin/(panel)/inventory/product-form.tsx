@@ -232,6 +232,8 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
         <Section id="internal" title={a.sections.internal} hint={a.internalHint}>
           <div className="grid gap-3 md:grid-cols-3">
             <F label={a.purchaseCost}><Money value={v.internal.purchase_cost} onChange={(x) => setInternal("purchase_cost", x)} zero /></F>
+            <F label={t.order.inspection.repairFee}><Money value={v.internal.repair_fee} onChange={(x) => setInternal("repair_fee", x)} zero /></F>
+            <F label={t.order.inspection.replacementValue} hint={t.order.inspection.repairHint}><Money value={v.internal.replacement_value} onChange={(x) => setInternal("replacement_value", x)} zero /></F>
             {/* Not inside a <label>: clicks in the picker popover would re-trigger it. */}
             <div><span className="field-label">{a.purchaseDate}</span><DatePicker label={a.purchaseDate} value={v.internal.purchase_date ?? ""} onChange={(iso) => setInternal("purchase_date", iso || null)} /></div>
             <F label={a.condition}>
