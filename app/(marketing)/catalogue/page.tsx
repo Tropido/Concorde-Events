@@ -5,6 +5,7 @@ import { getViewer } from "@/lib/auth";
 import { getCatalogue } from "@/lib/catalogue";
 import { isApprovedPro } from "@/lib/types";
 import { EventDatesChip } from "@/components/ui/date-range-picker";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { CatalogueView } from "./catalogue-view";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -29,7 +30,7 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
           <EventDatesChip />
           {pro && (
             <p className="pill">
-              <span className="h-2 w-2 rounded-full" style={{ background: pro.tier.color }} aria-hidden />
+              <TierEmblem code={pro.tier.code} rank={pro.tier.rank} color={pro.tier.color} size={16} />
               {t.pro.pricesShown(pro.tier.name, pro.discount)}
             </p>
           )}

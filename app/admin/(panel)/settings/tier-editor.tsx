@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useApp } from "@/lib/context/app-context";
 import { saveTier, type AdminResult } from "@/lib/actions/admin";
 import { ResultText } from "@/components/admin/ui";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import type { TierRow } from "@/lib/pro";
 
 const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
@@ -30,6 +31,7 @@ export function TierEditor({ tier, readOnly }: { tier: TierRow; readOnly: boolea
       }}>
       <fieldset disabled={readOnly} className="space-y-3">
         <div className="flex items-center gap-3">
+          <TierEmblem code={tier.code} rank={tier.rank} color={v.color} size={40} title={v.name_fr} />
           <input type="color" value={v.color} onChange={(e) => setV({ ...v, color: e.target.value })} aria-label={a.color} className="h-9 w-9 cursor-pointer rounded-full bg-card p-0.5" />
           <input value={v.name_fr} onChange={(e) => setV({ ...v, name_fr: e.target.value })} required maxLength={60} aria-label={a.nameFr} className="field bg-card py-2 text-base font-semibold" />
           <input value={v.name_ar} onChange={(e) => setV({ ...v, name_ar: e.target.value })} maxLength={60} dir="rtl" lang="ar" aria-label={a.nameAr} className="field bg-card py-2" />

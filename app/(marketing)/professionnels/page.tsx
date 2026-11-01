@@ -4,6 +4,7 @@ import { Check, Minus } from "lucide-react";
 import { getT } from "@/lib/i18n/server";
 import { getViewer } from "@/lib/auth";
 import { getTiers } from "@/lib/tiers";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { formatNumber } from "@/lib/utils/formatters";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -71,13 +72,11 @@ export default async function ProsPage() {
           <h2 id="tiers-title" className="px-1 pb-4 text-3xl font-semibold tracking-tight sm:text-4xl">{p.tiersTitle}</h2>
           <ol className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {tiers.map((tier, i) => (
-              <li key={tier.code} className="card flex flex-col gap-5 p-6">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2.5">
-                    <span className="h-3 w-3 rounded-full" style={{ background: tier.color }} aria-hidden />
-                    <span className="text-xl font-semibold tracking-tight">{tier.name}</span>
-                  </span>
-                  <span className="font-mono text-xs text-ink/50">{tier.minPoints > 0 ? p.fromPoints(formatNumber(tier.minPoints, prefs.lang)) : p.entry}</span>
+              <li key={tier.code} className="card relative flex flex-col gap-5 p-6">
+                <TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={64} className="absolute end-5 top-5" />
+                <div className="pe-20">
+                  <p className="text-xl font-semibold tracking-tight">{tier.name}</p>
+                  <p className="font-mono text-xs text-ink/50">{tier.minPoints > 0 ? p.fromPoints(formatNumber(tier.minPoints, prefs.lang)) : p.entry}</p>
                 </div>
                 <p className="display text-5xl">{tier.discount > 0 ? <bdi dir="ltr">−{tier.discount}%</bdi> : p.proRates}</p>
                 <ul className="space-y-2 text-sm">

@@ -5,10 +5,11 @@ import { Plus } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { cn } from "@/lib/utils/formatters";
 import { PriceTag, ProductTile } from "@/components/ui/kit";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import type { CatalogueProduct } from "@/lib/types";
 
 export function ProductCard({ product: p, priority, className, light }: { product: CatalogueProduct; priority?: boolean; className?: string; light?: boolean }) {
-  const { t, setBookingProduct } = useApp();
+  const { t, viewer, setBookingProduct } = useApp();
   const soldOut = p.stock <= 0;
   return (
     <article className={cn("group relative flex flex-col gap-3", className)}>
@@ -19,7 +20,7 @@ export function ProductCard({ product: p, priority, className, light }: { produc
           <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
             {p.badge ? <span className="pill py-1 text-[11px]">{t.product.badges[p.badge]}</span> : <span />}
             {p.price?.tier === "pro" && p.price.discount > 0 && (
-              <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium text-card"><bdi dir="ltr">−{p.price.discount}%</bdi></span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-ink py-1 pe-2.5 ps-1.5 text-[11px] font-medium text-card">{viewer?.pro && <TierEmblem code={viewer.pro.tier.code} rank={viewer.pro.tier.rank} color={viewer.pro.tier.color} size={16} />}<bdi dir="ltr">−{p.price.discount}%</bdi></span>
             )}
           </div>
         </ProductTile>

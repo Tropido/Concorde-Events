@@ -7,6 +7,7 @@ import { Crown, FileText, Heart, LogOut, MessageSquare, UserRound } from "lucide
 import { useApp } from "@/lib/context/app-context";
 import { signOut } from "@/lib/actions/auth";
 import { cn, initials } from "@/lib/utils/formatters";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import type { Viewer } from "@/lib/types";
 
 export function AccountNav({ viewer }: { viewer: Viewer }) {
@@ -31,7 +32,7 @@ export function AccountNav({ viewer }: { viewer: Viewer }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{viewer.fullName ?? viewer.email}</p>
           {isPro && pro && viewer.status === "approved" ? (
-            <p className="flex items-center gap-1.5 text-xs text-ink/60"><span className="h-2 w-2 rounded-full" style={{ background: pro.tier.color }} aria-hidden />{t.pro.memberOf(pro.tier.name)}</p>
+            <p className="flex items-center gap-1.5 text-xs text-ink/60"><TierEmblem code={pro.tier.code} rank={pro.tier.rank} color={pro.tier.color} size={16} />{t.pro.memberOf(pro.tier.name)}</p>
           ) : (
             <p className="text-xs text-ink/60">{type}</p>
           )}

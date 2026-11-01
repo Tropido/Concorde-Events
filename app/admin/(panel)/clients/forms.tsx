@@ -7,6 +7,7 @@ import { useApp } from "@/lib/context/app-context";
 import { adjustPoints, saveClientNotes, saveProProgramme, setAccountStatus, setRole, type AdminResult } from "@/lib/actions/admin";
 import { ActionButton, Avatar, ResultText, btnDanger, btnPrimary } from "@/components/admin/ui";
 import { ease } from "@/components/ui/kit";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { cn, formatDateTime, formatNumber, formatTND } from "@/lib/utils/formatters";
 import type { AccountStatus, AppRole, EventType, ProTier } from "@/lib/types";
 
@@ -39,7 +40,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
           <div className="min-w-0">
             <p className="flex flex-wrap items-center gap-2 font-semibold tracking-tight">
               {c.full_name ?? c.email}
-              {c.role === "professional" && tier && <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 text-[11px] font-medium"><span className="h-2 w-2 rounded-full" style={{ background: tier.color }} aria-hidden />{tier.name}</span>}
+              {c.role === "professional" && tier && <span className="inline-flex items-center gap-1 rounded-full bg-paper py-0.5 pe-2 ps-1 text-[11px] font-medium"><TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={16} />{tier.name}</span>}
               {flags.slice(0, 3).map((f) => <span key={f} className="rounded-full bg-tone-sand px-2 py-0.5 text-[11px] font-normal">{a.flagLabels[f as keyof typeof a.flagLabels] ?? f}</span>)}
             </p>
             <p className="truncate text-xs text-ink/55">
@@ -137,7 +138,7 @@ function Programme({ profileId, account, tiers }: { profileId: string; account: 
         {tiers.map((x) => (
           <button key={x.code} type="button" aria-pressed={tier === x.code} onClick={() => { setTier(x.code); setLocked(true); }}
             className={cn("rounded-xl px-2 py-2 text-xs ring-1 transition", tier === x.code ? "bg-ink text-card ring-ink" : "bg-paper ring-transparent hover:ring-line")}>
-            <span className="block font-medium">{x.name}</span><span className="block opacity-60"><bdi dir="ltr">{x.discount ? `−${x.discount}%` : "0%"}</bdi></span>
+            <TierEmblem code={x.code} rank={x.rank} color={x.color} size={24} className="mx-auto mb-1" /><span className="block font-medium">{x.name}</span><span className="block opacity-60"><bdi dir="ltr">{x.discount ? `−${x.discount}%` : "0%"}</bdi></span>
           </button>
         ))}
       </div>

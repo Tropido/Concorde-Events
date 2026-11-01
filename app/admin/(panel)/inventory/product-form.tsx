@@ -9,6 +9,7 @@ import { saveProduct, type AdminResult, type ProductInput } from "@/lib/actions/
 import { ResultText } from "@/components/admin/ui";
 import { PriceTag, ProductTile } from "@/components/ui/kit";
 import { DatePicker } from "@/components/ui/date-range-picker";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { discounted } from "@/lib/pro";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { TONES, type ProTier, type Tone } from "@/lib/types";
@@ -218,7 +219,7 @@ export function ProductForm({ initial, categories, canEditPrices, tiers }: {
               <ul className="grid grid-cols-2 gap-2 text-sm sm:grid-cols-3">
                 {tiers.map((tier) => (
                   <li key={tier.code} className="flex items-center justify-between gap-2 rounded-xl bg-card px-3 py-2">
-                    <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full" style={{ background: tier.color }} aria-hidden />{tier.name}</span>
+                    <span className="flex items-center gap-1.5"><TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={16} />{tier.name}</span>
                     <span className="tabular-nums">{formatTND(discounted((prices.pro ?? prices.retail)!, tier.discount), language)}</span>
                   </li>
                 ))}

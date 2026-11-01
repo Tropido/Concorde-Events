@@ -51,6 +51,20 @@
   --bad: 154 68 53;
   --bad-soft: 243 220 213;
   --shadow: 43 29 19;
+  /* Tier emblem metals (plain colours, used directly in SVG gradients). */
+  --metal-bronze-1: #c9925f;
+  --metal-bronze-2: #8c5a33;
+  --metal-silver-1: #dcdbd8;
+  --metal-silver-2: #8f8f92;
+  --metal-gold-1: #f0d27a;
+  --metal-gold-2: #b6862a;
+  --metal-platinum-1: #ece9e3;
+  --metal-platinum-2: #98948b;
+  --metal-diamond-1: #f1f8fb;
+  --metal-diamond-2: #8fb2c4;
+  --metal-royal-1: #4a3322;
+  --metal-royal-2: #2b1d13;
+  --metal-royal-gold: #c9a35a;
 }
 
 /* Dark palette built from the same owner colours: coffee-black surfaces, almond-cream ink. */
@@ -83,6 +97,19 @@
   --bad: 229 143 126;
   --bad-soft: 61 31 25;
   --shadow: 0 0 0;
+  --metal-bronze-1: #d8a273;
+  --metal-bronze-2: #a06c42;
+  --metal-silver-1: #e8e7e4;
+  --metal-silver-2: #a4a4a7;
+  --metal-gold-1: #f5dc8e;
+  --metal-gold-2: #c79a3c;
+  --metal-platinum-1: #f2efe9;
+  --metal-platinum-2: #aeaaa1;
+  --metal-diamond-1: #f6fbfd;
+  --metal-diamond-2: #a5c6d6;
+  --metal-royal-1: #5a4029;
+  --metal-royal-2: #2f2015;
+  --metal-royal-gold: #dfbb73;
 }
 
 [dir="rtl"] {
@@ -251,6 +278,18 @@
     .group:is(:hover, :focus-visible, :active) .tile-icon {
       transform: none;
     }
+  }
+}
+
+/* Royal Elite: a slow sheen on hover, nothing at all with reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .emblem:hover .emblem-sheen {
+    animation: emblem-sheen 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@keyframes emblem-sheen {
+  to {
+    transform: skewX(-18deg) translateX(110px);
   }
 }
 

@@ -6,7 +6,8 @@ import { requireViewer } from "@/lib/auth";
 import { getCatalogue } from "@/lib/catalogue";
 import { createClient } from "@/lib/supabase/server";
 import { isApprovedPro } from "@/lib/types";
-import { formatDateTime, formatNumber, tierSwatch } from "@/lib/utils/formatters";
+import { TierEmblem } from "@/components/ui/tier-emblem";
+import { formatDateTime, formatNumber } from "@/lib/utils/formatters";
 import { MarginCalculator } from "./margin-calculator";
 
 export default async function ProSpacePage() {
@@ -40,7 +41,7 @@ export default async function ProSpacePage() {
                 <p className="font-mono text-[10.5px] uppercase tracking-label text-almondCream/50">{p.yourTier}</p>
                 <p className="display mt-2 text-5xl">{pro.tier.name}</p>
               </div>
-              <span className="h-12 w-12 rounded-full ring-4 ring-almondCream/10" style={{ background: tierSwatch(pro.tier.color) }} aria-hidden />
+              <TierEmblem code={pro.tier.code} rank={pro.tier.rank} color={pro.tier.color} size={64} />
             </div>
             <div className="space-y-3">
               <div className="flex items-baseline justify-between text-sm">

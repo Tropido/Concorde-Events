@@ -9,6 +9,7 @@ import { toggleFavourite } from "@/lib/actions/account";
 import { BookingPanel } from "@/components/catalogue/date-selection-modal";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { PriceTag, ProductTile, ease } from "@/components/ui/kit";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { cn, formatNumber, formatTND } from "@/lib/utils/formatters";
 import { pricesVisible, type CatalogueProduct } from "@/lib/types";
 
@@ -93,7 +94,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
 
           <div className="space-y-1">
             <PriceTag price={p.price} size="lg" />
-            {p.price && <p className="text-xs text-ink/55">{p.price.tier === "pro" ? t.product.proPriceNote(p.price.discount) : t.product.retailNote}</p>}
+            {p.price && <p className="flex items-center gap-1.5 text-xs text-ink/55">{p.price.tier === "pro" && viewer?.pro && <TierEmblem code={viewer.pro.tier.code} rank={viewer.pro.tier.rank} color={viewer.pro.tier.color} size={16} />}{p.price.tier === "pro" ? t.product.proPriceNote(p.price.discount) : t.product.retailNote}</p>}
           </div>
 
           {p.description && <p className="text-[15px] leading-relaxed text-ink/70 text-pretty">{p.description}</p>}

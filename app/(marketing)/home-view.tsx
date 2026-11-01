@@ -7,7 +7,8 @@ import { AnimatePresence, motion } from "framer-motion";
 import { ArrowRight, ChevronDown, MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { waLink } from "@/lib/utils/whatsapp";
-import { cn, tierSwatch } from "@/lib/utils/formatters";
+import { cn } from "@/lib/utils/formatters";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { HeroSearch } from "@/components/home/hero-search";
 import { CategoryIcon } from "@/lib/category-icons";
@@ -163,7 +164,7 @@ function ProTeaser({ tiers }: { tiers: ProTier[] }) {
           <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {tiers.map((tier) => (
               <li key={tier.code} className="rounded-2xl bg-almondCream/[0.06] p-4 ring-1 ring-almondCream/10">
-                <span className="mb-3 block h-1.5 w-8 rounded-full" style={{ background: tierSwatch(tier.color) }} aria-hidden />
+                <TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={40} className="mb-3" />
                 <p className="font-semibold tracking-tight">{tier.name}</p>
                 <p className="text-xs text-almondCream/55">{tier.discount > 0 ? t.pro.tierDiscount(tier.discount) : t.pro.proRates}</p>
               </li>
