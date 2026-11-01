@@ -12,7 +12,7 @@ begin
   for f in
     select p.oid::regprocedure
     from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname in ('public', 'private') and p.prokind = 'f'
+    where n.nspname in ('public', 'private') and p.prokind = 'f' and p.proowner = current_user::regrole
   loop
     execute format('revoke execute on function %s from public', f);
   end loop;
