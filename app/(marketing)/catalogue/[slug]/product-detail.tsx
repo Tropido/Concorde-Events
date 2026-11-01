@@ -9,8 +9,9 @@ import { toggleFavourite } from "@/lib/actions/account";
 import { BookingPanel } from "@/components/catalogue/date-selection-modal";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { PriceTag, ProductTile, ease } from "@/components/ui/kit";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { cn, formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { CatalogueProduct } from "@/lib/types";
+import { pricesVisible, type CatalogueProduct } from "@/lib/types";
 
 type Tab = "details" | "dimensions" | "care";
 
@@ -27,7 +28,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
     ...p.highlights.map((h) => ({ icon: Sparkles, text: h })),
     ...(p.seatingCapacity ? [{ icon: Users, text: t.product.seats(p.seatingCapacity) }] : []),
     ...(p.setupMinutes ? [{ icon: Clock, text: t.product.setup(p.setupMinutes) }] : []),
-    ...(p.deposit ? [{ icon: ShieldCheck, text: t.product.deposit(formatTND(p.deposit, language)) }] : []),
+    ...(p.deposit && pricesVisible(viewer) ? [{ icon: ShieldCheck, text: t.product.deposit(formatTND(p.deposit, language)) }] : []),
   ];
 
   const specs: [string, string | null][] = [
@@ -55,7 +56,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
         <div className="space-y-2.5 lg:sticky lg:top-20">
           <AnimatePresence mode="wait" initial={false}>
             <motion.div key={image} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.35, ease }}>
-              <ProductTile src={p.images[image]} alt={p.title} tone={p.tone} priority sizes="(max-width: 1024px) 100vw, 58vw" className="aspect-square rounded-[1.75rem] sm:aspect-[5/4]" />
+              <ProductTile src={p.images[image]} alt={p.title} tone={p.tone} fit={p.imageFit} priority sizes="(max-width: 1024px) 100vw, 58vw" className="aspect-square rounded-[1.75rem] sm:aspect-[5/4]" />
             </motion.div>
           </AnimatePresence>
           {p.images.length > 1 && (
@@ -63,7 +64,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
               {p.images.map((src, i) => (
                 <button key={src} type="button" onClick={() => setImage(i)} aria-pressed={image === i} aria-label={`${p.title} ${i + 1}`}
                   className={cn("shrink-0 rounded-2xl ring-2 ring-offset-2 ring-offset-paper transition", image === i ? "ring-ink" : "ring-transparent opacity-70 hover:opacity-100")}>
-                  <ProductTile src={src} alt="" tone={p.tone} sizes="88px" className="h-20 w-20 rounded-2xl" />
+                  <ProductTile src={src} alt="" tone={p.tone} fit={p.imageFit} sizes="88px" className="h-20 w-20 rounded-2xl" />
                 </button>
               ))}
             </div>
@@ -93,9 +94,7 @@ export function ProductDetail({ product: p, related, favourite }: { product: Cat
 
           <div className="space-y-1">
             <PriceTag price={p.price} size="lg" />
-            <p className="text-xs text-ink/55">
-              {p.price?.tier === "pro" ? t.product.proPriceNote(p.price.discount) : t.product.retailNote}
-            </p>
+            {p.price && <p className="flex items-center gap-1.5 text-xs text-ink/55">{p.price.tier === "pro" && viewer?.pro && <TierEmblem code={viewer.pro.tier.code} rank={viewer.pro.tier.rank} color={viewer.pro.tier.color} size={16} />}{p.price.tier === "pro" ? t.product.proPriceNote(p.price.discount) : t.product.retailNote}</p>}
           </div>
 
           {p.description && <p className="text-[15px] leading-relaxed text-ink/70 text-pretty">{p.description}</p>}

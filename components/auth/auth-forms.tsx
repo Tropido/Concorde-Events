@@ -3,11 +3,12 @@
 import { useActionState, useState } from "react";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { Briefcase, Check, MailCheck, UserRound } from "lucide-react";
+import { Briefcase, Check, MailCheck, Sparkles, UserRound } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { requestPasswordReset, signIn, signUp, updatePassword, type AuthState } from "@/lib/actions/auth";
 import { cn } from "@/lib/utils/formatters";
 import { ease } from "@/components/ui/kit";
+import { EVENT_TYPES } from "@/lib/types";
 
 export const ACTIVITIES = ["wedding_planner", "agency", "venue", "caterer", "designer", "photographer", "other"] as const;
 
@@ -67,7 +68,9 @@ export function LoginForm({ next, scope, linkError }: { next?: string; scope: "c
   );
 }
 
-export function RegisterForm({ initialType }: { initialType: "customer" | "professional" }) {
+type AccountType = "customer" | "customer_plus" | "professional";
+
+export function RegisterForm({ initialType }: { initialType: AccountType }) {
   const { t } = useApp();
   const a = t.auth;
   const [state, action, pending] = useActionState(signUp, null);
@@ -78,7 +81,7 @@ export function RegisterForm({ initialType }: { initialType: "customer" | "profe
       <div role="status" className="space-y-3 rounded-3xl bg-paper p-6 text-center">
         <MailCheck className="mx-auto h-8 w-8 text-toffeeBrown" aria-hidden />
         <p className="text-lg font-semibold tracking-tight">{a.checkEmailTitle}</p>
-        <p className="text-sm text-ink/60">{type === "professional" ? a.checkEmailPro : a.checkEmailText}</p>
+        <p className="text-sm text-ink/60">{type === "professional" ? a.checkEmailPro : type === "customer_plus" ? a.checkEmailPlus : a.checkEmailText}</p>
       </div>
     );
   }
@@ -86,13 +89,13 @@ export function RegisterForm({ initialType }: { initialType: "customer" | "profe
     <form action={action} className="space-y-6">
       <fieldset>
         <legend className="field-label">{a.accountType}</legend>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {([["customer", UserRound], ["professional", Briefcase]] as const).map(([v, Icon]) => (
-            <label key={v} className={cn("relative cursor-pointer rounded-2xl p-4 ring-1 transition", type === v ? "bg-card ring-ink" : "bg-paper ring-transparent hover:ring-line")}>
+        <div className="grid gap-2 sm:grid-cols-3">
+          {([["customer", UserRound, a.customer, a.customerHint], ["customer_plus", Sparkles, a.customerPlus, a.customerPlusHint], ["professional", Briefcase, a.professional, a.professionalHint]] as const).map(([v, Icon, title, hint]) => (
+            <label key={v} className={cn("relative cursor-pointer rounded-2xl p-4 ring-1 transition has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-toffeeBrown", type === v ? "bg-card ring-ink" : "bg-paper ring-transparent hover:ring-line")}>
               <input type="radio" name="account_type" value={v} checked={type === v} onChange={() => setType(v)} className="sr-only" />
               <Icon className="mb-3 h-5 w-5" aria-hidden />
-              <span className="block text-sm font-semibold">{v === "customer" ? a.customer : a.professional}</span>
-              <span className="block text-xs text-ink/55">{v === "customer" ? a.customerHint : a.professionalHint}</span>
+              <span className="block text-sm font-semibold">{title}</span>
+              <span className="block text-xs text-ink/60">{hint}</span>
               {type === v && <Check className="absolute end-3 top-3 h-4 w-4" aria-hidden />}
             </label>
           ))}
@@ -103,11 +106,23 @@ export function RegisterForm({ initialType }: { initialType: "customer" | "profe
         <Field label={a.fullName}><input name="full_name" required maxLength={120} autoComplete="name" className="field" /></Field>
         <Field label={a.phone}><input name="phone" type="tel" required minLength={6} maxLength={40} autoComplete="tel" className="field" dir="ltr" /></Field>
         <Field label={a.email} wide><input name="email" type="email" required maxLength={254} autoComplete="email" className="field" dir="ltr" /></Field>
-        <Field label={`${a.city} · ${t.common.optional}`}><input name="city" maxLength={80} autoComplete="address-level2" className="field" /></Field>
+        <Field label={type === "customer_plus" ? a.city : `${a.city} · ${t.common.optional}`}><input name="city" required={type === "customer_plus"} maxLength={80} autoComplete="address-level2" className="field" /></Field>
         <Field label={a.password} hint={a.passwordHint}><input name="password" type="password" required minLength={8} maxLength={200} autoComplete="new-password" className="field" dir="ltr" /></Field>
       </div>
 
       <AnimatePresence initial={false}>
+        {type === "customer_plus" && (
+          <motion.fieldset initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.35, ease }} className="overflow-hidden">
+            <legend className="mb-3 text-sm font-semibold">{a.plusSection}</legend>
+            <Field label={`${a.eventType} · ${t.common.optional}`}>
+              <select name="event_type" defaultValue="" className="field">
+                <option value="">—</option>
+                {EVENT_TYPES.map((x) => <option key={x} value={x}>{t.eventTypes[x]}</option>)}
+              </select>
+            </Field>
+            <p className="mt-3 text-xs text-ink/60">{a.plusNote}</p>
+          </motion.fieldset>
+        )}
         {type === "professional" && (
           <motion.fieldset initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.35, ease }} className="overflow-hidden">
             <legend className="mb-3 text-sm font-semibold">{a.proSection}</legend>
@@ -128,7 +143,7 @@ export function RegisterForm({ initialType }: { initialType: "customer" | "profe
       </AnimatePresence>
 
       <ErrorText state={state} />
-      <button type="submit" disabled={pending} className="btn-ink h-12 w-full">{pending ? t.common.loading : type === "professional" ? a.submitPro : a.submitRegister}</button>
+      <button type="submit" disabled={pending} className="btn-ink h-12 w-full">{pending ? t.common.loading : type === "professional" ? a.submitPro : type === "customer_plus" ? a.submitPlus : a.submitRegister}</button>
       <p className="text-center text-sm"><Link href="/login" className="text-ink/60 hover:text-ink">{a.haveAccount}</Link></p>
     </form>
   );
@@ -140,7 +155,7 @@ export function ForgotForm() {
   if (state?.ok) return <p role="status" className="rounded-2xl bg-paper p-4 text-sm">{t.auth.resetSent}</p>;
   return (
     <form action={action} className="space-y-4">
-      <Field label={t.auth.email}><input name="email" type="email" required autoComplete="email" className="field" dir="ltr" /></Field>
+      <Field label={t.auth.identifier}><input name="identifier" required maxLength={254} autoComplete="username" className="field" dir="ltr" /></Field>
       <ErrorText state={state} />
       <button type="submit" disabled={pending} className="btn-ink h-12 w-full">{pending ? t.common.loading : t.auth.sendReset}</button>
     </form>
@@ -167,7 +182,7 @@ export function RegisterAside() {
     <aside className="grain tone-sand flex flex-col justify-between gap-8 rounded-[1.75rem] p-6 sm:p-10">
       <p className="text-3xl font-semibold leading-tight tracking-tight text-balance">{t.auth.asideTitle}</p>
       <div className="space-y-6 text-sm">
-        {[{ title: t.auth.customer, items: t.auth.customerPerks }, { title: t.auth.professional, items: t.auth.proPerks }].map((g) => (
+        {[{ title: t.auth.customer, items: t.auth.customerPerks }, { title: t.auth.customerPlus, items: t.auth.plusPerks }, { title: t.auth.professional, items: t.auth.proPerks }].map((g) => (
           <div key={g.title} className="space-y-2">
             <p className="label">{g.title}</p>
             <ul className="space-y-1.5">{g.items.map((x) => <li key={x} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />{x}</li>)}</ul>

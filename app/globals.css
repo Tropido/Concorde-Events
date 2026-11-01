@@ -7,7 +7,109 @@
   --font-display: "Inter Tight Variable", "IBM Plex Sans Arabic", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono Variable", ui-monospace, "SFMono-Regular", monospace;
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Owner palette: the same in both themes. */
+  --almond-cream: 237 224 212;
+  --desert-sand: 230 204 178;
+  --tan: 221 184 146;
+  --faded-copper: 176 137 104;
+  --coffee-bean: 127 85 57;
+  --toffee-brown: 156 102 68;
+}
+
+/* Colour tokens are RGB channels, used as rgb(var(--x) / alpha) by tailwind.config.ts.
+   .theme-light pins a subtree to the light palette (the quote document). */
+:root,
+.theme-light {
   color-scheme: light;
+  --paper: 247 241 234;
+  --card: 252 249 245;
+  --raised: 252 249 245;
+  --ink: 43 29 19;
+  --ink-soft: 92 61 40;
+  --line: 233 220 205;
+  --espresso: 43 29 19;
+  --espresso-fg: 252 249 245;
+  --tone-almond: 237 224 212;
+  --tone-sand: 233 211 189;
+  --tone-tan: 229 201 168;
+  --tone-copper: 220 194 169;
+  --tone-cream: 243 233 220;
+  --tone-stone: 228 220 211;
+  /* Product stages: the tile behind a photo. Light in both themes (a lit display case), so
+     cut-out photos on white backgrounds blend in with mix-blend-multiply. */
+  --stage-almond: 237 224 212;
+  --stage-sand: 233 211 189;
+  --stage-tan: 229 201 168;
+  --stage-copper: 220 194 169;
+  --stage-cream: 243 233 220;
+  --stage-stone: 228 220 211;
+  --ok: 79 107 74;
+  --ok-soft: 227 234 221;
+  --warn: 138 93 23;
+  --warn-soft: 244 230 200;
+  --bad: 154 68 53;
+  --bad-soft: 243 220 213;
+  --shadow: 43 29 19;
+  /* Tier emblem metals (plain colours, used directly in SVG gradients). */
+  --metal-bronze-1: #c9925f;
+  --metal-bronze-2: #8c5a33;
+  --metal-silver-1: #dcdbd8;
+  --metal-silver-2: #8f8f92;
+  --metal-gold-1: #f0d27a;
+  --metal-gold-2: #b6862a;
+  --metal-platinum-1: #ece9e3;
+  --metal-platinum-2: #98948b;
+  --metal-diamond-1: #f1f8fb;
+  --metal-diamond-2: #8fb2c4;
+  --metal-royal-1: #4a3322;
+  --metal-royal-2: #2b1d13;
+  --metal-royal-gold: #c9a35a;
+}
+
+/* Dark palette built from the same owner colours: coffee-black surfaces, almond-cream ink. */
+.dark {
+  color-scheme: dark;
+  --paper: 24 17 12;
+  --card: 35 25 18;
+  --raised: 45 32 23;
+  --ink: 237 224 212;
+  --ink-soft: 205 184 165;
+  --line: 58 42 30;
+  --espresso: 48 35 26;
+  --espresso-fg: 252 249 245;
+  --tone-almond: 58 44 33;
+  --tone-sand: 61 45 32;
+  --tone-tan: 66 48 31;
+  --tone-copper: 63 44 34;
+  --tone-cream: 51 38 28;
+  --tone-stone: 53 45 39;
+  --stage-almond: 222 208 194;
+  --stage-sand: 219 200 180;
+  --stage-tan: 214 190 162;
+  --stage-copper: 208 186 165;
+  --stage-cream: 228 217 204;
+  --stage-stone: 214 207 199;
+  --ok: 156 191 148;
+  --ok-soft: 34 48 31;
+  --warn: 224 176 98;
+  --warn-soft: 58 44 18;
+  --bad: 229 143 126;
+  --bad-soft: 61 31 25;
+  --shadow: 0 0 0;
+  --metal-bronze-1: #d8a273;
+  --metal-bronze-2: #a06c42;
+  --metal-silver-1: #e8e7e4;
+  --metal-silver-2: #a4a4a7;
+  --metal-gold-1: #f5dc8e;
+  --metal-gold-2: #c79a3c;
+  --metal-platinum-1: #f2efe9;
+  --metal-platinum-2: #aeaaa1;
+  --metal-diamond-1: #f6fbfd;
+  --metal-diamond-2: #a5c6d6;
+  --metal-royal-1: #5a4029;
+  --metal-royal-2: #2f2015;
+  --metal-royal-gold: #dfbb73;
 }
 
 [dir="rtl"] {
@@ -36,11 +138,11 @@
     letter-spacing: 0;
   }
   ::selection {
-    background: #ddb892;
-    color: #2b1d13;
+    background: rgb(var(--tan));
+    color: rgb(var(--espresso));
   }
   :focus-visible {
-    outline: 2px solid #9c6644;
+    outline: 2px solid rgb(var(--toffee-brown));
     outline-offset: 2px;
   }
   input[type="number"]::-webkit-inner-spin-button {
@@ -76,7 +178,7 @@
     @apply btn bg-card text-ink ring-1 ring-line hover:ring-ink/30;
   }
   .btn-toffee {
-    @apply btn bg-toffeeBrown text-card hover:bg-coffeeBean;
+    @apply btn bg-toffeeBrown text-espresso-fg hover:bg-coffeeBean;
   }
   .btn-sm {
     @apply px-3.5 py-2 text-xs;
@@ -99,6 +201,12 @@
   .tone-copper { @apply bg-tone-copper; }
   .tone-cream { @apply bg-tone-cream; }
   .tone-stone { @apply bg-tone-stone; }
+  .stage-almond { @apply bg-stage-almond; }
+  .stage-sand { @apply bg-stage-sand; }
+  .stage-tan { @apply bg-stage-tan; }
+  .stage-copper { @apply bg-stage-copper; }
+  .stage-cream { @apply bg-stage-cream; }
+  .stage-stone { @apply bg-stage-stone; }
 
   /* Legacy surface names still used by a few screens. */
   .apple-card {
@@ -121,6 +229,67 @@
   }
   .text-pretty {
     text-wrap: pretty;
+  }
+}
+
+/* Home hero: the headline sits in a notch cut out of the banner. The two concave corners are
+   paper-coloured squares masked by a circle, mirrored in RTL. */
+@layer components {
+  @media (min-width: 1024px) {
+    .hero-notch {
+      background: rgb(var(--paper));
+      border-start-end-radius: 2.25rem;
+    }
+    .hero-notch::before,
+    .hero-notch::after {
+      content: "";
+      position: absolute;
+      width: 2.25rem;
+      height: 2.25rem;
+      background: radial-gradient(circle at 100% 0, transparent 2.24rem, rgb(var(--paper)) 2.25rem);
+    }
+    [dir="rtl"] .hero-notch::before,
+    [dir="rtl"] .hero-notch::after {
+      background: radial-gradient(circle at 0 0, transparent 2.24rem, rgb(var(--paper)) 2.25rem);
+    }
+    .hero-notch::before {
+      bottom: 100%;
+      inset-inline-start: 0;
+    }
+    .hero-notch::after {
+      bottom: 0;
+      inset-inline-start: 100%;
+    }
+  }
+
+  /* Home category tiles. */
+  .group:is(:hover, :focus-visible, :active) .tile-overlay,
+  .group:is(:hover, :focus-visible, :active) .tile-more {
+    opacity: 1;
+  }
+  .group:is(:hover, :focus-visible, :active) .tile-text {
+    color: rgb(var(--espresso-fg));
+  }
+  .group:is(:hover, :focus-visible, :active) .tile-icon {
+    color: rgb(var(--almond-cream) / 0.45);
+    transform: translateY(-0.75rem);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .group:is(:hover, :focus-visible, :active) .tile-icon {
+      transform: none;
+    }
+  }
+}
+
+/* Royal Elite: a slow sheen on hover, nothing at all with reduced motion. */
+@media (prefers-reduced-motion: no-preference) {
+  .emblem:hover .emblem-sheen {
+    animation: emblem-sheen 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+}
+@keyframes emblem-sheen {
+  to {
+    transform: skewX(-18deg) translateX(110px);
   }
 }
 
@@ -147,7 +316,7 @@
   height: 10px;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(127, 85, 57, 0.25);
+  background: rgb(var(--ink) / 0.2);
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: padding-box;

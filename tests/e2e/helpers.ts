@@ -1,6 +1,6 @@
 import net from "node:net";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 // Same local-network workaround as the dev server (see playwright.config.ts).
 net.setDefaultAutoSelectFamilyAttemptTimeout(1500);
@@ -29,7 +29,7 @@ export const service: SupabaseClient = enabled
 
 export const createdUsers: string[] = [];
 
-export async function makeUser(label: string, role?: "manager" | "admin") {
+export async function makeUser(label: string, role?: "manager" | "admin" | "customer_plus" | "professional") {
   const email = `${label}-${run}@it.concorde.test`;
   const password = `E2e-${crypto.randomUUID()}`;
   const { data, error } = await service.auth.admin.createUser({
@@ -57,4 +57,11 @@ export function isoDate(days: number) {
   const d = new Date();
   d.setUTCDate(d.getUTCDate() + days);
   return d.toISOString().slice(0, 10);
+}
+
+/** Clicks a day in a date picker calendar, moving forward month by month until it shows. */
+export async function pickDay(scope: Locator, iso: string) {
+  const day = scope.locator(`[data-day="${iso}"]`).first();
+  for (let i = 0; i < 24 && !(await day.isVisible()); i++) await scope.getByRole("button", { name: "Mois suivant" }).first().click();
+  await day.click();
 }

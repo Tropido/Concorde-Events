@@ -3,7 +3,7 @@ import { enabled } from "./helpers";
 
 test.skip(!enabled, "needs .env.local + .env.test.local for the TEST Supabase project");
 
-for (const lang of ["fr", "ar"] as const) {
+for (const lang of ["fr", "en", "ar"] as const) {
   test.describe(`${lang} layout`, () => {
     test.beforeEach(async ({ context, baseURL }) => {
       await context.addCookies([{ name: "ce_lang", value: lang, url: baseURL! }]);
@@ -14,6 +14,7 @@ for (const lang of ["fr", "ar"] as const) {
         await page.goto(path);
         await expect(page.locator("html")).toHaveAttribute("dir", lang === "ar" ? "rtl" : "ltr");
         await expect(page.locator("html")).toHaveAttribute("lang", lang);
+        await expect(page).toHaveTitle(/Rent for Events/);
         const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
         expect(overflow).toBeLessThanOrEqual(1);
       });
@@ -37,4 +38,28 @@ test("booking dialog is keyboard operable", async ({ page }) => {
   await page.keyboard.press("Escape");
   await expect(dialog).toBeHidden();
   await expect(book).toBeFocused();
+});
+
+test("date picker works from the keyboard and returns focus", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByRole("form", { name: /rechercher/i });
+  const start = search.getByRole("button", { name: /^dates/i });
+  await start.click();
+  const dialog = page.getByRole("dialog");
+  await expect(dialog).toBeVisible();
+  // Focus starts on today: tomorrow is the start, two days later the return.
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("ArrowRight");
+  await page.keyboard.press("Enter");
+  await dialog.getByRole("button", { name: "Valider" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(search).toContainText("2 nuits");
+
+  await start.click();
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  await expect(start).toBeFocused();
 });

@@ -1,7 +1,8 @@
 import type { Language } from "@/lib/i18n/translations";
 
 // Mirrors the enums in supabase/migrations.
-export type AppRole = "customer" | "professional" | "editor" | "manager" | "admin";
+/** customer = "Particulier", customer_plus = "Particulier+". */
+export type AppRole = "customer" | "customer_plus" | "professional" | "editor" | "manager" | "admin";
 export type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 /** Database enum. The business is Tunisia-only; "FR" only exists on historical rows. */
 export type Country = "FR" | "TN";
@@ -10,20 +11,34 @@ export type PriceTier = "retail" | "pro";
 export type RequestStatus =
   | "submitted"
   | "validated"
+  | "accepted"
   | "confirmed"
   | "dispatched"
+  | "returned"
   | "completed"
   | "cancelled"
   | "rejected";
+export type PaymentStatus = "unpaid" | "deposit_due" | "deposit_paid" | "balance_due" | "paid" | "refunded";
+export type PaymentKind = "deposit" | "balance" | "caution_held" | "caution_refund" | "caution_retained" | "refund";
+export type PaymentMethod = "virement" | "especes" | "cheque" | "d17" | "flouci" | "konnect" | "carte" | "autre";
+export type InspectionCondition = "ok" | "minor" | "damaged" | "broken" | "missing";
+export type LogisticsStatus = "reserved" | "delivered" | "under_inspection" | "inspected";
 export type MessageChannel = "site" | "contact" | "whatsapp";
 export type MessageStatus = "open" | "in_progress" | "resolved";
 export type EventType = "wedding" | "engagement" | "birthday" | "corporate" | "gala" | "private" | "other";
 export const EVENT_TYPES: EventType[] = ["wedding", "engagement", "birthday", "corporate", "gala", "private", "other"];
+/** Collected by the home search, kept for the session. */
+export interface EventContext { type: EventType | null; guests: number | null; city: string | null }
 export type DeliveryMode = "delivery" | "pickup";
 export type ContactChannel = "whatsapp" | "phone" | "email";
 export type Tone = "almond" | "sand" | "tan" | "copper" | "cream" | "stone";
 export const TONES: Tone[] = ["almond", "sand", "tan", "copper", "cream", "stone"];
 export type ProductBadge = "new" | "bestseller" | "limited";
+/** "contain": cut-out staged whole on its tile; "cover": ambiance photo filling it. */
+export type ImageFit = "contain" | "cover";
+
+/** Subject of the inbox ticket a Particulier sends to ask for Particulier+ (staff read French). */
+export const PLUS_REQUEST_SUBJECT = "Demande de passage à Particulier+";
 
 /** Operations staff (requests, stock, clients, inbox). */
 export const OPS_ROLES: AppRole[] = ["manager", "admin"];
@@ -61,13 +76,22 @@ export interface Viewer {
   vatNumber: string | null;
   activity: string | null;
   city: string | null;
+  address: string | null;
   website: string | null;
+  /** Language of emails and documents. */
+  language: Language;
   role: AppRole;
   status: AccountStatus;
   pro: ProStatus | null;
 }
 
 export const isApprovedPro = (v: Viewer | null) => v?.role === "professional" && v.status === "approved";
+/** Who sees prices on the site; mirrors private.can_see_retail (RLS stays the authority).
+ *  Visitors and Particuliers (pending Particulier+ included) get "Prix sur devis". */
+export const pricesVisible = (v: Viewer | null) =>
+  !!v && ((v.role === "customer_plus" && v.status === "approved")
+    || (v.role === "professional" && (v.status === "pending" || v.status === "approved"))
+    || (STAFF_ROLES.includes(v.role) && v.status === "approved"));
 export const isStaff = (v: Viewer | null, roles: AppRole[] = STAFF_ROLES) =>
   !!v && v.status === "approved" && roles.includes(v.role);
 
@@ -87,7 +111,7 @@ export interface CatalogueProduct {
   sku: string | null;
   title: string;
   description: string;
-  /** Language the title/description are actually in (AR falls back to FR). */
+  /** Language the title/description are actually in (AR and EN fall back to FR). */
   lang: Language;
   category: { id: string; slug: string; name: string } | null;
   dimensions: { width: number | null; height: number | null; depth: number | null; unit: "cm" | "m" };
@@ -108,6 +132,7 @@ export interface CatalogueProduct {
   minimumNights: number;
   featured: boolean;
   images: string[];
+  imageFit: ImageFit;
   /** Usable units (owned minus maintenance), ignoring bookings. */
   stock: number;
   price: Price | null;
@@ -119,6 +144,8 @@ export interface Category {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  icon: string;
+  tone: Tone;
   count: number;
 }
 
@@ -128,6 +155,8 @@ export interface DraftLine {
   slug: string;
   title: string;
   image: string | null;
+  /** Missing on drafts saved before photo framing existed. */
+  imageFit?: ImageFit;
   tone: Tone;
   quantity: number;
   /** Date-specific availability when the line was added; the server re-checks. */
@@ -144,6 +173,8 @@ export interface QuoteLine {
   slug: string;
   title_fr: string;
   title_ar: string | null;
+  /** Absent on quotes issued before English existed. */
+  title_en?: string | null;
   quantity: number;
   start_date: string;
   end_date: string;
@@ -151,6 +182,13 @@ export interface QuoteLine {
   source_unit_price: number;
   unit_price: number;
   line_total: number;
+  /** Absent on quotes issued before invoicing existed. */
+  vat_rate?: number;
+  ttc?: number;
+}
+
+export interface QuoteExtra {
+  extra_id: string; kind: string; label: string; quantity: number; unit_price: number; line_total: number; vat_rate: number; ht: number; tva: number; ttc: number;
 }
 
 /** Frozen at issue time by public.issue_quote(); never recomputed. Older quotes may carry
@@ -170,13 +208,42 @@ export interface QuoteSnapshot {
   event?: { type: EventType | null; venue: string | null; guests: number | null; delivery_mode: DeliveryMode | null };
   notes: string | null;
   lines: QuoteLine[];
+  extras?: QuoteExtra[];
+  totals?: { ht: number; tva: number; ttc: number; by_rate: { rate: number; ht: number; tva: number; ttc: number }[] };
   total: number;
+}
+
+export interface InspectionLine extends Record<InspectionCondition, number> {
+  line_id: string; title_fr: string; title_en: string | null; title_ar: string | null; sent: number; received: number; fee: number; fee_reason: string | null;
+  /** Photo paths from the database, signed links once they reach a page. */
+  photos: string[];
+}
+
+export interface InspectionView {
+  closed_at: string; caution_outcome: "refund" | "retain" | "none"; caution_retained: number; caution_refunded: number; total_fees: number; lines: InspectionLine[];
+}
+
+/** private.client_view: an order as its client may see it. */
+export interface OrderView {
+  id: string; reference: string; status: RequestStatus; created_at: string; customer_name: string; event_type: EventType | null; event_venue: string | null;
+  guest_count: number | null; delivery_mode: DeliveryMode | null; user_id: string | null; payment_status: PaymentStatus; total_ttc: number | null; paid_total: number; owed: number;
+  deposit: { rate: number; required: number; paid: number; due_at: string | null; deadline_hours: number };
+  quote: { id: string; revision: number; snapshot: QuoteSnapshot } | null; quote_valid_until: string | null; can_accept: boolean; reacceptance_required: boolean;
+  lines: { id: string; title_fr: string; title_en: string | null; title_ar: string | null; quantity: number; start_date: string; end_date: string; nights: number; logistics_status: LogisticsStatus }[];
+  invoices: { id: string; type: "deposit" | "final" | "credit_note"; number: string; issued_at: string; due_at: string | null; ttc: number; total_due: number }[];
+  payments: { id: string; kind: PaymentKind; method: PaymentMethod; amount: number; received_at: string; reference: string | null }[];
+  inspection: InspectionView | null;
+  company: { legal_name: string; bank_name: string | null; rib: string | null; iban: string | null; phone: string | null; email: string | null };
 }
 
 /** Published homepage content (per locale). Every field is optional: missing ones fall
  *  back to the dictionary copy. */
 export interface CMSContent {
-  hero?: { badge?: string; title?: string; titleAccent?: string; subtitle?: string };
+  hero?: { title?: string; titleAccent?: string; subtitle?: string };
+  /** Banner photo in the site-images bucket. A language without one uses the French one. */
+  hero_image?: string | null;
+  /** Rental conditions shown on /conditions; the hash of this text is stored with each acceptance. */
+  terms?: string;
   faqs?: { question: string; answer: string }[];
   /** Real client quotes only; the section is hidden when empty. */
   testimonials?: { quote: string; author: string; role?: string }[];

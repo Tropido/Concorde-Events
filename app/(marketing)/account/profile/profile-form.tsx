@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { useApp } from "@/lib/context/app-context";
 import { updateProfile } from "@/lib/actions/account";
 import { ACTIVITIES } from "@/components/auth/auth-forms";
+import { LANGUAGES } from "@/lib/i18n/translations";
 import type { Viewer } from "@/lib/types";
 
 export function ProfileForm({ viewer }: { viewer: Viewer }) {
@@ -19,6 +20,7 @@ export function ProfileForm({ viewer }: { viewer: Viewer }) {
       {field(a.email, <input value={viewer.email} readOnly disabled className="field opacity-60" dir="ltr" />)}
       {field(a.phone, <input name="phone" type="tel" maxLength={40} defaultValue={viewer.phone ?? ""} className="field" dir="ltr" />)}
       {field(a.city, <input name="city" maxLength={80} defaultValue={viewer.city ?? ""} className="field" />)}
+      {field(t.order.panel.billingAddress, <input name="address" maxLength={240} defaultValue={viewer.address ?? ""} className="field" />)}
       {field(a.company, <input name="company_name" maxLength={120} defaultValue={viewer.companyName ?? ""} className="field" />)}
       {field(a.vat, <input name="vat_number" maxLength={40} defaultValue={viewer.vatNumber ?? ""} className="field" dir="ltr" />)}
       {pro && field(a.activity, (
@@ -28,6 +30,11 @@ export function ProfileForm({ viewer }: { viewer: Viewer }) {
         </select>
       ))}
       {pro && field(a.website, <input name="website" maxLength={200} defaultValue={viewer.website ?? ""} className="field" dir="ltr" />)}
+      {field(t.account.language, (
+        <select name="language" defaultValue={viewer.language} className="field">
+          {LANGUAGES.map((l) => <option key={l} value={l} lang={l}>{{ fr: "Français", en: "English", ar: "العربية" }[l]}</option>)}
+        </select>
+      ))}
       <div className="flex items-center gap-4 pt-2 sm:col-span-2">
         <button type="submit" disabled={pending} className="btn-ink">{pending ? t.common.saving : t.common.save}</button>
         <span aria-live="polite" className="text-sm">

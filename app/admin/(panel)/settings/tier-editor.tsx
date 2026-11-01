@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { useApp } from "@/lib/context/app-context";
 import { saveTier, type AdminResult } from "@/lib/actions/admin";
 import { ResultText } from "@/components/admin/ui";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import type { TierRow } from "@/lib/pro";
 
 const lines = (s: string) => s.split("\n").map((x) => x.trim()).filter(Boolean);
@@ -12,8 +13,8 @@ export function TierEditor({ tier, readOnly }: { tier: TierRow; readOnly: boolea
   const { t } = useApp();
   const a = t.admin.settings;
   const [v, setV] = useState({
-    name_fr: tier.name_fr, name_ar: tier.name_ar ?? "", min_points: tier.min_points, discount_percent: Number(tier.discount_percent),
-    benefits_fr: tier.benefits_fr.join("\n"), benefits_ar: tier.benefits_ar.join("\n"), color: tier.color,
+    name_fr: tier.name_fr, name_ar: tier.name_ar ?? "", name_en: tier.name_en ?? "", min_points: tier.min_points, discount_percent: Number(tier.discount_percent),
+    benefits_fr: tier.benefits_fr.join("\n"), benefits_ar: tier.benefits_ar.join("\n"), benefits_en: tier.benefits_en.join("\n"), color: tier.color,
   });
   const [state, setState] = useState<AdminResult | null>(null);
   const [pending, start] = useTransition();
@@ -24,12 +25,13 @@ export function TierEditor({ tier, readOnly }: { tier: TierRow; readOnly: boolea
       onSubmit={(e) => {
         e.preventDefault();
         start(async () => setState(await saveTier({
-          code: tier.code, name_fr: v.name_fr, name_ar: v.name_ar || null, min_points: v.min_points, discount_percent: v.discount_percent,
-          benefits_fr: lines(v.benefits_fr), benefits_ar: lines(v.benefits_ar), color: v.color,
+          code: tier.code, name_fr: v.name_fr, name_ar: v.name_ar || null, name_en: v.name_en || null, min_points: v.min_points, discount_percent: v.discount_percent,
+          benefits_fr: lines(v.benefits_fr), benefits_ar: lines(v.benefits_ar), benefits_en: lines(v.benefits_en), color: v.color,
         })));
       }}>
       <fieldset disabled={readOnly} className="space-y-3">
         <div className="flex items-center gap-3">
+          <TierEmblem code={tier.code} rank={tier.rank} color={v.color} size={40} title={v.name_fr} />
           <input type="color" value={v.color} onChange={(e) => setV({ ...v, color: e.target.value })} aria-label={a.color} className="h-9 w-9 cursor-pointer rounded-full bg-card p-0.5" />
           <input value={v.name_fr} onChange={(e) => setV({ ...v, name_fr: e.target.value })} required maxLength={60} aria-label={a.nameFr} className="field bg-card py-2 text-base font-semibold" />
           <input value={v.name_ar} onChange={(e) => setV({ ...v, name_ar: e.target.value })} maxLength={60} dir="rtl" lang="ar" aria-label={a.nameAr} className="field bg-card py-2" />
@@ -40,6 +42,14 @@ export function TierEditor({ tier, readOnly }: { tier: TierRow; readOnly: boolea
         </div>
         {f(a.benefitsFr, <textarea rows={3} value={v.benefits_fr} onChange={(e) => setV({ ...v, benefits_fr: e.target.value })} className="field resize-y bg-card" />)}
         {f(a.benefitsAr, <textarea rows={3} dir="rtl" lang="ar" value={v.benefits_ar} onChange={(e) => setV({ ...v, benefits_ar: e.target.value })} className="field resize-y bg-card" />)}
+        <details className="rounded-2xl bg-card p-3">
+          <summary className="cursor-pointer text-sm font-medium">{t.admin.inventory.englishGroup}</summary>
+          <div className="space-y-3 pt-3">
+            <p className="text-[11px] text-ink/50">{t.admin.inventory.englishHint}</p>
+            {f(a.nameEn, <input value={v.name_en} onChange={(e) => setV({ ...v, name_en: e.target.value })} maxLength={60} lang="en" className="field" />)}
+            {f(a.benefitsEn, <textarea rows={3} lang="en" value={v.benefits_en} onChange={(e) => setV({ ...v, benefits_en: e.target.value })} className="field resize-y" />)}
+          </div>
+        </details>
         {!readOnly && <div className="flex items-center gap-3"><button type="submit" disabled={pending} className="btn-ink btn-sm">{t.common.save}</button><ResultText state={state} /></div>}
       </fieldset>
     </form>

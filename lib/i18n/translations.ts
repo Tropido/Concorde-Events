@@ -1,10 +1,15 @@
 import type { DeliveryMode, ContactChannel, EventType, ProductBadge, RequestStatus } from "@/lib/types";
 import type { RangeProblem } from "@/lib/dates";
+import type { Theme } from "@/lib/prefs";
+import type { DayBlock } from "@/lib/date-range";
 import type { AdminTranslations } from "./admin-types";
+import type { OrderTranslations } from "./order-types";
 import { fr } from "./fr";
+import { en } from "./en";
 import { ar } from "./ar";
 
-export type Language = "fr" | "ar";
+export type Language = "fr" | "en" | "ar";
+export const LANGUAGES: Language[] = ["fr", "en", "ar"];
 
 /** Error codes raised by public.submit_request / submit_contact (see migrations). */
 export type SubmitErrorCode =
@@ -16,34 +21,36 @@ export type Activity = "wedding_planner" | "agency" | "venue" | "caterer" | "des
 type Sort = "featured" | "price_asc" | "price_desc" | "name";
 type Item = { title: string; text: string };
 
-// Record<Language, Translations> makes the compiler reject a missing key in either language.
+// Record<Language, Translations> makes the compiler reject a missing key in any language.
 export interface Translations {
   meta: { title: string; description: string };
   nav: {
     home: string; catalogue: string; decoration: string; pros: string; about: string; contact: string;
     account: string; admin: string; logIn: string; signUp: string; menu: string; language: string;
+    theme: string; themes: Record<Theme, string>;
   };
   common: {
     loading: string; save: string; saving: string; cancel: string; close: string; back: string; confirm: string;
     edit: string; delete: string; search: string; all: string; optional: string; signOut: string; perNight: string;
     total: string; status: string; actions: string; details: string; reference: string; open: string; viewAll: string;
-    units: (n: number) => string; nights: (n: number) => string; priceOnRequest: string; errorGeneric: string; retry: string;
+    units: (n: number) => string; nights: (n: number) => string; priceOnRequest: string; seePrices: string; priceInQuote: string; errorGeneric: string; retry: string;
     notFoundTitle: string; notFoundText: string; backHome: string; unavailableTitle: string; unavailableText: string;
     noData: string; skipToContent: string;
   };
   requestStatus: Record<RequestStatus, string>;
   eventTypes: Record<EventType, string>;
   hero: {
-    badge: string; title: string; titleAccent: string; subtitle: string; ctaExplore: string; ctaWhatsapp: string;
-    whatsappGreeting: string; facts: Item[];
-    quickBooking: { title: string; startDate: string; endDate: string; save: string; hint: string; datesSaved: string };
+    title: string; titleAccent: string; subtitle: string; ctaWhatsapp: string; whatsappGreeting: string;
   };
   home: {
-    featuredLabel: string; badgeRing: string; chooseDates: string; catalogueSoon: string; collection: string;
+    search: {
+      label: string; event: string; anyEvent: string; dates: string; guests: string; city: string; anyCity: string;
+      submit: string; cta: string; sheetTitle: string; next: string; show: string;
+    };
     picksTitle: string; viewAll: string; howTitle: string; howIntro: string; steps: Item[];
     faqTitle: string; faqs: { question: string; answer: string }[];
   };
-  categories: { title: string; pieces: (n: number) => string };
+  categories: { title: string; pieces: (n: number) => string; seeAll: (n: number) => string };
   testimonials: { title: string };
   catalogue: {
     title: string; subtitle: string; searchPlaceholder: string; filterLabel: string; sortLabel: string; sort: Record<Sort, string>;
@@ -53,9 +60,15 @@ export interface Translations {
   booking: {
     title: string; start: string; end: string; quantity: string; available: (n: number) => string; soldOut: string;
     soldOutShort: string; checking: string; add: string; minNights: (n: number) => string; nightsRule: string;
-    summary: (qty: number, nights: number) => string; rangeErrors: Record<RangeProblem, string>; decrease: string; increase: string;
+    summary: (qty: number, nights: number) => string; summaryQty: (qty: number, nights: number) => string; rangeErrors: Record<RangeProblem, string>; decrease: string; increase: string;
   };
   calendar: { prev: string; next: string; hint: string };
+  picker: {
+    choose: string; dialog: string; dialogSingle: string; clear: string; apply: string; edit: string; pickEnd: string;
+    yourDates: string; chooseDates: string;
+    states: { start: string; end: string; inRange: string; today: string; limited: string; available: (n: number) => string };
+    blocked: Record<DayBlock, string>;
+  };
   scheduling: { legendAvailable: string; legendSelected: string; legendLimited: string; legendFull: string };
   bag: {
     title: string; short: string; pieces: (n: number) => string; emptyTitle: string; emptyText: string; browse: string;
@@ -83,7 +96,7 @@ export interface Translations {
     tierDiscount: (n: number) => string; proRates: string; pricesShown: (tier: string, discount: number) => string;
     discountApplied: (tier: string) => string; memberOf: (tier: string) => string;
     pageTitle: string; pageIntro: string; mySpace: string; howPointsLabel: string; pointsRule: string; pointsText: string;
-    compareTitle: string; feature: string; compare: { label: string; customer: boolean | string; pro: boolean | string }[];
+    compareTitle: string; feature: string; compare: { label: string; customer: boolean | string; plus: boolean | string; pro: boolean | string }[];
     yes: string; no: string; tiersTitle: string; fromPoints: (n: string) => string; entry: string;
     everythingIn: (name: string) => string; tiersNote: string; yourTier: string; points: string;
     toNext: (points: string, tier: string) => string; topTier: string; progress: string; yourBenefits: string;
@@ -92,14 +105,15 @@ export interface Translations {
   auth: {
     loginTitle: string; loginSubtitle: string; adminLoginTitle: string; adminLoginSubtitle: string; email: string;
     password: string; forgot: string; submitLogin: string; noAccount: string; registerTitle: string; registerSubtitle: string;
-    accountType: string; customer: string; customerHint: string; professional: string; professionalHint: string;
+    accountType: string; customer: string; customerHint: string; customerPlus: string; customerPlusHint: string; professional: string; professionalHint: string;
+    plusSection: string; plusNote: string; eventType: string; submitPlus: string; checkEmailPlus: string; pendingTitlePlus: string; plusPerks: string[];
     proSection: string; proNote: string; fullName: string; phone: string; city: string; company: string; activity: string;
     activityPlaceholder: string; activities: Record<Activity, string>; vat: string; website: string; passwordHint: string;
     submitRegister: string; submitPro: string; haveAccount: string; checkEmailTitle: string; checkEmailText: string;
-    checkEmailPro: string; forgotTitle: string; forgotSubtitle: string; sendReset: string; resetSent: string;
+    checkEmailPro: string; forgotTitle: string; forgotSubtitle: string; identifier: string; sendReset: string; resetSent: string;
     resetTitle: string; newPassword: string; confirmPassword: string; updatePassword: string; linkInvalid: string;
     noStaffAccess: string;
-    errors: { invalidCredentials: string; emailNotConfirmed: string; weakPassword: string; mismatch: string; rateLimited: string; proFields: string; generic: string };
+    errors: { invalidCredentials: string; emailNotConfirmed: string; weakPassword: string; mismatch: string; rateLimited: string; proFields: string; plusFields: string; generic: string };
     pendingTitle: string; rejectedTitle: string; rejectedText: string; suspendedTitle: string; suspendedText: string;
     asideTitle: string; customerPerks: string[]; proPerks: string[];
   };
@@ -111,6 +125,9 @@ export interface Translations {
     newMessage: string; subject: string; message: string; send: string; noMessages: string; reply: string;
     staffReply: string; you: string; profileSaved: string; proToolsTitle: string; proToolsIntro: string; proOnly: string;
     calcProduct: string; marginLabel: string; clientPrice: string; costPrice: string; profit: string; pendingBanner: string;
+    pendingBannerPlus: string; types: Record<"customer" | "customer_plus" | "professional", string>;
+    upgradeTitle: string; upgradeText: string; upgradeCta: string; upgradeSent: string; upgradePending: string;
+    language: string;
   };
   contact: {
     title: string; subtitle: string; name: string; email: string; phone: string; subject: string; message: string;
@@ -122,13 +139,14 @@ export interface Translations {
     title: string; issuer: string; print: string; issuedOn: string; validUntil: string; client: string; event: string;
     guests: (n: number) => string; period: string; item: string; qty: string; nights: string; unitPrice: string;
     lineTotal: string; total: string; legacyFx: (rate: string) => string; notInvoice: string; tierPro: string;
-    tierRetail: string; notes: string;
+    tierRetail: string; notes: string; byCompany: string;
   };
   footer: {
     statement: string; aboutText: string; shop: string; account: string; proRegister: string; myRequests: string;
-    whatsapp: string; whatsappCta: string; rights: string; tagline: string;
+    whatsapp: string; whatsappCta: string; rights: string; tagline: string; signature: string;
   };
   admin: AdminTranslations;
+  order: OrderTranslations;
 }
 
-export const translations: Record<Language, Translations> = { fr, ar };
+export const translations: Record<Language, Translations> = { fr, en, ar };

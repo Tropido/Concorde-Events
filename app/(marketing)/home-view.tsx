@@ -1,117 +1,53 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, CalendarDays, ChevronDown, MessageCircle } from "lucide-react";
+import { ArrowRight, ChevronDown, MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
-import { todayIn, validateRange } from "@/lib/dates";
 import { waLink } from "@/lib/utils/whatsapp";
 import { cn } from "@/lib/utils/formatters";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { ProductCard } from "@/components/catalogue/product-card";
-import { PillTabs, PriceTag, ProductTile, RotatingBadge, ease } from "@/components/ui/kit";
+import { HeroSearch } from "@/components/home/hero-search";
+import { CategoryIcon } from "@/lib/category-icons";
+import { PillTabs, ease } from "@/components/ui/kit";
 import type { CatalogueProduct, Category, CMSContent, ProTier } from "@/lib/types";
 
-const enter = (i: number) => ({
-  initial: { opacity: 0, y: 18, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  transition: { duration: 0.8, ease, delay: 0.08 * i },
-});
-
 export function HomeView({ products, categories, cms, tiers }: { products: CatalogueProduct[]; categories: Category[]; cms: CMSContent; tiers: ProTier[] }) {
-  const { t, setBookingProduct } = useApp();
+  const { t } = useApp();
   const hero = { ...t.hero, ...Object.fromEntries(Object.entries(cms.hero ?? {}).filter(([, v]) => v)) };
   const faqs = cms.faqs?.length ? cms.faqs : t.home.faqs;
   const testimonials = cms.testimonials ?? [];
   const available = products.filter((p) => p.stock > 0);
-  const featured = available.find((p) => p.featured && p.images[0]) ?? available.find((p) => p.images[0]) ?? available[0];
-  const spotlight = categories.filter((c) => c.count > 0).sort((a, b) => b.count - a.count)[0];
-  const spotlightProduct = spotlight && available.find((p) => p.category?.id === spotlight.id && p.images[0] && p.id !== featured?.id);
 
   return (
     <div className="space-y-24 pb-6">
-      {/* Bento hero: one orchestrated entrance, nothing else moves on load. */}
-      <section className="shell pt-3">
-        <div className="grid gap-2.5 lg:grid-cols-12">
-          <motion.div {...enter(0)} className="card flex flex-col justify-between gap-10 p-6 sm:p-10 lg:col-span-7">
-            <span className="pill w-fit"><span className="h-1.5 w-1.5 rounded-full bg-toffeeBrown" aria-hidden />{hero.badge}</span>
-            <div className="space-y-6">
-              <h1 className="display max-w-[12ch] text-[clamp(2.75rem,7vw,5.75rem)] text-balance">{hero.title}</h1>
-              <p className="max-w-md text-[15px] leading-relaxed text-ink/65 text-pretty">{hero.subtitle}</p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/catalogue" className="btn-ink">{hero.ctaExplore}</Link>
-                <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn-light">
-                  <MessageCircle className="h-4 w-4" aria-hidden />{hero.ctaWhatsapp}
-                </a>
-              </div>
+      {/* The navbar floats over the banner, as in the reference. */}
+      <section className="shell -mt-14">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease }} className="relative">
+          <div className="relative">
+            <div className="grain relative h-[26rem] overflow-hidden rounded-[2.25rem] bg-[linear-gradient(135deg,rgb(var(--desert-sand)),rgb(var(--faded-copper))_55%,rgb(var(--coffee-bean)))] sm:h-[32rem] lg:h-[clamp(34rem,76vh,46rem)]">
+              {cms.hero_image && <Image src={cms.hero_image} alt="" fill priority sizes="100vw" className="object-cover" />}
+              <span className="absolute inset-0 bg-gradient-to-t from-espresso/25 via-transparent to-espresso/10" aria-hidden />
             </div>
-            <ul className="grid gap-3 border-t border-line pt-5 text-sm sm:grid-cols-3">
-              {t.hero.facts.map((f) => (
-                <li key={f.title}><p className="font-semibold tracking-tight">{f.title}</p><p className="text-xs text-ink/55">{f.text}</p></li>
-              ))}
-            </ul>
-          </motion.div>
-
-          {featured ? (
-            <motion.article {...enter(1)} className="group relative flex min-h-[460px] flex-col overflow-hidden rounded-[1.75rem] lg:col-span-5 lg:row-span-2">
-              <ProductTile src={featured.images[0]} alt={featured.title} tone={featured.tone} sizes="(max-width: 1024px) 100vw, 40vw" priority className="absolute inset-0" />
-              <div className="relative flex items-start justify-between p-5 sm:p-6">
-                <div lang={featured.lang}>
-                  <p className="label">{t.home.featuredLabel}</p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight">{featured.title}</h2>
-                </div>
-                <RotatingBadge text={t.home.badgeRing}><ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" /></RotatingBadge>
-              </div>
-              <div className="relative mt-auto m-3 flex items-center gap-2 rounded-full bg-card/90 p-1.5 ps-5 backdrop-blur">
-                <PriceTag price={featured.price} size="sm" />
-                <Link href={`/catalogue/${featured.slug}`} className="ms-auto rounded-full px-3 py-2 text-xs font-medium hover:bg-paper">{t.common.details}</Link>
-                <button type="button" onClick={() => setBookingProduct(featured)} className="btn-ink btn-sm">{t.home.chooseDates}</button>
-              </div>
-            </motion.article>
-          ) : (
-            <motion.div {...enter(1)} className="grain tone-sand flex min-h-[320px] flex-col justify-end rounded-[1.75rem] p-8 lg:col-span-5 lg:row-span-2">
-              <p className="max-w-xs text-2xl font-semibold tracking-tight">{t.home.catalogueSoon}</p>
-            </motion.div>
-          )}
-
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:col-span-7">
-            {spotlight ? (
-              <motion.div {...enter(2)}>
-                <Link href={`/catalogue?cat=${spotlight.slug}`} className="group grain tone-almond relative flex h-full min-h-[200px] overflow-hidden rounded-[1.75rem] p-6">
-                  <div className="relative z-10 flex flex-col justify-between">
-                    <p className="label">{t.home.collection}</p>
-                    <div>
-                      <p className="text-2xl font-semibold tracking-tight">{spotlight.name}</p>
-                      <p className="text-xs text-ink/55">{t.categories.pieces(spotlight.count)}</p>
-                    </div>
-                  </div>
-                  {spotlightProduct && (
-                    <ProductTile src={spotlightProduct.images[0]} alt="" tone="almond" sizes="200px" className="absolute -bottom-4 end-4 h-[78%] w-[46%] rounded-2xl" />
-                  )}
-                </Link>
-              </motion.div>
-            ) : <div />}
-            <motion.div {...enter(3)}><QuickDates /></motion.div>
+            <div className="absolute inset-x-0 bottom-0 z-20 flex translate-y-1/2 justify-center"><HeroSearch /></div>
           </div>
-        </div>
+          <div className="hero-notch z-10 space-y-5 pt-14 lg:absolute lg:bottom-0 lg:start-0 lg:w-[min(47%,42rem)] lg:pb-[4.5rem] lg:pe-10 lg:ps-2 lg:pt-8">
+            <h1 className="display text-[clamp(2.5rem,5.4vw,5rem)] text-balance">{hero.title}</h1>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <p className="max-w-md flex-1 basis-64 text-[15px] leading-relaxed text-ink/70 text-pretty">{hero.subtitle}</p>
+              <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4 hover:text-ink-soft">
+                <MessageCircle className="h-4 w-4" aria-hidden />{t.hero.ctaWhatsapp}
+              </a>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
+      <Categories categories={categories.filter((c) => c.count > 0)} />
       {available.length > 0 && <Picks products={available} categories={categories} />}
-
-      {categories.some((c) => c.count > 0) && (
-        <section className="shell space-y-6" aria-labelledby="cats-title">
-          <h2 id="cats-title" className="text-3xl font-semibold tracking-tight sm:text-4xl">{t.categories.title}</h2>
-          <div className="no-scrollbar -mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
-            {categories.filter((c) => c.count > 0).map((c, i) => (
-              <Link key={c.id} href={`/catalogue?cat=${c.slug}`}
-                className={cn("grain flex aspect-[4/5] w-40 shrink-0 flex-col justify-between rounded-[1.5rem] p-4 transition-transform hover:-translate-y-1 sm:w-auto", `tone-${(["almond", "sand", "cream", "tan", "stone", "copper"] as const)[i % 6]}`)}>
-                <span className="label">{t.categories.pieces(c.count)}</span>
-                <span className="text-lg font-semibold leading-tight tracking-tight text-balance">{c.name}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="shell" aria-labelledby="how-title">
         <div className="card grid gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_2fr]">
@@ -151,33 +87,33 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
   );
 }
 
-function QuickDates() {
-  const { t, eventDates, setEventDates } = useApp();
-  const today = todayIn("TN");
-  const [start, setStart] = useState(eventDates.start);
-  const [end, setEnd] = useState(eventDates.end);
-  const [saved, setSaved] = useState(false);
-  const problem = start || end ? validateRange(start, end, { today }) : null;
+/** Big tiles with the icon as a watermark. Hover, focus or a press brings up the espresso overlay
+ *  (and the cover photo, if there is one) with the icon sliding up; reduced motion keeps the overlay only. */
+function Categories({ categories }: { categories: Category[] }) {
+  const { t } = useApp();
+  if (categories.length === 0) return null;
+  const scroller = categories.length > 8;
   return (
-    <form className="card flex h-full flex-col justify-between gap-4 p-6"
-      onSubmit={(e) => { e.preventDefault(); if (!validateRange(start, end, { today })) { setEventDates({ start, end }); setSaved(true); } }}>
-      <div className="flex items-center justify-between">
-        <p className="label">{t.hero.quickBooking.title}</p>
-        <CalendarDays className="h-4 w-4 text-ink/40" aria-hidden />
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <label><span className="sr-only">{t.hero.quickBooking.startDate}</span>
-          <input type="date" min={today} value={start} onChange={(e) => { setStart(e.target.value); setSaved(false); }} className="field px-3 text-xs" aria-label={t.hero.quickBooking.startDate} /></label>
-        <label><span className="sr-only">{t.hero.quickBooking.endDate}</span>
-          <input type="date" min={start || today} value={end} onChange={(e) => { setEnd(e.target.value); setSaved(false); }} className="field px-3 text-xs" aria-label={t.hero.quickBooking.endDate} /></label>
-      </div>
-      <div className="flex items-center justify-between gap-2">
-        <p aria-live="polite" className="text-xs text-ink/55">
-          {problem ? <span className="text-bad">{t.booking.rangeErrors[problem]}</span> : saved ? t.hero.quickBooking.datesSaved : t.hero.quickBooking.hint}
-        </p>
-        <button type="submit" disabled={!start || !end || !!problem} className="btn-ink btn-sm shrink-0">{t.hero.quickBooking.save}</button>
-      </div>
-    </form>
+    <section className="shell space-y-6" aria-labelledby="cats-title">
+      <h2 id="cats-title" className="display text-[clamp(2rem,4.5vw,3.5rem)]">{t.categories.title}</h2>
+      <ul className={cn(scroller ? "no-scrollbar -mx-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-3 pb-1 pt-1 sm:mx-0 sm:px-0" : "grid grid-cols-2 gap-2.5 pt-1 md:grid-cols-3 xl:grid-cols-4")}>
+        {categories.map((c) => (
+          <li key={c.id} className={cn(scroller && "w-[46%] shrink-0 snap-start sm:w-[31%] xl:w-[23.5%]")}>
+            <Link href={`/catalogue?cat=${c.slug}`}
+              className={cn("grain group relative flex aspect-[5/4] flex-col overflow-hidden rounded-[1.75rem] p-5 transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:hover:translate-y-0 motion-reduce:focus-visible:translate-y-0 sm:p-6", `tone-${c.tone}`)}>
+              <span className="tile-overlay absolute inset-0 z-10 bg-espresso/75 opacity-0 transition-opacity duration-300" aria-hidden />
+              {c.imageUrl && <Image src={c.imageUrl} alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="tile-overlay object-cover opacity-0 transition-opacity duration-300" />}
+              <CategoryIcon name={c.icon} className="tile-icon absolute -bottom-6 -end-6 z-10 h-36 w-36 text-ink/[0.08] transition duration-300 sm:h-44 sm:w-44 rtl:-scale-x-100" />
+              <span className="tile-text relative z-20 text-lg font-semibold leading-tight tracking-tight text-balance transition-colors duration-300 sm:text-2xl">{c.name}</span>
+              <span className="tile-text relative z-20 mt-1 text-xs text-ink/60 transition-colors duration-300">{t.categories.pieces(c.count)}</span>
+              <span className="tile-more relative z-20 mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-espresso-fg opacity-0 transition-opacity duration-300">
+                {t.categories.seeAll(c.count)}<ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 
@@ -185,24 +121,25 @@ function Picks({ products, categories }: { products: CatalogueProduct[]; categor
   const { t } = useApp();
   const [cat, setCat] = useState("all");
   const used = categories.filter((c) => products.some((p) => p.category?.id === c.id));
-  const shown = useMemo(() => products.filter((p) => cat === "all" || p.category?.slug === cat).slice(0, 8), [products, cat]);
+  const shown = useMemo(() => products.filter((p) => cat === "all" || p.category?.slug === cat).slice(0, 4), [products, cat]);
   return (
     <section className="shell space-y-6" aria-labelledby="picks-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 id="picks-title" className="display text-[clamp(2rem,4.5vw,3.5rem)]">{t.home.picksTitle}</h2>
-        <PillTabs label={t.catalogue.filterLabel} value={cat} onChange={setCat}
+        <PillTabs label={t.catalogue.filterLabel} value={cat} onChange={setCat} className="max-w-full"
           options={[{ value: "all", label: t.common.all }, ...used.map((c) => ({ value: c.slug, label: c.name }))]} />
       </div>
-      <motion.div layout className="grid grid-cols-2 gap-x-2.5 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+      <motion.div layout className="no-scrollbar -mx-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-3 pb-1 md:mx-0 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:px-0">
         <AnimatePresence mode="popLayout">
           {shown.map((p, i) => (
-            <motion.div key={p.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease, delay: i * 0.03 }}>
-              <ProductCard product={p} />
+            <motion.div key={p.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease, delay: i * 0.03 }}
+              className="w-[72%] shrink-0 snap-start md:w-auto">
+              <ProductCard product={p} light />
             </motion.div>
           ))}
         </AnimatePresence>
       </motion.div>
-      <div className="flex justify-center"><Link href="/catalogue" className="btn-light">{t.home.viewAll}</Link></div>
+      <div className="flex justify-center pt-2"><Link href="/catalogue" className="btn-light">{t.home.viewAll}</Link></div>
     </section>
   );
 }
@@ -211,7 +148,7 @@ function ProTeaser({ tiers }: { tiers: ProTier[] }) {
   const { t } = useApp();
   return (
     <section className="shell" aria-labelledby="pro-title">
-      <div className="grid gap-8 rounded-[1.75rem] bg-ink p-6 text-card sm:p-10 lg:grid-cols-2">
+      <div className="grid gap-8 rounded-[1.75rem] bg-espresso p-6 text-espresso-fg sm:p-10 lg:grid-cols-2">
         <div className="flex flex-col justify-between gap-8">
           <div className="space-y-4">
             <p className="font-mono text-[10.5px] uppercase tracking-label text-almondCream/50">{t.pro.teaserLabel}</p>
@@ -219,15 +156,15 @@ function ProTeaser({ tiers }: { tiers: ProTier[] }) {
             <p className="max-w-md text-sm text-almondCream/70">{t.pro.teaserText}</p>
           </div>
           <div className="flex flex-wrap gap-2">
-            <Link href="/register?type=professional" className="btn bg-card text-ink hover:bg-almondCream">{t.pro.become}</Link>
-            <Link href="/professionnels" className="btn text-card ring-1 ring-almondCream/25 hover:ring-almondCream/60">{t.pro.learnMore}</Link>
+            <Link href="/register?type=professional" className="btn bg-espresso-fg text-espresso hover:bg-almondCream">{t.pro.become}</Link>
+            <Link href="/professionnels" className="btn text-espresso-fg ring-1 ring-almondCream/25 hover:ring-almondCream/60">{t.pro.learnMore}</Link>
           </div>
         </div>
         {tiers.length > 0 && (
           <ol className="grid grid-cols-2 gap-2 sm:grid-cols-3">
             {tiers.map((tier) => (
               <li key={tier.code} className="rounded-2xl bg-almondCream/[0.06] p-4 ring-1 ring-almondCream/10">
-                <span className="mb-3 block h-1.5 w-8 rounded-full" style={{ background: tier.color === "#3d281a" || tier.color === "#5c3d28" ? "#ddb892" : tier.color }} aria-hidden />
+                <TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={40} className="mb-3" />
                 <p className="font-semibold tracking-tight">{tier.name}</p>
                 <p className="text-xs text-almondCream/55">{tier.discount > 0 ? t.pro.tierDiscount(tier.discount) : t.pro.proRates}</p>
               </li>

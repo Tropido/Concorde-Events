@@ -3,15 +3,16 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MotionConfig } from "framer-motion";
-import type { CatalogueProduct, DraftLine, Viewer } from "@/lib/types";
-import { setPrefCookie, type Prefs } from "@/lib/prefs";
+import type { CatalogueProduct, DraftLine, EventContext, ImageFit, Tone, Viewer } from "@/lib/types";
+import { applyTheme, setPrefCookie, type Prefs, type Theme } from "@/lib/prefs";
 import { translations, type Language, type Translations } from "@/lib/i18n/translations";
 
 export interface Toast {
   id: string;
   title: string;
   image?: string | null;
-  tone?: string;
+  tone?: Tone;
+  fit?: ImageFit;
   action?: { label: string; onClick?: () => void; href?: string };
 }
 
@@ -22,6 +23,8 @@ interface AppContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: Translations;
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
 
   draft: DraftLine[];
   addToDraft: (line: Omit<DraftLine, "id">) => void;
@@ -36,6 +39,9 @@ interface AppContextType {
   /** Event dates the visitor chose once (e.g. on the homepage); defaults for new lines. */
   eventDates: { start: string; end: string };
   setEventDates: (d: { start: string; end: string }) => void;
+  /** What the home search collected; prefills /demande. */
+  eventContext: EventContext;
+  setEventContext: (c: EventContext) => void;
 
   previewProduct: CatalogueProduct | null;
   setPreviewProduct: (p: CatalogueProduct | null) => void;
@@ -62,21 +68,38 @@ function readDraft(): DraftLine[] {
 export function AppProvider({ children, prefs, viewer }: { children: React.ReactNode; prefs: Prefs; viewer: Viewer | null }) {
   const router = useRouter();
   const [language, setLanguageState] = useState<Language>(prefs.lang);
+  const [theme, setThemeState] = useState<Theme>(prefs.theme);
   const [draft, setDraft] = useState<DraftLine[]>([]);
   const [bagOpen, setBagOpen] = useState(false);
   const [bagPulse, setBagPulse] = useState(0);
   const [eventDates, setEventDatesState] = useState({ start: "", end: "" });
+  const [eventContext, setEventContextState] = useState<EventContext>({ type: null, guests: null, city: null });
   const [previewProduct, setPreviewProduct] = useState<CatalogueProduct | null>(null);
   const [bookingProduct, setBookingProduct] = useState<CatalogueProduct | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
 
   useEffect(() => setLanguageState(prefs.lang), [prefs.lang]);
+  // Re-applied after server refreshes too, which re-render <html> with the cookie's class.
+  useEffect(() => applyTheme(theme), [theme, prefs]);
+  // Printed pages (quotes above all) always come out light.
+  useEffect(() => {
+    const light = () => document.documentElement.classList.remove("dark");
+    const restore = () => applyTheme(theme);
+    window.addEventListener("beforeprint", light);
+    window.addEventListener("afterprint", restore);
+    return () => {
+      window.removeEventListener("beforeprint", light);
+      window.removeEventListener("afterprint", restore);
+    };
+  }, [theme]);
   useEffect(() => {
     setDraft(readDraft());
     try {
       const d = JSON.parse(sessionStorage.getItem("concorde:dates") ?? "null");
       if (d?.start) setEventDatesState(d);
+      const c = JSON.parse(sessionStorage.getItem("concorde:event") ?? "null");
+      if (c) setEventContextState(c);
     } catch {
       // ignore
     }
@@ -118,6 +141,11 @@ export function AppProvider({ children, prefs, viewer }: { children: React.React
       language,
       setLanguage,
       t: translations[language],
+      theme,
+      setTheme: (next) => {
+        setThemeState(next);
+        setPrefCookie("theme", next);
+      },
       draft,
       addToDraft: (line) => {
         const same = draft.find((l) => l.productId === line.productId && l.startDate === line.startDate && l.endDate === line.endDate);
@@ -147,6 +175,15 @@ export function AppProvider({ children, prefs, viewer }: { children: React.React
           // ignore
         }
       },
+      eventContext,
+      setEventContext: (c) => {
+        setEventContextState(c);
+        try {
+          sessionStorage.setItem("concorde:event", JSON.stringify(c));
+        } catch {
+          // ignore
+        }
+      },
       previewProduct,
       setPreviewProduct,
       bookingProduct,
@@ -155,7 +192,7 @@ export function AppProvider({ children, prefs, viewer }: { children: React.React
       toast,
       dismissToast,
     };
-  }, [viewer, language, draft, persist, bagOpen, bagPulse, eventDates, previewProduct, bookingProduct, toasts, toast, dismissToast, router]);
+  }, [viewer, language, theme, draft, persist, bagOpen, bagPulse, eventDates, eventContext, previewProduct, bookingProduct, toasts, toast, dismissToast, router]);
 
   return (
     <AppContext.Provider value={value}>

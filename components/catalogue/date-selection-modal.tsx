@@ -6,7 +6,7 @@ import { ShoppingBag } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { nights, todayIn, validateRange } from "@/lib/dates";
 import { formatTND } from "@/lib/utils/formatters";
-import { AvailabilityCalendar } from "@/components/ui/availability-calendar";
+import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Dialog } from "@/components/ui/dialog";
 import { CloseButton, PriceTag, ProductTile, QuantityStepper, ease } from "@/components/ui/kit";
 import { minAvailable, useAvailability } from "./use-availability";
@@ -38,6 +38,7 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
       slug: product.slug,
       title: product.title,
       image: product.images[0] ?? null,
+      imageFit: product.imageFit,
       tone: product.tone,
       quantity: qty,
       maxQuantity: max!,
@@ -46,7 +47,7 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
       unitPrice: product.price?.amount ?? null,
     });
     setEventDates({ start, end });
-    toast({ title: t.bag.added(product.title), image: product.images[0], tone: product.tone, action: { label: t.bag.view, onClick: () => setBagOpen(true) } });
+    toast({ title: t.bag.added(product.title), image: product.images[0], tone: product.tone, fit: product.imageFit, action: { label: t.bag.view, onClick: () => setBagOpen(true) } });
     onAdded?.();
   };
 
@@ -64,16 +65,6 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
 
   const controls = (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 gap-2">
-        <label className="block">
-          <span className="field-label">{t.booking.start}</span>
-          <input type="date" min={today} value={start} onChange={(e) => setStart(e.target.value)} className="field" />
-        </label>
-        <label className="block">
-          <span className="field-label">{t.booking.end}</span>
-          <input type="date" min={start || today} value={end} onChange={(e) => setEnd(e.target.value)} className="field" />
-        </label>
-      </div>
       <p aria-live="polite" className="min-h-5 text-xs font-medium">{status}</p>
       <div className="flex items-center gap-3">
         <QuantityStepper value={qty} max={max} label={t.booking.quantity} onChange={setQuantity} />
@@ -83,20 +74,20 @@ export function BookingPanel({ product, onAdded, layout = "wide" }: { product: C
         </button>
       </div>
       <p className="text-xs text-ink/50">
-        {n !== null && n > 0 ? t.booking.summary(qty, n) : product.minimumNights > 1 ? t.booking.minNights(product.minimumNights) : t.booking.nightsRule}
+        {n !== null && n > 0 ? (product.price ? t.booking.summary(qty, n) : t.booking.summaryQty(qty, n)) : product.minimumNights > 1 ? t.booking.minNights(product.minimumNights) : t.booking.nightsRule}
       </p>
     </div>
   );
 
-  const calendar = (
-    <AvailabilityCalendar productId={product.id} stock={product.stock} startDate={start} endDate={end}
-      onSelectDates={(s, e) => { setStart(s); setEnd(e); }} />
+  const picker = (
+    <DateRangePicker inline start={start} end={end} minimumNights={product.minimumNights} productId={product.id} stock={product.stock}
+      onChange={(s, e) => { setStart(s); setEnd(e); }} />
   );
 
   return layout === "stacked" ? (
-    <div className="space-y-6">{controls}<div className="rounded-3xl bg-paper p-4">{calendar}</div></div>
+    <div className="space-y-5">{picker}{controls}</div>
   ) : (
-    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">{controls}<div className="rounded-3xl bg-paper p-4">{calendar}</div></div>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)]">{picker}<div className="lg:pt-16">{controls}</div></div>
   );
 }
 
@@ -110,7 +101,7 @@ export function BookingModal() {
         {p && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease }} className="flex max-h-[90vh] flex-col">
             <div className="flex items-center gap-3 p-4 sm:p-5">
-              <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} sizes="56px" className="h-14 w-14 shrink-0 rounded-2xl" />
+              <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} fit={p.imageFit} sizes="56px" className="h-14 w-14 shrink-0 rounded-2xl" />
               <div className="min-w-0 flex-1" lang={p.lang}>
                 <p className="label">{p.category?.name ?? t.booking.title}</p>
                 <h2 id="booking-title" className="truncate text-lg font-semibold tracking-tight">{p.title}</h2>

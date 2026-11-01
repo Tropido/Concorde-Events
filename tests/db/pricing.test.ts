@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { as, freshDb, isoDate, issueQuote, productId, submit, user } from "./harness";
+import { as, closeInspection, confirmRequest, dispatch, freshDb, isoDate, issueQuote, pay, productId, receiveReturn, submit, user } from "./harness";
 
 // Seed (TND only): sofa retail 1150 / pro 920; lamp retail 280 / pro 215.
 let db: PGlite;
@@ -85,13 +85,14 @@ describe("quotes", () => {
 });
 
 describe("loyalty points", () => {
-  it("awards 1 point per 10 TND when a pro rental completes, once, and promotes the tier", async () => {
+  it("awards 1 point per 10 TND once a pro rental is both completed and paid, and promotes the tier", async () => {
     const r = await submit(db, pro, [sofaLine(1, 2, 4)]); // 920 x 2 nights = 1840 -> 184 pts
-    await issueQuote(db, manager, r.id);
-    await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'confirmed' where id = $1", [r.id]));
-    await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'dispatched' where id = $1", [r.id]));
-    await as(db, manager, (tx) => tx.query("select public.return_request($1)", [r.id]));
-    await as(db, manager, (tx) => tx.query("select public.return_request($1)", [r.id])); // idempotent
+    await confirmRequest(db, manager, r.id);
+    await dispatch(db, manager, r.id);
+    await receiveReturn(db, manager, r.id);
+    await closeInspection(db, manager, r.id);
+    expect((await account(pro)).points).toBe(0); // completed, but the balance is still due
+    await pay(db, manager, r.id, "balance", 922); // the other half, plus the stamp of each invoice
     expect((await account(pro)).points).toBe(184);
 
     await as(db, manager, (tx) => tx.query("insert into public.reward_events (profile_id, points, reason) values ($1, 400, 'Gala Carthage bonus')", [pro]));

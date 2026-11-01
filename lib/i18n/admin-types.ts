@@ -2,9 +2,9 @@ import type { AccountStatus, AppRole, MessageChannel, MessageStatus, RequestStat
 
 export type AdminErrorCode =
   | "capacity_exceeded" | "quote_expired" | "invalid_transition" | "forbidden"
-  | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "generic";
+  | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "tag_exists"
+  | "company_incomplete" | "reacceptance_required" | "quote_superseded" | "terms_required" | "reason_required" | "invalid_amount" | "quote_not_accepted" | "inspection_sum" | "caution_unresolved" | "reset_self" | "reset_staff" | "reset_destination" | "reset_limit" | "reset_unavailable" | "generic";
 
-type Flag = "vip" | "big_account" | "reliable_payer" | "watch" | "new_partner" | "dispute_resolved";
 type Level = "bronze" | "argent" | "or" | "platine" | "diamant" | "royal_elite";
 
 export interface AdminTranslations {
@@ -12,7 +12,7 @@ export interface AdminTranslations {
   badge: string;
   nav: {
     groupOps: string; groupCatalogue: string; groupSite: string; overview: string; requests: string; inbox: string;
-    inventory: string; rentals: string; clients: string; analytics: string; cms: string; settings: string; backToSite: string;
+    inventory: string; rentals: string; invoices: string; clients: string; analytics: string; cms: string; settings: string; backToSite: string;
   };
   errors: Record<AdminErrorCode, string>;
   saved: string;
@@ -27,8 +27,8 @@ export interface AdminTranslations {
   };
   requests: {
     subtitle: (n: number) => string; searchPlaceholder: string; empty: string; client: string; event: string; window: string;
-    nextQuote: string; nextConfirm: string; nextDispatch: string; nextReturn: string; contactConfirmed: string;
-    whatsappOpened: string; noContactYet: string; created: string; confirm: string; dispatch: string; reject: string;
+    nextQuote: string; nextFollow: string; nextDeposit: string; nextDispatch: string; nextReturn: string; nextInspect: string; contactConfirmed: string;
+    whatsappOpened: string; noContactYet: string; created: string; dispatch: string; reject: string;
     cancel: string; prefers: string; call: string; createTicket: string; markContacted: string; assignedTo: string;
     assignMe: string; unassigned: string; eventType: string; lines: string; product: string; qty: string; period: string;
     unit: string; lineTotal: string; reschedule: string; saveDates: string; quotes: string; noQuotes: string;
@@ -49,33 +49,37 @@ export interface AdminTranslations {
     piece: string; category: string; stock: string; retail: string; pro: string; inMaintenance: (n: number) => string;
     featured: string; retire: string; reactivate: string;
     sections: { title: string; general: string; media: string; look: string; specs: string; pricing: string; internal: string };
-    titleFr: string; titleAr: string; descFr: string; descAr: string; slug: string; slugHint: string; sku: string; skuHint: string;
-    noCategory: string; badge: string; noBadge: string; visible: string; uploadHint: string; cover: string; makeCover: string;
+    titleFr: string; titleAr: string; titleEn: string; descFr: string; descAr: string; descEn: string; englishGroup: string; englishHint: string; slug: string; slugHint: string; sku: string; skuHint: string;
+    noCategory: string; badge: string; noBadge: string; visible: string; uploadHint: string; imageFit: string; fitContain: string; fitCover: string; fitHint: string; cover: string; makeCover: string;
     removeImage: string; moveUp: string; moveDown: string; upload: string; uploading: string; tone: string;
     tones: Record<Tone, string>; color: string; colorHex: string; colorPlaceholder: string; material: string; finish: string;
-    style: string; stylePlaceholder: string; highlightsFr: string; highlightsAr: string; highlightsHint: string;
+    style: string; stylePlaceholder: string; highlightsFr: string; highlightsAr: string; highlightsEn: string; highlightsHint: string;
     tags: string; tagsHint: string; width: string; height: string; depth: string; unit: string; weight: string; seats: string;
-    setup: string; minNights: string; careFr: string; careAr: string; carePlaceholder: string; pricesHint: string;
+    setup: string; minNights: string; careFr: string; careAr: string; careEn: string; carePlaceholder: string; pricesHint: string;
     pricesAdminOnly: string; deposit: string; depositHint: string; tierPreview: string; owned: string; ownedHint: string;
     internalHint: string; purchaseCost: string; purchaseDate: string; condition: string;
     conditions: { new: string; excellent: string; good: string; fair: string }; supplier: string; storage: string;
     storagePlaceholder: string; breakEven: string; internalNotes: string; save: string; preview: string; untitled: string;
     assetValue: string; maintenance: string; repaired: string; writtenOff: string;
+    categoriesLink: string; categoriesTitle: string; categoriesHint: string; newCategory: string; nameFr: string; nameEn: string; nameAr: string;
+    icon: string; categoryCover: string; categoryCoverHint: string;
   };
   rentals: {
     subtitle: string; out: string; upcoming: string; none: string; noUpcoming: string; late: string; due: string; leaves: string;
     maintenanceTitle: string; maintenanceEmpty: string;
   };
   clients: {
-    subtitle: string; views: { label: string; pending: string; pros: string; customers: string; staff: string; inactive: string };
+    subtitle: string; views: { label: string; pending: string; pros: string; plus: string; customers: string; staff: string; inactive: string };
     searchPlaceholder: string; noPending: string; empty: string; approve: string; reject: string; suspend: string;
     reactivate: string; changeRole: string; statusLabels: Record<AccountStatus, string>; roleLabels: Record<AppRole, string>;
-    flagLabels: Record<Flag, string>; identity: string; requestsCount: string; bookedValue: string; joined: string;
+    identity: string; requestsCount: string; bookedValue: string; joined: string;
     programme: string; lockTier: string; tierLocked: string; tierAuto: string; nextAt: (tier: string, points: string) => string;
     customDiscount: string; extraBenefits: string; benefitPlaceholder: string; addBenefit: string; saveProgramme: string;
     adjustPoints: string; reason: string; reasonPlaceholder: string; applyPoints: string; particulierTitle: string;
     particulierText: string; notesTitle: string; flags: string; level: string; levelLabels: Record<Level, string>;
     notes: string; notesPlaceholder: string; notesPrivate: string; saveNotes: string;
+    tagAdd: string; tagSearch: string; tagCreate: (label: string) => string; tagColor: string; tagTranslations: string; tagFilter: string;
+    tagsTitle: string; tagsHint: string; tagSystem: string; tagArchived: string; tagArchive: string; tagRestore: string;
   };
   analytics: {
     subtitle: string; bookedYear: string; conversion: string; conversionHint: string; proShare: string; retailShare: string;
@@ -83,14 +87,14 @@ export interface AdminTranslations {
     piece: string; nightsBooked: string; revenue: string; cost: string; roi: string; noCost: string;
   };
   cms: {
-    locale: string; hero: string; heroBadge: string; heroTitle: string; heroAccent: string; heroSubtitle: string;
+    locale: string; hero: string; heroImage: string; heroImageUpload: string; heroImageHint: string; heroTitle: string; heroSubtitle: string;
     faqs: string; question: string; answer: string; addFaq: string; testimonials: string; testimonialsHint: string;
     quote: string; author: string; role: string; addTestimonial: string; remove: string; publish: string; publishedAt: string;
     emptyFallback: string;
   };
   settings: {
-    subtitle: string; tiersTitle: string; tiersHint: string; adminOnly: string; color: string; nameFr: string; nameAr: string;
-    minPoints: string; discount: string; benefitsFr: string; benefitsAr: string; businessTitle: string; currency: string;
+    subtitle: string; tiersTitle: string; tiersHint: string; adminOnly: string; color: string; nameFr: string; nameAr: string; nameEn: string;
+    minPoints: string; discount: string; benefitsFr: string; benefitsAr: string; benefitsEn: string; businessTitle: string; currency: string;
     whatsapp: string; languages: string; businessHint: string; pointsTitle: string; pointsText: string;
   };
 }

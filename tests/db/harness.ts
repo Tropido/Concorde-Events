@@ -1,19 +1,30 @@
 import { PGlite, type Transaction } from "@electric-sql/pglite";
 import { readFileSync, readdirSync } from "node:fs";
 import path from "node:path";
+import { addDays, todayIn } from "@/lib/dates";
 
 const root = path.resolve(__dirname, "../..");
 const read = (p: string) => readFileSync(path.join(root, p), "utf8");
 
-/** In-process Postgres with the real migrations + dev seed applied. */
-export async function freshDb() {
+const migrations = () => readdirSync(path.join(root, "supabase/migrations")).sort();
+
+/** In-process Postgres with the real migrations + dev seed applied. With `before`, stops
+ *  ahead of that migration (no seed), so a data migration can be tested on old rows. */
+export async function freshDb({ before }: { before?: string } = {}) {
   const db = new PGlite();
   await db.exec(read("tests/db/supabase-shim.sql"));
-  for (const f of readdirSync(path.join(root, "supabase/migrations")).sort()) {
+  for (const f of migrations()) {
+    if (before && f >= before) return db;
     await db.exec(read(`supabase/migrations/${f}`));
   }
   await db.exec(read("supabase/seed.sql"));
+  await setupCompany(db);
   return db;
+}
+
+/** Applies the migrations from `from` onwards (after freshDb({ before: from })). */
+export async function migrateFrom(db: PGlite, from: string) {
+  for (const f of migrations()) if (f >= from) await db.exec(read(`supabase/migrations/${f}`));
 }
 
 /** Runs fn as an API caller (anon when uid is null), like PostgREST does. Commits at the end,
@@ -26,14 +37,14 @@ export async function as<T>(db: PGlite, uid: string | null, fn: (tx: Transaction
   });
 }
 
-type Role = "customer" | "professional" | "editor" | "manager" | "admin";
+type Role = "customer" | "customer_plus" | "professional" | "editor" | "manager" | "admin";
 type Status = "pending" | "approved" | "rejected" | "suspended";
 
 /** Signs a user up through the real auth trigger, then sets role/status as the SQL editor would. */
 export async function user(db: PGlite, email: string, role: Role = "customer", status: Status = "approved") {
   const { rows } = await db.query<{ id: string }>(
     "insert into auth.users (email, raw_user_meta_data) values ($1, $2) returning id",
-    [email, JSON.stringify({ full_name: email.split("@")[0], account_type: role === "professional" ? "professional" : "customer" })],
+    [email, JSON.stringify({ full_name: email.split("@")[0], account_type: role === "professional" || role === "customer_plus" ? role : "customer" })],
   );
   const id = rows[0].id;
   await db.query("update public.profiles set role = $2, status = $3 where id = $1", [id, role, status]);
@@ -45,10 +56,10 @@ export async function productId(db: PGlite, slug: string) {
   return rows[0].id;
 }
 
+/** Days from today in Tunis, like private.local_today('TN'): a UTC date is a day behind
+ *  between midnight and 1 a.m. Tunis time, which made date checks flaky at night. */
 export function isoDate(daysFromToday: number) {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + daysFromToday);
-  return d.toISOString().slice(0, 10);
+  return addDays(todayIn("TN"), daysFromToday);
 }
 
 /** Submits a request through the public RPC and returns its id + reference. */
@@ -73,6 +84,49 @@ export async function submit(
   );
   const { rows } = await db.query<{ id: string }>("select id from public.rental_requests where reference = $1", [ref]);
   return { id: rows[0].id, reference: ref, key };
+}
+
+/** Fills in what invoices refuse to be issued without. */
+export async function setupCompany(db: PGlite) {
+  await db.query("update public.company_settings set legal_name = 'Concorde Events', legal_form = 'SARL', tax_id = '1234567/A/M/000', address = '12 rue de la Mer', city = 'Tunis', bank_name = 'Banque Test', rib = '12345678901234567890'");
+}
+
+/** Accepts the latest quote on the client's behalf (staff, by phone) and returns the outcome. */
+export async function acceptQuote(db: PGlite, staff: string, requestId: string) {
+  const quote = (await db.query<{ id: string }>("select id from public.quotes where request_id = $1 order by revision desc limit 1", [requestId])).rows[0].id;
+  return as(db, staff, async (tx) =>
+    (await tx.query<{ r: Record<string, unknown> }>("select public.accept_quote($1, $2, 'Test Client', true, 'phone') as r", [requestId, quote])).rows[0].r);
+}
+
+export async function pay(db: PGlite, staff: string, requestId: string, kind: string, amount: number, method = "virement") {
+  return as(db, staff, async (tx) =>
+    (await tx.query<{ r: Record<string, unknown> }>("select public.record_payment($1, $2, $3, $4) as r", [requestId, kind, method, amount])).rows[0].r);
+}
+
+/** Quote, acceptance, then the deposit: a request all the way to confirmed. */
+export async function confirmRequest(db: PGlite, staff: string, requestId: string) {
+  await issueQuote(db, staff, requestId);
+  const accepted = await acceptQuote(db, staff, requestId);
+  if (accepted.status === "confirmed") return accepted;
+  return pay(db, staff, requestId, "deposit", Number(accepted.deposit_required));
+}
+
+export async function dispatch(db: PGlite, staff: string, requestId: string) {
+  await as(db, staff, (tx) => tx.query("update public.rental_requests set status = 'dispatched' where id = $1", [requestId]));
+}
+
+export async function receiveReturn(db: PGlite, staff: string, requestId: string, lines: { line_id: string; received: number }[] = []) {
+  await as(db, staff, (tx) => tx.query("select public.receive_return($1, $2)", [requestId, JSON.stringify(lines)]));
+}
+
+export const linesOf = async (db: PGlite, requestId: string) =>
+  (await db.query<{ id: string; quantity: number; product_id: string }>("select id, quantity, product_id from public.request_lines where request_id = $1", [requestId])).rows;
+
+/** Closes the inspection; unless a line says otherwise, every unit is fine. */
+export async function closeInspection(db: PGlite, staff: string, requestId: string, over: Record<string, unknown>[] = [], caution: Record<string, unknown> = { outcome: "none" }) {
+  const lines = (await linesOf(db, requestId)).map((l, i) => ({ line_id: l.id, ok: l.quantity, ...over[i] }));
+  return as(db, staff, async (tx) =>
+    (await tx.query<{ r: Record<string, unknown> }>("select public.close_inspection($1, $2, $3) as r", [requestId, JSON.stringify(lines), JSON.stringify(caution)])).rows[0].r);
 }
 
 export async function issueQuote(db: PGlite, staff: string, requestId: string, currency: "EUR" | "TND" = "TND") {

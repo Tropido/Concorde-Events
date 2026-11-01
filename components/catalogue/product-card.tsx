@@ -5,21 +5,22 @@ import { Plus } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { cn } from "@/lib/utils/formatters";
 import { PriceTag, ProductTile } from "@/components/ui/kit";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import type { CatalogueProduct } from "@/lib/types";
 
-export function ProductCard({ product: p, priority, className }: { product: CatalogueProduct; priority?: boolean; className?: string }) {
-  const { t, setBookingProduct } = useApp();
+export function ProductCard({ product: p, priority, className, light }: { product: CatalogueProduct; priority?: boolean; className?: string; light?: boolean }) {
+  const { t, viewer, setBookingProduct } = useApp();
   const soldOut = p.stock <= 0;
   return (
     <article className={cn("group relative flex flex-col gap-3", className)}>
       <div className="relative">
       <Link href={`/catalogue/${p.slug}`} className="block rounded-[1.5rem] focus-visible:outline-offset-4" aria-label={p.title}>
-        <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} priority={priority}
+        <ProductTile src={p.images[0]} alt={p.title} tone={p.tone} fit={p.imageFit} priority={priority}
           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw" className="aspect-[4/5] rounded-[1.5rem]">
           <div className="absolute inset-x-3 top-3 flex items-start justify-between gap-2">
             {p.badge ? <span className="pill py-1 text-[11px]">{t.product.badges[p.badge]}</span> : <span />}
             {p.price?.tier === "pro" && p.price.discount > 0 && (
-              <span className="rounded-full bg-ink px-2.5 py-1 text-[11px] font-medium text-card"><bdi dir="ltr">−{p.price.discount}%</bdi></span>
+              <span className="inline-flex items-center gap-1 rounded-full bg-ink py-1 pe-2.5 ps-1.5 text-[11px] font-medium text-card">{viewer?.pro && <TierEmblem code={viewer.pro.tier.code} rank={viewer.pro.tier.rank} color={viewer.pro.tier.color} size={16} />}<bdi dir="ltr">−{p.price.discount}%</bdi></span>
             )}
           </div>
         </ProductTile>
@@ -30,14 +31,19 @@ export function ProductCard({ product: p, priority, className }: { product: Cata
         <Plus className="h-4 w-4" />
       </button>
       </div>
-      <div className="flex items-start justify-between gap-3 px-1" lang={p.lang}>
+      {light ? (
+        <div className="flex items-baseline justify-between gap-4 px-1 pt-1" lang={p.lang}>
+          <Link href={`/catalogue/${p.slug}`} className="min-w-0 truncate text-[15px] font-semibold tracking-tight hover:underline">{p.title}</Link>
+          <PriceTag price={p.price} size="sm" showUnit={false} upsell={false} className="shrink-0 text-end" />
+        </div>
+      ) : <div className="flex items-start justify-between gap-3 px-1" lang={p.lang}>
         <div className="min-w-0">
           <p className="label">{p.category?.name ?? t.catalogue.uncategorised}</p>
           <Link href={`/catalogue/${p.slug}`} className="mt-1 block truncate text-[15px] font-semibold tracking-tight hover:underline">{p.title}</Link>
           <p className="mt-0.5 text-xs text-ink/50">{soldOut ? t.booking.soldOutShort : t.catalogue.inStock(p.stock)}</p>
         </div>
         <PriceTag price={p.price} size="sm" showUnit={false} className="shrink-0 flex-col items-end text-end" />
-      </div>
+      </div>}
     </article>
   );
 }

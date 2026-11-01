@@ -7,12 +7,13 @@ import { Search } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { EmptyState, PillTabs, ease } from "@/components/ui/kit";
-import type { CatalogueProduct, Category } from "@/lib/types";
+import { pricesVisible, type CatalogueProduct, type Category } from "@/lib/types";
 
 type Sort = "featured" | "price_asc" | "price_desc" | "name";
 
 export function CatalogueView({ products, categories, initialCategory }: { products: CatalogueProduct[]; categories: Category[]; initialCategory?: string }) {
-  const { t, language } = useApp();
+  const { t, language, viewer } = useApp();
+  const sorts: Sort[] = pricesVisible(viewer) ? ["featured", "price_asc", "price_desc", "name"] : ["featured", "name"];
   const router = useRouter();
   const path = usePathname();
   const [q, setQ] = useState("");
@@ -51,7 +52,7 @@ export function CatalogueView({ products, categories, initialCategory }: { produ
           <label>
             <span className="sr-only">{t.catalogue.sortLabel}</span>
             <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} className="h-10 rounded-full bg-card px-4 text-sm ring-1 ring-line focus:outline-none">
-              {(["featured", "price_asc", "price_desc", "name"] as Sort[]).map((s) => <option key={s} value={s}>{t.catalogue.sort[s]}</option>)}
+              {sorts.map((s) => <option key={s} value={s}>{t.catalogue.sort[s]}</option>)}
             </select>
           </label>
         </div>

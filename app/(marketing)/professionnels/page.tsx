@@ -4,6 +4,7 @@ import { Check, Minus } from "lucide-react";
 import { getT } from "@/lib/i18n/server";
 import { getViewer } from "@/lib/auth";
 import { getTiers } from "@/lib/tiers";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { formatNumber } from "@/lib/utils/formatters";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -41,11 +42,12 @@ export default async function ProsPage() {
       <section className="card overflow-hidden" aria-labelledby="compare-title">
         <h2 id="compare-title" className="p-6 text-2xl font-semibold tracking-tight sm:p-8">{p.compareTitle}</h2>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[560px] text-sm">
+          <table className="w-full min-w-[640px] text-sm">
             <thead>
               <tr className="border-y border-line text-start">
-                <th scope="col" className="w-1/2 px-6 py-3 text-start font-normal text-ink/55 sm:px-8">{p.feature}</th>
+                <th scope="col" className="w-2/5 px-6 py-3 text-start font-normal text-ink/60 sm:px-8">{p.feature}</th>
                 <th scope="col" className="px-4 py-3 text-center font-semibold">{t.auth.customer}</th>
+                <th scope="col" className="px-4 py-3 text-center font-semibold">{t.auth.customerPlus}</th>
                 <th scope="col" className="px-4 py-3 text-center font-semibold">{t.auth.professional}</th>
               </tr>
             </thead>
@@ -53,7 +55,7 @@ export default async function ProsPage() {
               {p.compare.map((row) => (
                 <tr key={row.label} className="border-b border-line last:border-0">
                   <th scope="row" className="px-6 py-3.5 text-start font-normal sm:px-8">{row.label}</th>
-                  {[row.customer, row.pro].map((v, i) => (
+                  {[row.customer, row.plus, row.pro].map((v, i) => (
                     <td key={i} className="px-4 py-3.5 text-center">
                       {v === true ? <Check className="mx-auto h-4 w-4 text-ok" aria-label={p.yes} /> : v === false ? <Minus className="mx-auto h-4 w-4 text-ink/25" aria-label={p.no} /> : <span className="text-xs">{v}</span>}
                     </td>
@@ -70,13 +72,11 @@ export default async function ProsPage() {
           <h2 id="tiers-title" className="px-1 pb-4 text-3xl font-semibold tracking-tight sm:text-4xl">{p.tiersTitle}</h2>
           <ol className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
             {tiers.map((tier, i) => (
-              <li key={tier.code} className="card flex flex-col gap-5 p-6">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-2.5">
-                    <span className="h-3 w-3 rounded-full" style={{ background: tier.color }} aria-hidden />
-                    <span className="text-xl font-semibold tracking-tight">{tier.name}</span>
-                  </span>
-                  <span className="font-mono text-xs text-ink/50">{tier.minPoints > 0 ? p.fromPoints(formatNumber(tier.minPoints, prefs.lang)) : p.entry}</span>
+              <li key={tier.code} className="card relative flex flex-col gap-5 p-6">
+                <TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={64} className="absolute end-5 top-5" />
+                <div className="pe-20">
+                  <p className="text-xl font-semibold tracking-tight">{tier.name}</p>
+                  <p className="font-mono text-xs text-ink/50">{tier.minPoints > 0 ? p.fromPoints(formatNumber(tier.minPoints, prefs.lang)) : p.entry}</p>
                 </div>
                 <p className="display text-5xl">{tier.discount > 0 ? <bdi dir="ltr">−{tier.discount}%</bdi> : p.proRates}</p>
                 <ul className="space-y-2 text-sm">

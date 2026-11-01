@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { cleanupUsers, enabled, isoDate, login, makeUser, run, service } from "./helpers";
+import { cleanupUsers, enabled, isoDate, login, makeUser, pickDay, run, service } from "./helpers";
 
 test.skip(!enabled, "needs .env.local + .env.test.local for the TEST Supabase project");
 test.describe.configure({ mode: "serial" });
@@ -24,8 +24,8 @@ test("request -> staff quote -> client sees it in another session", async ({ bro
   await c.goto("/catalogue");
   await c.getByRole("button", { name: /choisir les dates/i }).first().click();
   const dialog = c.getByRole("dialog");
-  await dialog.getByLabel("Début").fill(isoDate(30));
-  await dialog.getByLabel("Fin (retour)").fill(isoDate(33));
+  await pickDay(dialog, isoDate(30));
+  await pickDay(dialog, isoDate(33));
   await expect(dialog.getByText(/disponible/).first()).toBeVisible();
   await dialog.getByRole("button", { name: /^ajouter/i }).click();
   await c.goto("/demande");
@@ -138,6 +138,31 @@ test("pro approval and suspension take effect immediately", async ({ browser }) 
   await expect(m.getByRole("button", { name: /^suspendre$/i })).toHaveCount(0);
   await p.goto("/account");
   await expect(p.getByRole("heading", { name: /compte suspendu/i })).toBeVisible();
+});
+
+test("prices: a visitor sees 'Prix sur devis', an approved Particulier+ sees dinars", async ({ browser }) => {
+  const visitor = await browser.newPage();
+  await visitor.goto("/catalogue");
+  const firstCard = visitor.locator("article").first();
+  await expect(firstCard).toContainText("Prix sur devis");
+  await expect(firstCard.getByRole("link", { name: /voir les tarifs avec particulier\+/i })).toBeVisible();
+
+  const plus = await makeUser("plus", "customer_plus");
+  const p = await browser.newPage();
+  await login(p, plus.email, plus.password);
+  await p.goto("/catalogue");
+  await expect(p.locator("article").first()).toContainText(/\d DT/);
+  await expect(p.getByText("Prix sur devis")).toHaveCount(0);
+});
+
+test("theme switch applies dark mode and keeps it after a reload", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Thème sombre" }).first().click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.reload();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  await page.getByRole("button", { name: "Thème clair" }).first().click();
+  await expect(page.locator("html")).not.toHaveClass(/dark/);
 });
 
 test("product photo upload persists after reload", async ({ browser }) => {

@@ -1,31 +1,36 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check, Mail, MessageCircle, Phone, Store, Truck } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { markWhatsappOpened, submitRequest } from "@/lib/actions/requests";
 import { nights } from "@/lib/dates";
+import { GOVERNORATES } from "@/lib/governorates";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { waLink } from "@/lib/utils/whatsapp";
 import { DraftLineRow, draftEstimate } from "@/components/catalogue/bag-drawer";
-import { EmptyState, ease } from "@/components/ui/kit";
-import { EVENT_TYPES, type ContactChannel, type DeliveryMode, type EventType } from "@/lib/types";
+import { EmptyState, SeePricesLink, ease } from "@/components/ui/kit";
+import { EVENT_TYPES, pricesVisible, type ContactChannel, type DeliveryMode, type EventType } from "@/lib/types";
 import type { SubmitErrorCode } from "@/lib/i18n/translations";
 
 export function CheckoutView() {
-  const { t, language, viewer, draft, clearDraft } = useApp();
+  const { t, language, viewer, draft, clearDraft, eventContext } = useApp();
   const c = t.checkout;
   const [eventType, setEventType] = useState<EventType | null>(null);
   const [delivery, setDelivery] = useState<DeliveryMode>("delivery");
   const [contact, setContact] = useState<ContactChannel>("whatsapp");
   const [error, setError] = useState<SubmitErrorCode | null>(null);
-  const [done, setDone] = useState<{ reference: string; key: string; message: string } | null>(null);
+  const [done, setDone] = useState<{ reference: string; key: string; message: string; trackPath: string | null } | null>(null);
   const [pending, start] = useTransition();
   // One key per attempt at a given draft: a retried submit returns the same reference.
   const keyRef = useRef<{ draft: string; key: string } | null>(null);
-  const total = draftEstimate(draft);
+  const shown = pricesVisible(viewer);
+  const total = shown ? draftEstimate(draft) : null;
+  const city = GOVERNORATES.find((g) => g.fr === eventContext.city)?.[language];
+  // The context is read from sessionStorage after mount.
+  useEffect(() => { if (eventContext.type) setEventType(eventContext.type); }, [eventContext.type]);
 
   const submit = (form: FormData) => {
     const draftJson = JSON.stringify(draft);
@@ -54,14 +59,14 @@ export function CheckoutView() {
         return;
       }
       const lines = draft.map((l) => `• ${l.quantity} × ${l.title} — ${l.startDate} → ${l.endDate} (${t.common.nights(nights(l.startDate, l.endDate) ?? 0)})`).join("\n");
-      setDone({ reference: res.reference, key, message: `${c.whatsappIntro(res.reference)}\n${lines}\n${c.whatsappContact}: ${contactInfo.name}, ${contactInfo.phone}` });
+      setDone({ reference: res.reference, key, trackPath: res.trackPath, message: `${c.whatsappIntro(res.reference)}\n${lines}\n${c.whatsappContact}: ${contactInfo.name}, ${contactInfo.phone}` });
       keyRef.current = null;
       clearDraft();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   };
 
-  if (done) return <ThankYou reference={done.reference} onWhatsapp={() => { void markWhatsappOpened(done.key); window.open(waLink(done.message), "_blank", "noopener"); }} />;
+  if (done) return <ThankYou reference={done.reference} trackPath={done.trackPath} onWhatsapp={() => { void markWhatsappOpened(done.key); window.open(waLink(done.message), "_blank", "noopener"); }} />;
 
   if (draft.length === 0) {
     return (
@@ -105,8 +110,8 @@ export function CheckoutView() {
             </div>
           </fieldset>
           <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
-            <Field label={c.venue}><input name="venue" maxLength={200} placeholder={c.venuePlaceholder} className="field" /></Field>
-            <Field label={c.guests}><input name="guests" type="number" min={1} max={100000} inputMode="numeric" className="field" /></Field>
+            <Field label={c.venue}><input key={city} name="venue" maxLength={200} defaultValue={city} placeholder={c.venuePlaceholder} className="field" /></Field>
+            <Field label={c.guests}><input key={eventContext.guests} name="guests" type="number" min={1} max={100000} inputMode="numeric" defaultValue={eventContext.guests ?? undefined} className="field" /></Field>
           </div>
           <fieldset>
             <legend className="field-label">{c.deliveryTitle}</legend>
@@ -145,7 +150,11 @@ export function CheckoutView() {
           {viewer?.pro && viewer.status === "approved" && viewer.pro.discount > 0 && (
             <div className="flex justify-between text-ink/60"><dt>{t.pro.discountApplied(viewer.pro.tier.name)}</dt><dd><bdi dir="ltr">−{viewer.pro.discount}%</bdi></dd></div>
           )}
-          <div className="flex items-baseline justify-between"><dt className="text-ink/60">{t.bag.estimate}</dt><dd className="text-2xl font-semibold tabular-nums">{total !== null ? formatTND(total, language) : "—"}</dd></div>
+          {shown ? (
+            <div className="flex items-baseline justify-between"><dt className="text-ink/60">{t.bag.estimate}</dt><dd className="text-2xl font-semibold tabular-nums">{total !== null ? formatTND(total, language) : "—"}</dd></div>
+          ) : (
+            <div className="space-y-1"><dt className="font-semibold">{t.common.priceOnRequest}</dt><dd className="text-xs text-ink/60">{t.common.priceInQuote} <SeePricesLink /></dd></div>
+          )}
         </dl>
         {error && <p role="alert" className="rounded-2xl bg-bad-soft p-3 text-sm text-bad">{t.submitErrors[error]}</p>}
         <button type="submit" disabled={pending} className="btn-ink h-12 w-full">{pending ? c.sending : c.send}</button>
@@ -170,7 +179,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label className="block"><span className="field-label">{label}</span>{children}</label>;
 }
 
-function ThankYou({ reference, onWhatsapp }: { reference: string; onWhatsapp: () => void }) {
+function ThankYou({ reference, trackPath, onWhatsapp }: { reference: string; trackPath: string | null; onWhatsapp: () => void }) {
   const { t, viewer } = useApp();
   const c = t.checkout;
   return (
@@ -194,7 +203,7 @@ function ThankYou({ reference, onWhatsapp }: { reference: string; onWhatsapp: ()
           <button type="button" onClick={onWhatsapp} className="btn-ink"><MessageCircle className="h-4 w-4" aria-hidden />{c.openWhatsapp}</button>
           {viewer
             ? <Link href="/account" className="btn-light">{c.track}</Link>
-            : <Link href="/register" className="btn-light">{c.createAccount}</Link>}
+            : <Link href={trackPath ?? "/register"} className="btn-light">{trackPath ? c.track : c.createAccount}</Link>}
         </div>
       </motion.div>
     </div>

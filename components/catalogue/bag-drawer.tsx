@@ -1,12 +1,13 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { CalendarRange, Trash2 } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { nights } from "@/lib/dates";
 import { cn, formatDay, formatTND } from "@/lib/utils/formatters";
-import { CloseButton, Drawer, QuantityStepper } from "@/components/ui/kit";
+import { CloseButton, Drawer, ProductTile, QuantityStepper, SeePricesLink } from "@/components/ui/kit";
+import { pricesVisible } from "@/lib/types";
+import { EventDatesChip } from "@/components/ui/date-range-picker";
 import type { DraftLine } from "@/lib/types";
 
 export function draftEstimate(draft: DraftLine[]) {
@@ -20,17 +21,17 @@ export function draftEstimate(draft: DraftLine[]) {
 }
 
 export function DraftLineRow({ line: l, compact = false }: { line: DraftLine; compact?: boolean }) {
-  const { t, language, updateDraftQuantity, removeFromDraft } = useApp();
+  const { t, language, viewer, updateDraftQuantity, removeFromDraft } = useApp();
   const n = nights(l.startDate, l.endDate) ?? 0;
   return (
     <li className="flex gap-3 py-3">
-      <Link href={`/catalogue/${l.slug}`} className={cn("relative shrink-0 overflow-hidden rounded-2xl", `tone-${l.tone ?? "almond"}`, compact ? "h-16 w-16" : "h-20 w-20")}>
-        {l.image && <Image src={l.image} alt="" fill sizes="80px" className="object-cover" />}
+      <Link href={`/catalogue/${l.slug}`} className="shrink-0" tabIndex={-1} aria-hidden>
+        <ProductTile src={l.image} alt="" tone={l.tone ?? "almond"} fit={l.imageFit} sizes="80px" className={cn("rounded-2xl", compact ? "h-16 w-16" : "h-20 w-20")} />
       </Link>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex items-start justify-between gap-2">
           <Link href={`/catalogue/${l.slug}`} className="truncate text-sm font-semibold hover:underline">{l.title}</Link>
-          {l.unitPrice !== null && <span className="shrink-0 text-sm tabular-nums">{formatTND(l.unitPrice * l.quantity * n, language)}</span>}
+          {l.unitPrice !== null && pricesVisible(viewer) && <span className="shrink-0 text-sm tabular-nums">{formatTND(l.unitPrice * l.quantity * n, language)}</span>}
         </div>
         <p className="flex items-center gap-1.5 text-xs text-ink/55">
           <CalendarRange className="h-3.5 w-3.5" aria-hidden />
@@ -51,8 +52,9 @@ export function DraftLineRow({ line: l, compact = false }: { line: DraftLine; co
 }
 
 export function BagDrawer() {
-  const { t, language, draft, bagOpen, setBagOpen } = useApp();
-  const total = draftEstimate(draft);
+  const { t, language, viewer, draft, bagOpen, setBagOpen } = useApp();
+  const shown = pricesVisible(viewer);
+  const total = shown ? draftEstimate(draft) : null;
   const close = () => setBagOpen(false);
   return (
     <Drawer open={bagOpen} onClose={close} labelledBy="bag-title">
@@ -63,6 +65,7 @@ export function BagDrawer() {
         </div>
         <CloseButton onClick={close} label={t.common.close} />
       </div>
+      <EventDatesChip hideWhenEmpty className="px-5 pb-2" />
       {draft.length === 0 ? (
         <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 text-center">
           <p className="text-lg font-semibold tracking-tight">{t.bag.emptyTitle}</p>
@@ -81,7 +84,9 @@ export function BagDrawer() {
                 <span className="text-xl font-semibold tabular-nums">{formatTND(total, language)}</span>
               </div>
             )}
-            <p className="text-xs text-ink/50">{t.bag.estimateNote}</p>
+            {shown ? <p className="text-xs text-ink/60">{t.bag.estimateNote}</p> : (
+              <p className="flex flex-wrap items-baseline justify-between gap-2 text-xs text-ink/60">{t.common.priceInQuote}<SeePricesLink /></p>
+            )}
             <Link href="/demande" onClick={close} className="btn-ink w-full">{t.bag.checkout}</Link>
           </div>
         </>

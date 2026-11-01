@@ -4,69 +4,53 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { assertStaff } from "@/lib/auth";
+import { notifyRequest } from "@/lib/email/notify";
+import { dbError, run, type AdminResult } from "./run";
 import { supabaseEnv } from "@/lib/supabase/env";
+import { CATEGORY_ICON_NAMES } from "@/lib/category-icons";
 import type { AdminErrorCode } from "@/lib/i18n/admin-types";
-import type { AppRole } from "@/lib/types";
 
-export type AdminResult = { ok: true } | { ok: false; error: AdminErrorCode };
+export type { AdminResult } from "./run";
+import { LANGUAGES, type Language } from "@/lib/i18n/translations";
+import type { AppRole } from "@/lib/types";
 
 const uuid = z.string().uuid();
 const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const ok: AdminResult = { ok: true };
-
-function dbError(e: { message: string; code?: string }): AdminResult {
-  const m = e.message;
-  const error: AdminErrorCode =
-    m.startsWith("capacity_exceeded") ? "capacity_exceeded"
-    : m.startsWith("quote expired") ? "quote_expired"
-    : m.startsWith("invalid status transition") || m.startsWith("use issue_quote") || m.startsWith("cannot quote") ? "invalid_transition"
-    : m.includes("last approved admin") ? "last_admin"
-    : e.code === "23505" ? "slug_taken"
-    : e.code === "42501" ? "forbidden"
-    : "generic";
-  if (error === "generic") console.error("admin action failed", e);
-  return { ok: false, error };
-}
-
-/** Runs a mutation as the signed-in staff member (RLS still applies) and revalidates admin pages. */
-async function run(roles: AppRole[] | undefined, fn: (db: Awaited<ReturnType<typeof createClient>>, me: string) => PromiseLike<{ error: { message: string; code?: string } | null }>): Promise<AdminResult> {
-  let me: string;
-  try {
-    me = (await assertStaff(roles)).id;
-  } catch {
-    return { ok: false, error: "forbidden" };
-  }
-  const db = await createClient();
-  const { error } = await fn(db, me);
-  if (error) return dbError(error);
-  revalidatePath("/admin", "layout");
-  return ok;
-}
 
 // ---------- Requests ----------
 
-export async function setRequestStatus(id: string, status: "confirmed" | "dispatched" | "rejected" | "cancelled") {
-  if (!uuid.safeParse(id).success || !["confirmed", "dispatched", "rejected", "cancelled"].includes(status)) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.from("rental_requests").update({ status }).eq("id", id));
+/** Confirmation is not here: it follows the deposit (record_payment) or an admin's decision. */
+export async function setRequestStatus(id: string, status: "dispatched" | "rejected" | "cancelled") {
+  if (!uuid.safeParse(id).success || !["dispatched", "rejected", "cancelled"].includes(status)) return { ok: false, error: "invalid" } as AdminResult;
+  const result = await run(undefined, (db) => db.from("rental_requests").update({ status }).eq("id", id));
+  if (result.ok && status === "dispatched") await notifyRequest("dispatched", id);
+  if (result.ok && status === "cancelled") await notifyRequest("cancelled", id);
+  return result;
 }
 
 /** Quotes are always issued in TND. */
 export async function issueQuote(id: string, validDays: number) {
   const p = z.object({ id: uuid, validDays: z.number().int().min(1).max(90) }).safeParse({ id, validDays });
   if (!p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.rpc("issue_quote", { p_request: id, p_currency: "TND", p_valid_days: validDays }));
+  let quote = "";
+  let total: number | undefined;
+  const result = await run(undefined, async (db) => {
+    const r = await db.rpc("issue_quote", { p_request: id, p_currency: "TND", p_valid_days: validDays });
+    if (r.data) {
+      quote = r.data as string;
+      const { data } = await db.from("quotes").select("total:snapshot->total").eq("id", quote).single();
+      total = Number((data as { total: number } | null)?.total);
+    }
+    return r;
+  });
+  if (result.ok) await notifyRequest("quote_sent", id, { dedupe: quote, extra: { total }, attachments: [{ type: "quote", id: quote }] });
+  return result;
 }
 
 export async function rescheduleRequest(id: string, lines: { id: string; start_date: string; end_date: string }[]) {
   const p = z.array(z.object({ id: uuid, start_date: isoDay, end_date: isoDay })).min(1).max(50).safeParse(lines);
   if (!uuid.safeParse(id).success || !p.success) return { ok: false, error: "invalid" } as AdminResult;
   return run(undefined, (db) => db.rpc("reschedule_request", { p_request: id, p_lines: p.data }));
-}
-
-export async function returnRequest(id: string, damaged: { line_id: string; quantity: number }[]) {
-  const p = z.array(z.object({ line_id: uuid, quantity: z.number().int().min(0).max(10000) })).max(50).safeParse(damaged);
-  if (!uuid.safeParse(id).success || !p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.rpc("return_request", { p_request: id, p_damaged: p.data.filter((d) => d.quantity > 0) }));
 }
 
 export async function assignRequestToMe(id: string) {
@@ -141,8 +125,10 @@ const ProductInput = z.object({
   sku: optText(40),
   title_fr: text(200).min(1),
   title_ar: optText(200),
+  title_en: optText(200),
   description_fr: text(5000),
   description_ar: optText(5000),
+  description_en: optText(5000),
   category_id: uuid.nullable(),
   badge: z.enum(["new", "bestseller", "limited"]).nullable(),
   tone: z.enum(["almond", "sand", "tan", "copper", "cream", "stone"]),
@@ -161,13 +147,16 @@ const ProductInput = z.object({
   deposit_amount: z.number().min(0).max(1_000_000).nullable(),
   highlights_fr: z.array(text(60).min(1)).max(8),
   highlights_ar: z.array(text(60).min(1)).max(8),
+  highlights_en: z.array(text(60).min(1)).max(8),
   care_fr: optText(2000),
   care_ar: optText(2000),
+  care_en: optText(2000),
   tags: z.array(text(40).min(1)).max(20),
   minimum_nights: z.number().int().min(1).max(365),
   featured: z.boolean(),
   status: z.enum(["active", "retired"]),
   images: z.array(z.string().url().max(1000)).max(12),
+  image_fit: z.enum(["contain", "cover"]),
   owned: z.number().int().min(0).max(100000),
   prices: z.object({ retail: money, pro: money }).optional(),
   internal: z.object({
@@ -177,6 +166,8 @@ const ProductInput = z.object({
     storage_location: optText(120),
     condition: z.enum(["new", "excellent", "good", "fair"]).nullable(),
     internal_notes: optText(2000),
+    repair_fee: z.number().min(0).max(10_000_000).nullable(),
+    replacement_value: z.number().min(0).max(10_000_000).nullable(),
   }),
 });
 export type ProductInput = z.infer<typeof ProductInput>;
@@ -227,6 +218,53 @@ export async function saveProduct(input: ProductInput): Promise<AdminResult & { 
   return { ok: true, id: productId };
 }
 
+const CategoryInput = z.object({
+  id: uuid.optional(),
+  slug: z.string().trim().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(120),
+  name_fr: text(120).min(1),
+  name_en: optText(120),
+  name_ar: optText(120),
+  icon: z.enum(CATEGORY_ICON_NAMES as [string, ...string[]]),
+  tone: z.enum(["almond", "sand", "tan", "copper", "cream", "stone"]),
+  image_url: z.string().url().max(1000).nullable(),
+});
+export type CategoryInput = z.infer<typeof CategoryInput>;
+
+export async function saveCategory(input: CategoryInput): Promise<AdminResult> {
+  const p = CategoryInput.safeParse(input);
+  if (!p.success) return { ok: false, error: "invalid" };
+  const { id, ...fields } = p.data;
+  const result = await run(undefined, async (db) => {
+    if (id) return db.from("categories").update(fields).eq("id", id);
+    const { data } = await db.from("categories").select("display_order").order("display_order", { ascending: false }).limit(1).maybeSingle();
+    return db.from("categories").insert({ ...fields, display_order: (data?.display_order ?? 0) + 1 });
+  });
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
+/** Swaps a category with its neighbour in the display order. */
+export async function moveCategory(id: string, delta: -1 | 1): Promise<AdminResult> {
+  if (!uuid.safeParse(id).success) return { ok: false, error: "invalid" };
+  const result = await run(undefined, async (db) => {
+    const { data, error } = await db.from("categories").select("id, display_order").order("display_order").order("name_fr");
+    if (error) return { error };
+    const i = (data ?? []).findIndex((c) => c.id === id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= data.length) return { error: null };
+    // Rewritten as 0..n so categories sharing an order value still move.
+    const order = data.map((c) => c.id);
+    [order[i], order[j]] = [order[j], order[i]];
+    for (const [display_order, cid] of order.entries()) {
+      const { error: e } = await db.from("categories").update({ display_order }).eq("id", cid);
+      if (e) return { error: e };
+    }
+    return { error: null };
+  });
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
 export async function setProductStatus(id: string, status: "active" | "retired") {
   if (!uuid.safeParse(id).success || !["active", "retired"].includes(status)) return { ok: false, error: "invalid" } as AdminResult;
   return run(undefined, (db) => db.from("products").update({ status }).eq("id", id));
@@ -234,20 +272,9 @@ export async function setProductStatus(id: string, status: "active" | "retired")
 
 /** Repaired units return to service; written-off units leave the owned stock too. */
 export async function resolveMaintenance(productId: string, qty: number, outcome: "repaired" | "written_off") {
-  const country = "TN";
-  const p = z.object({ productId: uuid, country: z.literal("TN"), qty: z.number().int().min(1).max(100000), outcome: z.enum(["repaired", "written_off"]) })
-    .safeParse({ productId, country, qty, outcome });
+  const p = z.object({ productId: uuid, qty: z.number().int().min(1).max(100000), outcome: z.enum(["repaired", "written_off"]) }).safeParse({ productId, qty, outcome });
   if (!p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, async (db) => {
-    const { data: s, error } = await db.from("product_stock").select("quantity_owned, quantity_maintenance")
-      .eq("product_id", productId).eq("country", country).single();
-    if (error) return { error };
-    if (qty > s.quantity_maintenance) return { error: { message: "invalid", code: "22023" } };
-    return db.from("product_stock").update({
-      quantity_maintenance: s.quantity_maintenance - qty,
-      quantity_owned: outcome === "written_off" ? s.quantity_owned - qty : s.quantity_owned,
-    }).eq("product_id", productId).eq("country", country);
-  });
+  return run(undefined, (db) => db.rpc("resolve_maintenance", { p_product: productId, p_qty: qty, p_outcome: outcome }));
 }
 
 // ---------- Clients ----------
@@ -258,22 +285,67 @@ export async function setAccountStatus(profileId: string, status: "approved" | "
 }
 
 export async function setRole(profileId: string, role: AppRole) {
-  const p = z.enum(["customer", "professional", "editor", "manager", "admin"]).safeParse(role);
+  const p = z.enum(["customer", "customer_plus", "professional", "editor", "manager", "admin"]).safeParse(role);
   if (!uuid.safeParse(profileId).success || !p.success) return { ok: false, error: "invalid" } as AdminResult;
   return run(["admin"], (db) => db.from("profiles").update({ role: p.data }).eq("id", profileId));
 }
 
-export async function saveClientNotes(profileId: string, input: { notes: string; flags: string[]; level: string | null }): Promise<AdminResult> {
+export async function saveClientNotes(profileId: string, input: { notes: string; level: string | null }): Promise<AdminResult> {
   const p = z.object({
     profileId: uuid,
     notes: z.string().max(5000),
-    flags: z.array(z.string().trim().min(1).max(40)).max(20),
     level: z.string().trim().max(40).nullable(),
   }).safeParse({ profileId, ...input });
   if (!p.success) return { ok: false, error: "invalid" };
   return run(undefined, (db, me) => db.from("client_notes").upsert({
-    profile_id: p.data.profileId, notes: p.data.notes, flags: p.data.flags, level: p.data.level || null, updated_by: me,
+    profile_id: p.data.profileId, notes: p.data.notes, level: p.data.level || null, updated_by: me,
   }));
+}
+
+// ---------- Client labels ----------
+
+const TagInput = z.object({
+  label_fr: z.string().trim().min(1).max(40),
+  label_en: z.string().trim().min(1).max(40).nullable(),
+  label_ar: z.string().trim().min(1).max(40).nullable(),
+  color: z.enum(["almond", "sand", "tan", "copper", "cream", "stone", "ok", "warn", "bad"]),
+});
+type TagInput = z.infer<typeof TagInput>;
+
+export async function toggleClientTag(profileId: string, tagId: string, on: boolean): Promise<AdminResult> {
+  if (!uuid.safeParse(profileId).success || !uuid.safeParse(tagId).success) return { ok: false, error: "invalid" };
+  return run(undefined, (db, me) => on
+    ? db.from("client_tag_links").upsert({ profile_id: profileId, tag_id: tagId, added_by: me }, { ignoreDuplicates: true })
+    : db.from("client_tag_links").delete().eq("profile_id", profileId).eq("tag_id", tagId));
+}
+
+/** Creates a label and applies it to the client whose card it was created from. */
+export async function createClientTag(profileId: string, input: TagInput): Promise<{ ok: true; id: string } | { ok: false; error: AdminErrorCode }> {
+  const p = TagInput.safeParse(input);
+  if (!uuid.safeParse(profileId).success || !p.success) return { ok: false, error: "invalid" };
+  let id = "";
+  const result = await run(undefined, async (db, me) => {
+    const created = await db.from("client_tags").insert(p.data).select("id").single();
+    if (created.error) return created;
+    id = created.data.id;
+    return db.from("client_tag_links").insert({ profile_id: profileId, tag_id: id, added_by: me });
+  });
+  return result.ok ? { ok: true, id } : result;
+}
+
+export async function renameClientTag(id: string, input: TagInput): Promise<AdminResult> {
+  const p = TagInput.safeParse(input);
+  if (!uuid.safeParse(id).success || !p.success) return { ok: false, error: "invalid" };
+  return run(undefined, async (db) => {
+    const r = await db.from("client_tags").update(p.data).eq("id", id).select("id");
+    // RLS hides the row from a manager who didn't create it: zero rows, no error.
+    return r.error || r.data.length ? r : { error: { message: "forbidden", code: "42501" } };
+  });
+}
+
+export async function archiveClientTag(id: string, archived: boolean): Promise<AdminResult> {
+  if (!uuid.safeParse(id).success) return { ok: false, error: "invalid" };
+  return run(["admin"], (db) => db.from("client_tags").update({ archived_at: archived ? new Date().toISOString() : null }).eq("id", id));
 }
 
 // ---------- Professional programme ----------
@@ -305,10 +377,12 @@ const TierInput = z.object({
   code: z.string().regex(/^[a-z0-9_]{2,30}$/),
   name_fr: z.string().trim().min(1).max(60),
   name_ar: z.string().trim().max(60).nullable(),
+  name_en: z.string().trim().max(60).nullable(),
   min_points: z.number().int().min(0).max(10_000_000),
   discount_percent: z.number().min(0).max(50),
   benefits_fr: z.array(z.string().trim().min(1).max(120)).max(12),
   benefits_ar: z.array(z.string().trim().min(1).max(120)).max(12),
+  benefits_en: z.array(z.string().trim().min(1).max(120)).max(12),
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/),
 });
 export type TierInput = z.infer<typeof TierInput>;
@@ -325,15 +399,18 @@ export async function saveTier(input: TierInput): Promise<AdminResult> {
 // ---------- CMS ----------
 
 const CmsInput = z.object({
-  hero: z.object({ badge: text(120), title: text(160), titleAccent: text(160), subtitle: text(600) }),
+  hero: z.object({ title: text(160), titleAccent: text(160), subtitle: text(600) }),
+  hero_image: z.string().url().max(1000).nullable(),
+  terms: text(30000),
   faqs: z.array(z.object({ question: text(300).min(1), answer: text(2000).min(1) })).max(30),
   testimonials: z.array(z.object({ quote: text(1000).min(1), author: text(120).min(1), role: text(160) })).max(12),
 });
 export type CmsInput = z.infer<typeof CmsInput>;
 
-export async function publishCms(locale: "fr" | "ar", content: CmsInput): Promise<AdminResult> {
+export async function publishCms(locale: Language, content: CmsInput): Promise<AdminResult> {
   const p = CmsInput.safeParse(content);
-  if (!["fr", "ar"].includes(locale) || !p.success) return { ok: false, error: "invalid" };
+  if (!LANGUAGES.includes(locale) || !p.success) return { ok: false, error: "invalid" };
+  if (p.data.hero_image && !p.data.hero_image.startsWith(`${supabaseEnv().url}/storage/v1/object/public/site-images/`)) return { ok: false, error: "upload_failed" };
   const result = await run(["editor", "manager", "admin"], (db, me) =>
     db.from("cms_content").upsert({ locale, content: p.data, updated_by: me }));
   if (result.ok) revalidatePath("/");

@@ -2,6 +2,10 @@
 
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
+import { getPrefs } from "@/lib/i18n/server";
+import { notifyRequest } from "@/lib/email/notify";
+import { serviceClient } from "@/lib/supabase/service";
+import { requestPath } from "@/lib/tracking";
 import type { SubmitErrorCode } from "@/lib/i18n/translations";
 
 const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
@@ -34,7 +38,7 @@ const RequestInput = z.object({
     .max(50),
 });
 
-export type SubmitResult = { ok: true; reference: string } | { ok: false; error: SubmitErrorCode };
+export type SubmitResult = { ok: true; reference: string; trackPath: string | null } | { ok: false; error: SubmitErrorCode };
 
 /** Saves the request through public.submit_request, which derives identity, tier and
  *  prices server-side. Success is only reported once the row is committed. */
@@ -60,6 +64,7 @@ export async function submitRequest(input: z.input<typeof RequestInput>): Promis
       guest_count: d.guests,
       delivery_mode: d.delivery,
       preferred_contact: d.contact,
+      language: (await getPrefs()).lang,
       lines: d.lines.map((l) => ({ product_id: l.productId, quantity: l.quantity, start_date: l.startDate, end_date: l.endDate })),
     },
   });
@@ -68,7 +73,14 @@ export async function submitRequest(input: z.input<typeof RequestInput>): Promis
     if (!code) console.error("submit_request failed", error);
     return { ok: false, error: code ?? "generic" };
   }
-  return { ok: true, reference: data as string };
+  const reference = data as string;
+  // After the commit: a mail or link problem must not fail a request that is already saved.
+  const db = serviceClient();
+  const { data: row } = db ? await db.from("rental_requests").select("id, user_id, idempotency_key, access_token_hash").eq("reference", reference).single() : { data: null };
+  if (!row) return { ok: true, reference, trackPath: null };
+  const trackPath = await requestPath(db!, row);
+  await notifyRequest("request_received", row.id, { staff: "Nouvelle demande" });
+  return { ok: true, reference, trackPath: trackPath.startsWith("/suivi") ? trackPath : null };
 }
 
 /** The client clicked the wa.me link. Recorded as "opened", never as "sent". */

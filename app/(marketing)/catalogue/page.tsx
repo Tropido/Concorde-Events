@@ -4,6 +4,8 @@ import { translations } from "@/lib/i18n/translations";
 import { getViewer } from "@/lib/auth";
 import { getCatalogue } from "@/lib/catalogue";
 import { isApprovedPro } from "@/lib/types";
+import { EventDatesChip } from "@/components/ui/date-range-picker";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import { CatalogueView } from "./catalogue-view";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,12 +26,15 @@ export default async function CataloguePage({ searchParams }: { searchParams: Pr
           <h1 className="display text-[clamp(2.75rem,7vw,5.5rem)]">{t.catalogue.title}</h1>
           <p className="max-w-xl text-[15px] text-ink/60 text-pretty">{t.catalogue.subtitle}</p>
         </div>
-        {pro && (
-          <p className="pill">
-            <span className="h-2 w-2 rounded-full" style={{ background: pro.tier.color }} aria-hidden />
-            {t.pro.pricesShown(pro.tier.name, pro.discount)}
-          </p>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <EventDatesChip />
+          {pro && (
+            <p className="pill">
+              <TierEmblem code={pro.tier.code} rank={pro.tier.rank} color={pro.tier.color} size={16} />
+              {t.pro.pricesShown(pro.tier.name, pro.discount)}
+            </p>
+          )}
+        </div>
       </header>
       <CatalogueView products={products} categories={categories} initialCategory={cat} />
     </div>

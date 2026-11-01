@@ -1,38 +1,61 @@
 "use client";
 
-import { useEffect, useId, useRef } from "react";
+import { Fragment, useEffect, useId, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Minus, Plus, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { cn, formatTND } from "@/lib/utils/formatters";
-import type { Price, Tone } from "@/lib/types";
+import { BRAND_NAME, BRAND_SHORT } from "@/lib/brand";
+import { pricesVisible, type ImageFit, type Price, type Tone } from "@/lib/types";
 
 export const ease = [0.22, 1, 0.36, 1] as const;
 
+/** Wordmark plus the "R4E" mark; the digit carries the accent. Inherits the text colour. */
 export function Logo({ className, compact = false }: { className?: string; compact?: boolean }) {
+  const words = BRAND_NAME.split(" ");
   return (
     <span className={cn("inline-flex items-center gap-2.5", className)} dir="ltr">
       <svg viewBox="0 0 32 32" className="h-8 w-8 shrink-0" aria-hidden>
-        <circle cx="16" cy="16" r="16" fill="#2b1d13" />
-        <path d="M21.5 11.2a7 7 0 1 0 0 9.6" fill="none" stroke="#ddb892" strokeWidth="2.4" strokeLinecap="round" />
-        <circle cx="21.6" cy="16" r="1.7" fill="#ddb892" />
+        <circle cx="16" cy="16" r="16" className="fill-ink" />
+        <text x="16" y="20.4" textAnchor="middle" fontSize="12.5" fontWeight="800" letterSpacing="-0.6" className="fill-card font-display">
+          {[...BRAND_SHORT].map((c, i) => <tspan key={i} className={/\d/.test(c) ? "fill-tan dark:fill-toffeeBrown" : undefined}>{c}</tspan>)}
+        </text>
       </svg>
       {!compact && (
-        <span className="leading-none">
-          <span className="block text-[15px] font-bold tracking-[-0.02em]">Concorde</span>
-          <span className="block font-mono text-[9px] uppercase tracking-[0.28em] text-ink/50">Events</span>
+        <span className="whitespace-nowrap text-[15px] font-bold leading-none tracking-[-0.02em]">
+          {words.map((w, i) => (
+            <Fragment key={i}>{i > 0 && " "}<span className={i > 0 && i < words.length - 1 ? "font-medium opacity-55" : undefined}>{w}</span></Fragment>
+          ))}
         </span>
       )}
     </span>
   );
 }
 
-/** Nightly TND price. Approved pros also see the public rate struck through. */
-export function PriceTag({ price, className, size = "md", showUnit = true }: { price: Price | null; className?: string; size?: "sm" | "md" | "lg"; showUnit?: boolean }) {
-  const { t, language } = useApp();
-  if (!price) return <span className={cn("text-sm text-ink/60", className)}>{t.common.priceOnRequest}</span>;
+/** Upsell under "Prix sur devis": sign up as Particulier+, or ask for it from the account. */
+export function SeePricesLink({ className }: { className?: string }) {
+  const { t, viewer } = useApp();
+  return (
+    <Link href={viewer ? "/account#particulier-plus" : "/register?type=customer_plus"} className={cn("text-[11px] text-ink/65 underline underline-offset-2 hover:text-ink", className)}>
+      {t.common.seePrices}
+    </Link>
+  );
+}
+
+/** Nightly TND price. Approved pros also see the public rate struck through. Visitors and
+ *  Particuliers get "Prix sur devis" (RLS returned no price row) with the Particulier+ link. */
+export function PriceTag({ price, className, size = "md", showUnit = true, upsell = true }: { price: Price | null; className?: string; size?: "sm" | "md" | "lg"; showUnit?: boolean; upsell?: boolean }) {
+  const { t, language, viewer } = useApp();
+  if (!price) {
+    return (
+      <span className={cn("inline-flex flex-col gap-0.5", className)}>
+        <span className={cn("font-semibold tracking-tight", size === "lg" ? "text-xl" : "text-sm")}>{t.common.priceOnRequest}</span>
+        {upsell && !pricesVisible(viewer) && <SeePricesLink />}
+      </span>
+    );
+  }
   const big = size === "lg" ? "text-3xl" : size === "md" ? "text-base" : "text-sm";
   const saving = price.tier === "pro" && price.retail !== null && price.retail > price.amount;
   return (
@@ -44,15 +67,26 @@ export function PriceTag({ price, className, size = "md", showUnit = true }: { p
   );
 }
 
-/** A product picture on its tinted tile; a quiet monogram when no photo exists yet. */
-export function ProductTile({ src, alt, tone, sizes, priority, className, children }: {
-  src?: string | null; alt: string; tone: Tone; sizes: string; priority?: boolean; className?: string; children?: React.ReactNode;
+const zoom = "transition-transform duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]";
+
+/** A product picture on its stage. "contain" (cut-outs) stands the whole piece on the tile
+ *  with a floor shadow, white photo backgrounds multiplied into the tone; "cover" fills it
+ *  (ambiance photos). A quiet monogram when no photo exists yet. */
+export function ProductTile({ src, alt, tone, sizes, priority, className, children, fit = "contain" }: {
+  src?: string | null; alt: string; tone: Tone; sizes: string; priority?: boolean; className?: string; children?: React.ReactNode; fit?: ImageFit;
 }) {
   return (
-    <div className={cn("grain relative overflow-hidden", `tone-${tone}`, className)}>
-      {src ? (
-        <Image src={src} alt={alt} fill sizes={sizes} priority={priority}
-          className="object-cover transition-transform duration-[900ms] ease-[cubic-bezier(.22,1,.36,1)] group-hover:scale-[1.04]" />
+    <div className={cn("grain relative overflow-hidden", `stage-${tone}`, className)}>
+      {src && fit === "cover" ? (
+        <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className={cn("object-cover", zoom)} />
+      ) : src ? (
+        <>
+          {/* The piece stands on the floor shadow rather than floating in the middle. */}
+          <span aria-hidden className="absolute inset-x-[20%] bottom-[7%] h-[6%] rounded-[50%] bg-espresso/25 blur-[10px]" />
+          <span className={cn("absolute inset-x-[10%] top-[10%] bottom-[9%]", zoom)}>
+            <Image src={src} alt={alt} fill sizes={sizes} priority={priority} className="object-contain object-bottom mix-blend-multiply" />
+          </span>
+        </>
       ) : (
         <span aria-hidden className="absolute inset-0 flex items-center justify-center display text-[7rem] text-ink/[0.07] select-none">
           {alt.trim().charAt(0)}
@@ -63,37 +97,19 @@ export function ProductTile({ src, alt, tone, sizes, priority, className, childr
   );
 }
 
-/** Slowly turning circular label, the one ornamental motion of the storefront. */
-export function RotatingBadge({ text, className, children }: { text: string; className?: string; children?: React.ReactNode }) {
-  const id = useId().replace(/:/g, "");
-  return (
-    <span className={cn("relative inline-flex h-20 w-20 items-center justify-center", className)} aria-hidden>
-      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full animate-spin-slow">
-        <defs>
-          <path id={id} d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0" />
-        </defs>
-        <text className="fill-ink/70 font-mono" fontSize="9.2" letterSpacing="2.6">
-          <textPath href={`#${id}`}>{text}</textPath>
-        </text>
-      </svg>
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-card">{children}</span>
-    </span>
-  );
-}
-
-export function QuantityStepper({ value, onChange, min = 1, max, label, size = "md" }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number | null; label: string; size?: "sm" | "md";
+export function QuantityStepper({ value, onChange, min = 1, max, label, size = "md", step = 1 }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number | null; label: string; size?: "sm" | "md"; step?: number;
 }) {
   const { t } = useApp();
   const h = size === "sm" ? "h-8" : "h-12";
   return (
     <div className={cn("inline-flex items-center rounded-full bg-paper ring-1 ring-line", h)} role="group" aria-label={label}>
-      <button type="button" aria-label={t.booking.decrease} disabled={value <= min} onClick={() => onChange(value - 1)}
+      <button type="button" aria-label={t.booking.decrease} disabled={value <= min} onClick={() => onChange(value - step)}
         className={cn("flex items-center justify-center rounded-full disabled:opacity-30", size === "sm" ? "w-8" : "w-11")}>
         <Minus className="h-3.5 w-3.5" />
       </button>
       <span className="min-w-6 text-center text-sm font-semibold tabular-nums" aria-live="polite">{value}</span>
-      <button type="button" aria-label={t.booking.increase} disabled={max != null && value >= max} onClick={() => onChange(value + 1)}
+      <button type="button" aria-label={t.booking.increase} disabled={max != null && value >= max} onClick={() => onChange(value + step)}
         className={cn("flex items-center justify-center rounded-full disabled:opacity-30", size === "sm" ? "w-8" : "w-11")}>
         <Plus className="h-3.5 w-3.5" />
       </button>
@@ -149,10 +165,10 @@ export function Drawer({ open, onClose, labelledBy, children, side = "end" }: {
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[60]">
-          <motion.div className="absolute inset-0 bg-ink/35 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+          <motion.div className="absolute inset-0 bg-espresso/40 backdrop-blur-[2px]" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
           <motion.div ref={ref} role="dialog" aria-modal="true" aria-labelledby={labelledBy} tabIndex={-1}
             initial={{ x: `${offscreen}%` }} animate={{ x: 0 }} exit={{ x: `${offscreen}%` }} transition={{ duration: 0.45, ease }}
-            className={cn("absolute top-0 bottom-0 flex w-full max-w-[440px] flex-col bg-card shadow-float outline-none sm:top-2 sm:bottom-2 sm:rounded-[1.75rem]",
+            className={cn("absolute top-0 bottom-0 flex w-full max-w-[440px] flex-col bg-raised shadow-float outline-none sm:top-2 sm:bottom-2 sm:rounded-[1.75rem]",
               fromEnd ? "end-0 sm:end-2" : "start-0 sm:start-2")}>
             {children}
           </motion.div>
@@ -181,9 +197,7 @@ export function Toaster() {
             transition={{ duration: 0.35, ease }}
             className="pointer-events-auto flex max-w-md items-center gap-3 rounded-full bg-ink py-1.5 ps-1.5 pe-1.5 text-card shadow-float">
             {x.image ? (
-              <span className={cn("relative h-9 w-9 shrink-0 overflow-hidden rounded-full", `tone-${x.tone ?? "almond"}`)}>
-                <Image src={x.image} alt="" fill sizes="36px" className="object-cover" />
-              </span>
+              <ProductTile src={x.image} alt="" tone={x.tone ?? "almond"} fit={x.fit} sizes="36px" className="h-9 w-9 shrink-0 rounded-full" />
             ) : (
               <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-ok text-card"><Check className="h-4 w-4" /></span>
             )}

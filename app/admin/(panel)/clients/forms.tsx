@@ -2,34 +2,40 @@
 
 import { useState, useTransition } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Building2, ChevronDown, Globe, Lock, Mail, MapPin, Phone, Plus, Unlock, X } from "lucide-react";
+import { Building2, CalendarHeart, ChevronDown, Globe, Lock, Mail, MapPin, Phone, Plus, Unlock, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { adjustPoints, saveClientNotes, saveProProgramme, setAccountStatus, setRole, type AdminResult } from "@/lib/actions/admin";
+import { saveDepositOverride } from "@/lib/actions/orders";
 import { ActionButton, Avatar, ResultText, btnDanger, btnPrimary } from "@/components/admin/ui";
 import { ease } from "@/components/ui/kit";
+import { TierEmblem } from "@/components/ui/tier-emblem";
+import { ClientTags, TagPill, type ClientTag } from "./tags";
+import { ResetPassword, type AuditRow } from "./reset-password";
 import { cn, formatDateTime, formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { AccountStatus, AppRole, ProTier } from "@/lib/types";
+import type { AccountStatus, AppRole, EventType, ProTier } from "@/lib/types";
 
 export type ClientRow = {
   id: string; email: string; full_name: string | null; company_name: string | null; phone: string | null; vat_number: string | null;
-  activity: string | null; city: string | null; website: string | null; role: AppRole; status: AccountStatus; created_at: string;
-  client_notes: { notes: string; flags: string[]; level: string | null } | null;
+  activity: string | null; city: string | null; website: string | null; event_type: EventType | null; role: AppRole; status: AccountStatus; created_at: string;
+  client_notes: { notes: string; level: string | null; deposit_rate_override: number | null } | null;
+  client_tag_links: { tag_id: string }[];
+  admin_audit: (AuditRow & { action: string })[];
   pro_accounts: { tier_code: string; tier_locked: boolean; points: number; custom_discount_percent: number | null; extra_benefits: string[] } | null;
   stats: { requests: number; booked: number };
 };
 
-const ROLES: AppRole[] = ["customer", "professional", "editor", "manager", "admin"];
-const FLAGS = ["vip", "big_account", "reliable_payer", "watch", "new_partner", "dispute_resolved"] as const;
+const ROLES: AppRole[] = ["customer", "customer_plus", "professional", "editor", "manager", "admin"];
 const LEVELS = ["bronze", "argent", "or", "platine", "diamant", "royal_elite"] as const;
 const statusTone: Record<AccountStatus, string> = { pending: "bg-warn-soft text-warn", approved: "bg-ok-soft text-ok", rejected: "bg-bad-soft text-bad", suspended: "bg-bad-soft text-bad" };
 
-export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: { client: ClientRow; tiers: ProTier[]; isAdmin: boolean; selfId: string; defaultOpen: boolean }) {
+export function ClientCard({ client: c, tiers, tags, isAdmin, selfId, defaultOpen }: { client: ClientRow; tiers: ProTier[]; tags: ClientTag[]; isAdmin: boolean; selfId: string; defaultOpen: boolean }) {
   const { t, language } = useApp();
   const a = t.admin.clients;
   const [open, setOpen] = useState(defaultOpen);
-  const isClient = c.role === "customer" || c.role === "professional";
+  const isClient = c.role === "customer" || c.role === "customer_plus" || c.role === "professional";
   const tier = c.pro_accounts && tiers.find((x) => x.code === c.pro_accounts!.tier_code);
-  const flags = c.client_notes?.flags ?? [];
+  const tagIds = c.client_tag_links.map((l) => l.tag_id);
+  const clientTags = tags.filter((x) => tagIds.includes(x.id));
 
   return (
     <article className="card overflow-hidden">
@@ -39,8 +45,8 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
           <div className="min-w-0">
             <p className="flex flex-wrap items-center gap-2 font-semibold tracking-tight">
               {c.full_name ?? c.email}
-              {c.role === "professional" && tier && <span className="inline-flex items-center gap-1 rounded-full bg-paper px-2 py-0.5 text-[11px] font-medium"><span className="h-2 w-2 rounded-full" style={{ background: tier.color }} aria-hidden />{tier.name}</span>}
-              {flags.slice(0, 3).map((f) => <span key={f} className="rounded-full bg-tone-sand px-2 py-0.5 text-[11px] font-normal">{a.flagLabels[f as keyof typeof a.flagLabels] ?? f}</span>)}
+              {c.role === "professional" && tier && <span className="inline-flex items-center gap-1 rounded-full bg-paper py-0.5 pe-2 ps-1 text-[11px] font-medium"><TierEmblem code={tier.code} rank={tier.rank} color={tier.color} size={16} />{tier.name}</span>}
+              {clientTags.slice(0, 4).map((x) => <TagPill key={x.id} tag={x} />)}
             </p>
             <p className="truncate text-xs text-ink/55">
               {[c.company_name, c.activity && (t.auth.activities[c.activity as keyof typeof t.auth.activities] ?? c.activity), c.city].filter(Boolean).join(" · ") || c.email}
@@ -68,6 +74,7 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
                   {c.phone && <li className="flex items-center gap-2"><Phone className="h-4 w-4 text-ink/40" aria-hidden /><a href={`https://wa.me/${c.phone.replace(/\D/g, "")}`} target="_blank" rel="noopener noreferrer" className="hover:underline"><bdi dir="ltr">{c.phone}</bdi></a></li>}
                   {c.company_name && <li className="flex items-center gap-2"><Building2 className="h-4 w-4 text-ink/40" aria-hidden />{c.company_name}{c.vat_number && <span className="font-mono text-xs text-ink/50">· {c.vat_number}</span>}</li>}
                   {c.city && <li className="flex items-center gap-2"><MapPin className="h-4 w-4 text-ink/40" aria-hidden />{c.city}</li>}
+                  {c.event_type && <li className="flex items-center gap-2"><CalendarHeart className="h-4 w-4 text-ink/40" aria-hidden />{t.eventTypes[c.event_type]}</li>}
                   {c.website && <li className="flex items-center gap-2"><Globe className="h-4 w-4 text-ink/40" aria-hidden /><bdi dir="ltr" className="truncate">{c.website}</bdi></li>}
                 </ul>
                 <dl className="grid grid-cols-2 gap-2 text-sm">
@@ -76,13 +83,16 @@ export function ClientCard({ client: c, tiers, isAdmin, selfId, defaultOpen }: {
                 </dl>
                 <p className="text-xs text-ink/45">{a.joined} {formatDateTime(c.created_at, language)}</p>
                 {isAdmin && c.id !== selfId && <RoleSelect profileId={c.id} role={c.role} />}
+                {c.id !== selfId && (isClient || isAdmin) && (
+                  <ResetPassword profileId={c.id} email={c.email} phone={c.phone} isAdmin={isAdmin} history={c.admin_audit.filter((h) => h.action === "password_reset_link").sort((x, y) => y.created_at.localeCompare(x.created_at)).slice(0, 3)} />
+                )}
               </div>
 
               {c.role === "professional" && c.pro_accounts
                 ? <Programme profileId={c.id} account={c.pro_accounts} tiers={tiers} />
                 : isClient ? <LevelOnly /> : <div className="hidden xl:block" />}
 
-              {isClient && <Notes profileId={c.id} initial={c.client_notes} showLevel={c.role === "customer"} />}
+              {isClient && <Notes profileId={c.id} initial={c.client_notes} tags={tags} tagIds={tagIds} showLevel={c.role === "customer" || c.role === "customer_plus"} />}
             </div>
           </motion.div>
         )}
@@ -136,7 +146,7 @@ function Programme({ profileId, account, tiers }: { profileId: string; account: 
         {tiers.map((x) => (
           <button key={x.code} type="button" aria-pressed={tier === x.code} onClick={() => { setTier(x.code); setLocked(true); }}
             className={cn("rounded-xl px-2 py-2 text-xs ring-1 transition", tier === x.code ? "bg-ink text-card ring-ink" : "bg-paper ring-transparent hover:ring-line")}>
-            <span className="block font-medium">{x.name}</span><span className="block opacity-60"><bdi dir="ltr">{x.discount ? `−${x.discount}%` : "0%"}</bdi></span>
+            <TierEmblem code={x.code} rank={x.rank} color={x.color} size={24} className="mx-auto mb-1" /><span className="block font-medium">{x.name}</span><span className="block opacity-60"><bdi dir="ltr">{x.discount ? `−${x.discount}%` : "0%"}</bdi></span>
           </button>
         ))}
       </div>
@@ -194,10 +204,27 @@ function LevelOnly() {
   );
 }
 
-function Notes({ profileId, initial, showLevel }: { profileId: string; initial: ClientRow["client_notes"]; showLevel: boolean }) {
+function DepositOverride({ profileId, initial }: { profileId: string; initial: number | null }) {
+  const { t } = useApp();
+  const c = t.order.company;
+  const [v, setV] = useState(initial === null ? "" : String(initial));
+  const [state, setState] = useState<AdminResult | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <label className="block"><span className="field-label">{c.clientDepositRate}</span>
+      <span className="flex items-center gap-2">
+        <input type="number" min={0} max={100} step="0.5" value={v} onChange={(e) => setV(e.target.value)} className="field w-28 py-2" />
+        <button type="button" disabled={pending} className="btn-light btn-sm" onClick={() => start(async () => setState(await saveDepositOverride(profileId, v === "" ? null : Number(v))))}>{t.common.save}</button>
+        <ResultText state={state} />
+      </span>
+      <span className="mt-1 block text-[11px] text-ink/45">{c.clientDepositHint}</span>
+    </label>
+  );
+}
+
+function Notes({ profileId, initial, tags, tagIds, showLevel }: { profileId: string; initial: ClientRow["client_notes"]; tags: ClientTag[]; tagIds: string[]; showLevel: boolean }) {
   const { t } = useApp();
   const a = t.admin.clients;
-  const [flags, setFlags] = useState<string[]>(initial?.flags ?? []);
   const [level, setLevel] = useState(initial?.level ?? "");
   const [notes, setNotes] = useState(initial?.notes ?? "");
   const [state, setState] = useState<AdminResult | null>(null);
@@ -205,18 +232,7 @@ function Notes({ profileId, initial, showLevel }: { profileId: string; initial: 
   return (
     <div className="space-y-4 rounded-2xl bg-card p-4">
       <p className="text-sm font-semibold">{a.notesTitle}</p>
-      <fieldset>
-        <legend className="field-label">{a.flags}</legend>
-        <div className="flex flex-wrap gap-1.5">
-          {FLAGS.map((f) => {
-            const on = flags.includes(f);
-            return (
-              <button key={f} type="button" aria-pressed={on} onClick={() => setFlags(on ? flags.filter((x) => x !== f) : [...flags, f])}
-                className={cn("rounded-full px-3 py-1.5 text-xs ring-1 transition", on ? "bg-ink text-card ring-ink" : "bg-paper ring-transparent hover:ring-line")}>{a.flagLabels[f]}</button>
-            );
-          })}
-        </div>
-      </fieldset>
+      <ClientTags profileId={profileId} tags={tags} initial={tagIds} />
       {showLevel && (
         <label className="block"><span className="field-label">{a.level}</span>
           <select value={level} onChange={(e) => setLevel(e.target.value)} className="field">
@@ -225,12 +241,13 @@ function Notes({ profileId, initial, showLevel }: { profileId: string; initial: 
           </select>
         </label>
       )}
+      <DepositOverride profileId={profileId} initial={initial?.deposit_rate_override ?? null} />
       <label className="block"><span className="field-label">{a.notes}</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} maxLength={5000} placeholder={a.notesPlaceholder} className="field resize-y" />
       </label>
       <p className="text-[11px] text-ink/45">{a.notesPrivate}</p>
       <div className="flex items-center gap-2">
-        <button type="button" disabled={pending} className="btn-ink btn-sm" onClick={() => start(async () => setState(await saveClientNotes(profileId, { notes, flags, level: level || null })))}>{a.saveNotes}</button>
+        <button type="button" disabled={pending} className="btn-ink btn-sm" onClick={() => start(async () => setState(await saveClientNotes(profileId, { notes, level: level || null })))}>{a.saveNotes}</button>
         <ResultText state={state} />
       </div>
     </div>

@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth";
-import type { Viewer } from "@/lib/types";
+import { notifyRequest } from "@/lib/email/notify";
+import { PLUS_REQUEST_SUBJECT, type Viewer } from "@/lib/types";
 
 /** Rejected/suspended accounts keep read access to their history but cannot write. */
 const active = (v: Viewer | null): v is Viewer => !!v && (v.status === "approved" || v.status === "pending");
@@ -30,8 +31,9 @@ export async function cancelRequest(requestId: string) {
   const viewer = await getViewer();
   if (!viewer) return;
   const supabase = await createClient();
-  await supabase.from("rental_requests").update({ status: "cancelled" })
-    .eq("id", requestId).eq("user_id", viewer.id).in("status", ["submitted", "validated"]);
+  const { data } = await supabase.from("rental_requests").update({ status: "cancelled" })
+    .eq("id", requestId).eq("user_id", viewer.id).in("status", ["submitted", "validated"]).select("id");
+  if (data?.length) await notifyRequest("cancelled", requestId);
   revalidatePath("/account");
 }
 
@@ -61,6 +63,31 @@ export async function sendMessage(_: FormState, form: FormData): Promise<FormSta
   return { ok: true };
 }
 
+/** A Particulier asks staff for Particulier+, as an inbox ticket (one open request at a time).
+ *  Staff then change the role; the database refuses self-promotion anyway. */
+export async function requestPlusUpgrade(): Promise<FormState> {
+  const viewer = await getViewer();
+  if (!viewer || viewer.role !== "customer" || viewer.status !== "approved") return { error: true };
+  const supabase = await createClient();
+  const { count } = await supabase.from("messages").select("id", { count: "exact", head: true })
+    .eq("profile_id", viewer.id).eq("subject", PLUS_REQUEST_SUBJECT).neq("status", "resolved");
+  if (count) return { ok: true };
+  const { error } = await supabase.from("messages").insert({
+    channel: "site",
+    profile_id: viewer.id,
+    name: viewer.fullName,
+    email: viewer.email,
+    phone: viewer.phone,
+    country: "TN",
+    category: "other",
+    subject: PLUS_REQUEST_SUBJECT,
+    body: `${viewer.fullName ?? viewer.email} souhaite passer à Particulier+.${viewer.city ? ` Ville : ${viewer.city}.` : ""}`,
+  });
+  if (error) return { error: true };
+  revalidatePath("/account");
+  return { ok: true };
+}
+
 export async function replyToMessage(_: FormState, form: FormData): Promise<FormState> {
   const viewer = await getViewer();
   const parsed = z.object({ message_id: z.string().uuid(), body: z.string().trim().min(1).max(5000) }).safeParse(Object.fromEntries(form));
@@ -83,6 +110,8 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
     city: opt(80),
     activity: opt(80),
     website: opt(200),
+    language: z.enum(["fr", "en", "ar"]),
+    address: opt(240),
   }).safeParse(Object.fromEntries(form));
   if (!viewer || !parsed.success) return { error: true };
   const supabase = await createClient();

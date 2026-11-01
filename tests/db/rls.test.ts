@@ -46,12 +46,11 @@ describe("prices", () => {
   const proRows = "select * from public.product_prices where tier = 'pro'";
   const proView = "select * from public.catalogue_prices where tier = 'pro'";
 
-  it("hides pro prices from anon, customers and pending pros (table and view)", async () => {
-    for (const uid of [null, customerA, pendingPro, editor]) {
+  it("hides pro prices from customers, pending pros and editors (table and view)", async () => {
+    for (const uid of [customerA, pendingPro, editor]) {
       expect(await count(uid, proRows)).toBe(0);
       expect(await count(uid, proView)).toBe(0);
     }
-    expect(await count(null, "select * from public.product_prices where tier = 'retail'")).toBeGreaterThan(0);
   });
 
   it("shows pro prices to approved pros and operations staff", async () => {

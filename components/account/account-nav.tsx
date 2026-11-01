@@ -7,6 +7,7 @@ import { Crown, FileText, Heart, LogOut, MessageSquare, UserRound } from "lucide
 import { useApp } from "@/lib/context/app-context";
 import { signOut } from "@/lib/actions/auth";
 import { cn, initials } from "@/lib/utils/formatters";
+import { TierEmblem } from "@/components/ui/tier-emblem";
 import type { Viewer } from "@/lib/types";
 
 export function AccountNav({ viewer }: { viewer: Viewer }) {
@@ -21,6 +22,9 @@ export function AccountNav({ viewer }: { viewer: Viewer }) {
     { href: "/account/profile", label: t.account.profile, icon: UserRound },
   ];
   const pro = viewer.pro;
+  const type = viewer.status === "pending"
+    ? viewer.role === "customer_plus" ? t.auth.pendingTitlePlus : t.auth.pendingTitle
+    : viewer.role in t.account.types ? t.account.types[viewer.role as keyof typeof t.account.types] : t.admin.clients.roleLabels[viewer.role];
   return (
     <aside className="card flex flex-col gap-5 p-4 lg:sticky lg:top-20 lg:min-h-[calc(100vh-7rem)] lg:p-5">
       <div className="flex items-center gap-3 px-1">
@@ -28,9 +32,9 @@ export function AccountNav({ viewer }: { viewer: Viewer }) {
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{viewer.fullName ?? viewer.email}</p>
           {isPro && pro && viewer.status === "approved" ? (
-            <p className="flex items-center gap-1.5 text-xs text-ink/60"><span className="h-2 w-2 rounded-full" style={{ background: pro.tier.color }} aria-hidden />{t.pro.memberOf(pro.tier.name)}</p>
+            <p className="flex items-center gap-1.5 text-xs text-ink/60"><TierEmblem code={pro.tier.code} rank={pro.tier.rank} color={pro.tier.color} size={16} />{t.pro.memberOf(pro.tier.name)}</p>
           ) : (
-            <p className="text-xs text-ink/55">{isPro ? t.auth.pendingTitle : t.account.particulier}</p>
+            <p className="text-xs text-ink/60">{type}</p>
           )}
         </div>
       </div>

@@ -1,10 +1,12 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { safeNext } from "@/lib/auth";
+import { getPrefs } from "@/lib/i18n/server";
 import { STAFF_ROLES, type AppRole } from "@/lib/types";
 import type { Translations } from "@/lib/i18n/translations";
 
@@ -58,7 +60,8 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
       phone: z.string().trim().min(6).max(40),
       company_name: opt(120),
       vat_number: opt(40),
-      account_type: z.enum(["customer", "professional"]),
+      account_type: z.enum(["customer", "customer_plus", "professional"]),
+      event_type: z.enum(["wedding", "engagement", "birthday", "corporate", "gala", "private", "other"]).optional().or(z.literal("").transform(() => undefined)),
       activity: opt(80),
       city: opt(80),
       website: opt(200),
@@ -69,27 +72,29 @@ export async function signUp(_: AuthState, form: FormData): Promise<AuthState> {
   }
   const { email: e, password, ...profile } = parsed.data;
   if (profile.account_type === "professional" && (!profile.company_name || !profile.activity)) return { error: "proFields" };
+  if (profile.account_type === "customer_plus" && !profile.city) return { error: "plusFields" };
   const supabase = await createClient();
   // Metadata only requests an account type; the database trigger decides the actual role.
   const { error } = await supabase.auth.signUp({
     email: e,
     password,
-    options: { emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/account`, data: profile },
+    options: { emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/account`, data: { ...profile, language: (await getPrefs()).lang } },
   });
   if (error) return { error: authError(error) };
   return { ok: true };
 }
 
+/** An email gets the usual link; a phone number becomes a ticket for staff, who check who is
+ *  asking. Whatever happens, the answer is the same, so nothing reveals whether an account exists. */
 export async function requestPasswordReset(_: AuthState, form: FormData): Promise<AuthState> {
-  const parsed = email.safeParse(form.get("email"));
-  if (parsed.success) {
-    const supabase = await createClient();
-    const { error } = await supabase.auth.resetPasswordForEmail(parsed.data, {
-      redirectTo: `${await siteOrigin()}/auth/confirm?next=/reset-password`,
-    });
-    if (error && authError(error) === "rateLimited") return { error: "rateLimited" };
+  const identifier = String(form.get("identifier") ?? "").trim().toLowerCase().slice(0, 254);
+  const h = await headers();
+  const ip = (h.get("x-forwarded-for") ?? "").split(",")[0].trim() || "unknown";
+  const supabase = await createClient();
+  const { data: mayEmail } = await supabase.rpc("request_password_help", { p_identifier: identifier, p_ip_hash: createHash("sha256").update(ip).digest("hex") });
+  if (mayEmail && email.safeParse(identifier).success) {
+    await supabase.auth.resetPasswordForEmail(identifier, { redirectTo: `${await siteOrigin()}/auth/confirm?next=/reset-password` });
   }
-  // Same answer whether or not the account exists.
   return { ok: true };
 }
 

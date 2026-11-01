@@ -31,7 +31,7 @@ export function MarginCalculator({ products }: { products: CatalogueProduct[] })
         <label className="block"><span className="field-label">{t.booking.quantity}</span><input type="number" min={1} value={qty} onChange={(e) => setQty(num(e.target.value))} className="field" /></label>
         <label className="block"><span className="field-label">{t.quote.nights}</span><input type="number" min={1} value={n} onChange={(e) => setN(num(e.target.value))} className="field" /></label>
         <label className="block sm:col-span-2"><span className="field-label">{t.account.marginLabel} · {margin}%</span>
-          <input type="range" min={0} max={150} step={5} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className="w-full accent-[#2b1d13]" />
+          <input type="range" min={0} max={150} step={5} value={margin} onChange={(e) => setMargin(Number(e.target.value))} className="w-full accent-ink" />
         </label>
       </div>
       <dl className="space-y-3 rounded-3xl bg-paper p-5 text-sm" aria-live="polite">

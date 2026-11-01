@@ -18,5 +18,10 @@ export default defineConfig({
   // Dedicated port, never reuse: another local app on :3000 must not be tested by mistake.
   webServer: { command: "npx next dev -p 3210", url: "http://localhost:3210", reuseExistingServer: false, timeout: 180_000,
     // Local networks without IPv6 + Node 250 ms per-attempt connect timeout = sporadic ETIMEDOUT to Supabase.
-    env: { NODE_OPTIONS: "--network-family-autoselection-attempt-timeout=1500" } },
+    env: {
+      NODE_OPTIONS: "--network-family-autoselection-attempt-timeout=1500",
+      NEXT_PUBLIC_SITE_URL: "http://localhost:3210",
+      // Guest tracking links need a key; this run's links are only ever opened by this run.
+      TRACKING_TOKEN_SECRET: process.env.TRACKING_TOKEN_SECRET ?? "e2e-tracking-only",
+    } },
 });

@@ -11,7 +11,7 @@ type Req = {
   request_lines: { product_id: string; quantity: number; nights: number; line_total: number; start_date: string }[];
 };
 
-const BOOKED: RequestStatus[] = ["confirmed", "dispatched", "completed"];
+const BOOKED: RequestStatus[] = ["confirmed", "dispatched", "returned", "completed"];
 
 // Only figures backed by records (requests, lines, stock, purchase costs).
 export default async function AdminAnalyticsPage() {
@@ -68,7 +68,7 @@ export default async function AdminAnalyticsPage() {
 
   const data: AnalyticsData = {
     months: months.map((m) => ({ month: m, value: byMonth.get(m)! })),
-    statuses: (["submitted", "validated", "confirmed", "dispatched", "completed", "cancelled", "rejected"] as RequestStatus[]).map((s) => ({ status: s, count: byStatus.get(s) ?? 0 })),
+    statuses: (["submitted", "validated", "accepted", "confirmed", "dispatched", "returned", "completed", "cancelled", "rejected"] as RequestStatus[]).map((s) => ({ status: s, count: byStatus.get(s) ?? 0 })),
     events: [...byEvent.entries()].sort((a, b) => b[1] - a[1]).map(([type, value]) => ({ type, value })),
     products: productRows.slice(0, 12),
     split: { pro: proValue, retail: retailValue },

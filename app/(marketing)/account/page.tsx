@@ -6,12 +6,14 @@ import { cancelRequest } from "@/lib/actions/account";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { StatusPill, StatusTrack } from "@/components/ui/status";
 import { todayIn } from "@/lib/dates";
+import { localized } from "@/lib/i18n/localize";
 import { formatDateTime, formatDay, formatNumber, formatTND } from "@/lib/utils/formatters";
-import type { RequestStatus } from "@/lib/types";
+import { PLUS_REQUEST_SUBJECT, pricesVisible, type RequestStatus } from "@/lib/types";
+import { UpgradeCard } from "./upgrade-card";
 
 type Row = {
   id: string; reference: string; status: RequestStatus; created_at: string; quote_valid_until: string | null; event_type: string | null;
-  request_lines: { id: string; quantity: number; start_date: string; end_date: string; nights: number; line_total: number; products: { title_fr: string; title_ar: string | null } | null }[];
+  request_lines: { id: string; quantity: number; start_date: string; end_date: string; nights: number; line_total: number; products: { title_fr: string; title_en: string | null; title_ar: string | null } | null }[];
   quotes: { id: string; revision: number; total: number }[];
 };
 
@@ -21,14 +23,19 @@ export default async function AccountRequestsPage() {
   // RLS already limits rows to this user; the explicit filter keeps the intent obvious.
   const { data, error } = await supabase
     .from("rental_requests")
-    .select("id, reference, status, created_at, quote_valid_until, event_type, request_lines(id, quantity, start_date, end_date, nights, line_total, products(title_fr, title_ar)), quotes(id, revision, total:snapshot->total)")
+    .select("id, reference, status, created_at, quote_valid_until, event_type, request_lines(id, quantity, start_date, end_date, nights, line_total, products(title_fr, title_en, title_ar)), quotes(id, revision, total:snapshot->total)")
     .eq("user_id", viewer.id)
     .order("created_at", { ascending: false });
   if (error) throw error;
   const rows = (data ?? []) as unknown as Row[];
+  const shown = pricesVisible(viewer);
+  // A Particulier can ask for Particulier+; an open request shows as pending.
+  const particulier = viewer.role === "customer" && viewer.status === "approved";
+  const asked = particulier && !!(await supabase.from("messages").select("id", { count: "exact", head: true })
+    .eq("profile_id", viewer.id).eq("subject", PLUS_REQUEST_SUBJECT).neq("status", "resolved")).count;
   const a = t.account;
   const today = todayIn("TN");
-  const open = rows.filter((r) => ["submitted", "validated", "confirmed", "dispatched"].includes(r.status));
+  const open = rows.filter((r) => ["submitted", "validated", "accepted", "confirmed", "dispatched", "returned"].includes(r.status));
   const next = open.flatMap((r) => r.request_lines.map((l) => l.start_date)).filter((d) => d >= today).sort()[0];
 
   return (
@@ -43,6 +50,8 @@ export default async function AccountRequestsPage() {
             : <Stat label={a.totalRequests} value={formatNumber(rows.length, prefs.lang)} />}
         </dl>
       </section>
+
+      {particulier && <UpgradeCard alreadyAsked={asked} />}
 
       {rows.length === 0 ? (
         <div className="card flex flex-col items-center gap-3 p-12 text-center">
@@ -66,7 +75,7 @@ export default async function AccountRequestsPage() {
             <ul className="divide-y divide-line rounded-2xl bg-paper px-4 text-sm">
               {r.request_lines.map((l) => (
                 <li key={l.id} className="flex flex-wrap justify-between gap-2 py-2.5">
-                  <span>{l.quantity} × {(prefs.lang === "ar" && l.products?.title_ar) || l.products?.title_fr}</span>
+                  <span>{l.quantity} × {l.products && localized(l.products, "title", prefs.lang)}</span>
                   <span className="text-xs text-ink/55"><bdi>{formatDay(l.start_date, prefs.lang)}</bdi> – <bdi>{formatDay(l.end_date, prefs.lang)}</bdi> · {t.common.nights(l.nights)}</span>
                 </li>
               ))}
@@ -80,11 +89,15 @@ export default async function AccountRequestsPage() {
                     {r.status === "validated" && r.quote_valid_until && <span className="block text-xs text-ink/55">{a.quoteValidUntil(formatDay(r.quote_valid_until, prefs.lang))}</span>}
                   </>
                 ) : (
-                  <span className="text-ink/60">{a.estimate} <span className="font-semibold text-ink">{formatTND(estimate, prefs.lang)}</span> · {a.noQuote}</span>
+                  shown
+                    ? <span className="text-ink/60">{a.estimate} <span className="font-semibold text-ink">{formatTND(estimate, prefs.lang)}</span> · {a.noQuote}</span>
+                    : <span className="text-ink/60"><span className="font-semibold text-ink">{t.common.priceOnRequest}</span> · {t.common.priceInQuote}</span>
                 )}
               </div>
               <div className="flex gap-2">
-                {quote && <Link href={`/quote/${quote.id}`} className="btn-ink btn-sm">{a.viewQuote}</Link>}
+                {r.status === "validated" && <Link href={`/account/requests/${r.id}`} className="btn-ink btn-sm">{t.order.acceptCta}</Link>}
+                {quote && <Link href={`/quote/${quote.id}`} className="btn-light btn-sm">{a.viewQuote}</Link>}
+                <Link href={`/account/requests/${r.id}`} className="btn-light btn-sm">{t.order.viewDetails}</Link>
                 {(r.status === "submitted" || r.status === "validated") && (
                   <form action={cancelRequest.bind(null, r.id)}>
                     <ConfirmButton message={a.cancelConfirm} className="btn-light btn-sm text-bad">{a.cancel}</ConfirmButton>
