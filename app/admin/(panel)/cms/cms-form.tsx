@@ -78,6 +78,12 @@ export function CmsForm({ locale, initial }: { locale: Language; initial: CmsInp
         <button type="button" className={btnGhost} onClick={() => setC((x) => ({ ...x, testimonials: [...x.testimonials, { quote: "", author: "", role: "" }] }))}>{a.addTestimonial}</button>
       </section>
 
+      <section className="card space-y-2 p-5 sm:p-6">
+        <h2 className="text-lg font-semibold tracking-tight">{t.order.cms.terms}</h2>
+        <p className="text-xs text-ink/55">{t.order.cms.termsHint}</p>
+        <textarea rows={8} maxLength={30000} value={c.terms} aria-label={t.order.cms.terms} onChange={(e) => setC((x) => ({ ...x, terms: e.target.value }))} className={field} />
+      </section>
+
       <div className="card sticky bottom-2.5 flex items-center gap-3 p-3 shadow-float">
         <button type="submit" disabled={pending} className={btnPrimary}>{a.publish}</button>
         <ResultText state={state} />

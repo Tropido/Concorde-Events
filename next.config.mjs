@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Its renderer loads the TTF files at runtime, so they must ship with the server functions.
+  serverExternalPackages: ["@react-pdf/renderer"],
+  outputFileTracingIncludes: { "/**": ["./lib/invoicing/fonts/**"] },
   images: {
     remotePatterns: [
       // Product photos uploaded by staff (Supabase Storage public bucket).

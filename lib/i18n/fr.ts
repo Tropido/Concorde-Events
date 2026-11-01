@@ -1,5 +1,6 @@
 import type { Translations } from "./translations";
 import { adminFr } from "./admin-fr";
+import { orderFr } from "./order-fr";
 import { BRAND_NAME, COMPANY_NAME } from "@/lib/brand";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n > 1 ? many : one}`;
@@ -65,8 +66,10 @@ export const fr: Translations = {
   requestStatus: {
     submitted: "Reçue",
     validated: "Devis envoyé",
+    accepted: "Devis accepté",
     confirmed: "Confirmée",
-    dispatched: "En location",
+    dispatched: "Livrée",
+    returned: "En inspection",
     completed: "Terminée",
     cancelled: "Annulée",
     rejected: "Refusée",
@@ -522,4 +525,5 @@ export const fr: Translations = {
     signature: `${BRAND_NAME} by ${COMPANY_NAME}`,
   },
   admin: adminFr,
+  order: orderFr,
 };

@@ -4,60 +4,47 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { assertStaff } from "@/lib/auth";
+import { notifyRequest } from "@/lib/email/notify";
+import { dbError, run, type AdminResult } from "./run";
 import { supabaseEnv } from "@/lib/supabase/env";
 import { CATEGORY_ICON_NAMES } from "@/lib/category-icons";
 import type { AdminErrorCode } from "@/lib/i18n/admin-types";
+
+export type { AdminResult } from "./run";
 import { LANGUAGES, type Language } from "@/lib/i18n/translations";
 import type { AppRole } from "@/lib/types";
 
-export type AdminResult = { ok: true } | { ok: false; error: AdminErrorCode };
-
 const uuid = z.string().uuid();
 const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
-const ok: AdminResult = { ok: true };
-
-function dbError(e: { message: string; code?: string }): AdminResult {
-  const m = e.message;
-  const error: AdminErrorCode =
-    m.startsWith("capacity_exceeded") ? "capacity_exceeded"
-    : m.startsWith("quote expired") ? "quote_expired"
-    : m.startsWith("invalid status transition") || m.startsWith("use issue_quote") || m.startsWith("cannot quote") ? "invalid_transition"
-    : m.includes("last approved admin") ? "last_admin"
-    : /client_tags_(label|slug)_key/.test(m) ? "tag_exists"
-    : e.code === "23505" ? "slug_taken"
-    : e.code === "42501" ? "forbidden"
-    : "generic";
-  if (error === "generic") console.error("admin action failed", e);
-  return { ok: false, error };
-}
-
-/** Runs a mutation as the signed-in staff member (RLS still applies) and revalidates admin pages. */
-async function run(roles: AppRole[] | undefined, fn: (db: Awaited<ReturnType<typeof createClient>>, me: string) => PromiseLike<{ error: { message: string; code?: string } | null }>): Promise<AdminResult> {
-  let me: string;
-  try {
-    me = (await assertStaff(roles)).id;
-  } catch {
-    return { ok: false, error: "forbidden" };
-  }
-  const db = await createClient();
-  const { error } = await fn(db, me);
-  if (error) return dbError(error);
-  revalidatePath("/admin", "layout");
-  return ok;
-}
 
 // ---------- Requests ----------
 
-export async function setRequestStatus(id: string, status: "confirmed" | "dispatched" | "rejected" | "cancelled") {
-  if (!uuid.safeParse(id).success || !["confirmed", "dispatched", "rejected", "cancelled"].includes(status)) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.from("rental_requests").update({ status }).eq("id", id));
+/** Confirmation is not here: it follows the deposit (record_payment) or an admin's decision. */
+export async function setRequestStatus(id: string, status: "dispatched" | "rejected" | "cancelled") {
+  if (!uuid.safeParse(id).success || !["dispatched", "rejected", "cancelled"].includes(status)) return { ok: false, error: "invalid" } as AdminResult;
+  const result = await run(undefined, (db) => db.from("rental_requests").update({ status }).eq("id", id));
+  if (result.ok && status === "dispatched") await notifyRequest("dispatched", id);
+  if (result.ok && status === "cancelled") await notifyRequest("cancelled", id);
+  return result;
 }
 
 /** Quotes are always issued in TND. */
 export async function issueQuote(id: string, validDays: number) {
   const p = z.object({ id: uuid, validDays: z.number().int().min(1).max(90) }).safeParse({ id, validDays });
   if (!p.success) return { ok: false, error: "invalid" } as AdminResult;
-  return run(undefined, (db) => db.rpc("issue_quote", { p_request: id, p_currency: "TND", p_valid_days: validDays }));
+  let quote = "";
+  let total: number | undefined;
+  const result = await run(undefined, async (db) => {
+    const r = await db.rpc("issue_quote", { p_request: id, p_currency: "TND", p_valid_days: validDays });
+    if (r.data) {
+      quote = r.data as string;
+      const { data } = await db.from("quotes").select("total:snapshot->total").eq("id", quote).single();
+      total = Number((data as { total: number } | null)?.total);
+    }
+    return r;
+  });
+  if (result.ok) await notifyRequest("quote_sent", id, { dedupe: quote, extra: { total }, attachments: [{ type: "quote", id: quote }] });
+  return result;
 }
 
 export async function rescheduleRequest(id: string, lines: { id: string; start_date: string; end_date: string }[]) {
@@ -429,6 +416,7 @@ export async function saveTier(input: TierInput): Promise<AdminResult> {
 const CmsInput = z.object({
   hero: z.object({ title: text(160), titleAccent: text(160), subtitle: text(600) }),
   hero_image: z.string().url().max(1000).nullable(),
+  terms: text(30000),
   faqs: z.array(z.object({ question: text(300).min(1), answer: text(2000).min(1) })).max(30),
   testimonials: z.array(z.object({ quote: text(1000).min(1), author: text(120).min(1), role: text(160) })).max(12),
 });

@@ -18,7 +18,7 @@ export default async function AdminClientsPage({ searchParams }: { searchParams:
   const db = await createClient();
   const view: View = VIEWS.includes(sp.view as View) ? (sp.view as View) : "pending";
   let q = db.from("profiles")
-    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, event_type, role, status, created_at, client_notes(notes, level), client_tag_links!client_tag_links_profile_id_fkey(tag_id), pro_accounts(tier_code, tier_locked, points, custom_discount_percent, extra_benefits)")
+    .select("id, email, full_name, company_name, phone, vat_number, activity, city, website, event_type, role, status, created_at, client_notes(notes, level, deposit_rate_override), client_tag_links!client_tag_links_profile_id_fkey(tag_id), pro_accounts(tier_code, tier_locked, points, custom_discount_percent, extra_benefits)")
     .order("created_at", { ascending: false }).limit(200);
   if (view === "pending") q = q.eq("status", "pending");
   if (view === "pros") q = q.eq("role", "professional").neq("status", "pending");
@@ -57,7 +57,7 @@ export default async function AdminClientsPage({ searchParams }: { searchParams:
   for (const r of reqs.data ?? []) {
     const s = stats.get(r.user_id!) ?? { requests: 0, booked: 0 };
     s.requests += 1;
-    if (["confirmed", "dispatched", "completed"].includes(r.status)) s.booked += (r.request_lines as { line_total: number }[]).reduce((x, l) => x + Number(l.line_total), 0);
+    if (["confirmed", "dispatched", "returned", "completed"].includes(r.status)) s.booked += (r.request_lines as { line_total: number }[]).reduce((x, l) => x + Number(l.line_total), 0);
     stats.set(r.user_id!, s);
   }
   const rows = ((data ?? []) as unknown as ClientRow[]).map((r) => ({ ...r, stats: stats.get(r.id) ?? { requests: 0, booked: 0 } }));

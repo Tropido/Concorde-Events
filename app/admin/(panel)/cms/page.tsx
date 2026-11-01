@@ -24,6 +24,7 @@ export default async function AdminCmsPage({ searchParams }: { searchParams: Pro
       <CmsForm key={locale} locale={locale} initial={{
         hero: { title: content.hero?.title ?? "", titleAccent: content.hero?.titleAccent ?? "", subtitle: content.hero?.subtitle ?? "" },
         hero_image: content.hero_image ?? null,
+        terms: content.terms ?? "",
         faqs: content.faqs ?? [],
         testimonials: (content.testimonials ?? []).map((x) => ({ quote: x.quote, author: x.author, role: x.role ?? "" })),
       }} />

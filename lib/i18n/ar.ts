@@ -1,5 +1,6 @@
 import type { Translations } from "./translations";
 import { adminAr } from "./admin-ar";
+import { orderAr } from "./order-ar";
 import { BRAND_NAME, COMPANY_NAME } from "@/lib/brand";
 
 // Arabic plural forms (1, 2, 3–10, 11+), with Latin digits as used for prices in Tunisia.
@@ -69,8 +70,10 @@ export const ar: Translations = {
   requestStatus: {
     submitted: "مستلم",
     validated: "تم إرسال عرض السعر",
+    accepted: "تم قبول العرض",
     confirmed: "مؤكد",
-    dispatched: "قيد الكراء",
+    dispatched: "تم التوصيل",
+    returned: "قيد الفحص",
     completed: "منتهٍ",
     cancelled: "ملغى",
     rejected: "مرفوض",
@@ -526,4 +529,5 @@ export const ar: Translations = {
     signature: `${BRAND_NAME} من ${COMPANY_NAME}`,
   },
   admin: adminAr,
+  order: orderAr,
 };

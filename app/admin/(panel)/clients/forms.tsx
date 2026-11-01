@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Building2, CalendarHeart, ChevronDown, Globe, Lock, Mail, MapPin, Phone, Plus, Unlock, X } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { adjustPoints, saveClientNotes, saveProProgramme, setAccountStatus, setRole, type AdminResult } from "@/lib/actions/admin";
+import { saveDepositOverride } from "@/lib/actions/orders";
 import { ActionButton, Avatar, ResultText, btnDanger, btnPrimary } from "@/components/admin/ui";
 import { ease } from "@/components/ui/kit";
 import { TierEmblem } from "@/components/ui/tier-emblem";
@@ -15,7 +16,7 @@ import type { AccountStatus, AppRole, EventType, ProTier } from "@/lib/types";
 export type ClientRow = {
   id: string; email: string; full_name: string | null; company_name: string | null; phone: string | null; vat_number: string | null;
   activity: string | null; city: string | null; website: string | null; event_type: EventType | null; role: AppRole; status: AccountStatus; created_at: string;
-  client_notes: { notes: string; level: string | null } | null;
+  client_notes: { notes: string; level: string | null; deposit_rate_override: number | null } | null;
   client_tag_links: { tag_id: string }[];
   pro_accounts: { tier_code: string; tier_locked: boolean; points: number; custom_discount_percent: number | null; extra_benefits: string[] } | null;
   stats: { requests: number; booked: number };
@@ -198,6 +199,24 @@ function LevelOnly() {
   );
 }
 
+function DepositOverride({ profileId, initial }: { profileId: string; initial: number | null }) {
+  const { t } = useApp();
+  const c = t.order.company;
+  const [v, setV] = useState(initial === null ? "" : String(initial));
+  const [state, setState] = useState<AdminResult | null>(null);
+  const [pending, start] = useTransition();
+  return (
+    <label className="block"><span className="field-label">{c.clientDepositRate}</span>
+      <span className="flex items-center gap-2">
+        <input type="number" min={0} max={100} step="0.5" value={v} onChange={(e) => setV(e.target.value)} className="field w-28 py-2" />
+        <button type="button" disabled={pending} className="btn-light btn-sm" onClick={() => start(async () => setState(await saveDepositOverride(profileId, v === "" ? null : Number(v))))}>{t.common.save}</button>
+        <ResultText state={state} />
+      </span>
+      <span className="mt-1 block text-[11px] text-ink/45">{c.clientDepositHint}</span>
+    </label>
+  );
+}
+
 function Notes({ profileId, initial, tags, tagIds, showLevel }: { profileId: string; initial: ClientRow["client_notes"]; tags: ClientTag[]; tagIds: string[]; showLevel: boolean }) {
   const { t } = useApp();
   const a = t.admin.clients;
@@ -217,6 +236,7 @@ function Notes({ profileId, initial, tags, tagIds, showLevel }: { profileId: str
           </select>
         </label>
       )}
+      <DepositOverride profileId={profileId} initial={initial?.deposit_rate_override ?? null} />
       <label className="block"><span className="field-label">{a.notes}</span>
         <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} maxLength={5000} placeholder={a.notesPlaceholder} className="field resize-y" />
       </label>

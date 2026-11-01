@@ -20,7 +20,7 @@ export default async function AdminRentalsPage() {
   const today = todayIn("TN");
   const [out, upcoming, maintenance, conflicts] = await Promise.all([
     db.from("rental_requests").select("id, reference, customer_name, customer_phone, event_venue, request_lines(id, quantity, start_date, end_date, products(title_fr))").eq("status", "dispatched").order("created_at"),
-    db.from("rental_requests").select("id, reference, customer_name, customer_phone, event_venue, request_lines(id, quantity, start_date, end_date, products(title_fr))").eq("status", "confirmed").order("created_at"),
+    db.from("rental_requests").select("id, reference, customer_name, customer_phone, event_venue, request_lines(id, quantity, start_date, end_date, products(title_fr))").in("status", ["accepted", "confirmed"]).order("created_at"),
     db.from("product_stock").select("product_id, quantity_owned, quantity_maintenance, products(title_fr)").eq("country", "TN").gt("quantity_maintenance", 0),
     db.rpc("capacity_conflicts"),
   ]);

@@ -1,13 +1,15 @@
 import { cn } from "@/lib/utils/formatters";
 import type { MessageStatus, RequestStatus } from "@/lib/types";
 
-const PATH: RequestStatus[] = ["submitted", "validated", "confirmed", "dispatched", "completed"];
+const PATH: RequestStatus[] = ["submitted", "validated", "accepted", "confirmed", "dispatched", "returned", "completed"];
 
 const tone: Record<RequestStatus, string> = {
   submitted: "bg-tone-cream text-ink",
   validated: "bg-tone-sand text-ink",
+  accepted: "bg-warn-soft text-warn",
   confirmed: "bg-ok-soft text-ok",
   dispatched: "bg-ink text-card",
+  returned: "bg-tone-tan text-ink",
   completed: "bg-paper text-ink/60",
   cancelled: "bg-paper text-ink/45 line-through",
   rejected: "bg-bad-soft text-bad",
@@ -27,12 +29,25 @@ export function MessagePill({ status, label }: { status: MessageStatus; label: s
   return <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-medium", msgTone[status])}>{label}</span>;
 }
 
+/** Received against expected, with its figures written out. */
+export function ProgressBar({ label, value, max, caption }: { label: string; value: number; max: number; caption: string }) {
+  const percent = max > 0 ? Math.min(100, Math.round((value / max) * 100)) : 0;
+  return (
+    <div className="space-y-1.5">
+      <p className="flex items-baseline justify-between gap-3 text-xs"><span className="text-ink/60">{label}</span><span className="tabular-nums">{caption}</span></p>
+      <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar" aria-label={label} aria-valuenow={percent} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-full rounded-full bg-ink" style={{ width: `${percent}%` }} />
+      </div>
+    </div>
+  );
+}
+
 /** Progress along the request lifecycle (hidden for cancelled/rejected requests). */
 export function StatusTrack({ status, labels }: { status: RequestStatus; labels: Record<RequestStatus, string> }) {
   const at = PATH.indexOf(status);
   if (at < 0) return null;
   return (
-    <ol className="grid grid-cols-5 gap-1.5" aria-label={labels[status]}>
+    <ol className="grid grid-cols-7 gap-1.5" aria-label={labels[status]}>
       {PATH.map((s, i) => (
         <li key={s} className="space-y-1.5">
           <span className={cn("block h-1 rounded-full", i <= at ? "bg-ink" : "bg-line")} aria-hidden />

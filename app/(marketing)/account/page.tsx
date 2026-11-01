@@ -35,7 +35,7 @@ export default async function AccountRequestsPage() {
     .eq("profile_id", viewer.id).eq("subject", PLUS_REQUEST_SUBJECT).neq("status", "resolved")).count;
   const a = t.account;
   const today = todayIn("TN");
-  const open = rows.filter((r) => ["submitted", "validated", "confirmed", "dispatched"].includes(r.status));
+  const open = rows.filter((r) => ["submitted", "validated", "accepted", "confirmed", "dispatched", "returned"].includes(r.status));
   const next = open.flatMap((r) => r.request_lines.map((l) => l.start_date)).filter((d) => d >= today).sort()[0];
 
   return (
@@ -95,7 +95,9 @@ export default async function AccountRequestsPage() {
                 )}
               </div>
               <div className="flex gap-2">
-                {quote && <Link href={`/quote/${quote.id}`} className="btn-ink btn-sm">{a.viewQuote}</Link>}
+                {r.status === "validated" && <Link href={`/account/requests/${r.id}`} className="btn-ink btn-sm">{t.order.acceptCta}</Link>}
+                {quote && <Link href={`/quote/${quote.id}`} className="btn-light btn-sm">{a.viewQuote}</Link>}
+                <Link href={`/account/requests/${r.id}`} className="btn-light btn-sm">{t.order.viewDetails}</Link>
                 {(r.status === "submitted" || r.status === "validated") && (
                   <form action={cancelRequest.bind(null, r.id)}>
                     <ConfirmButton message={a.cancelConfirm} className="btn-light btn-sm text-bad">{a.cancel}</ConfirmButton>

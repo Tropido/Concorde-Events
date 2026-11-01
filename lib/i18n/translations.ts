@@ -3,6 +3,7 @@ import type { RangeProblem } from "@/lib/dates";
 import type { Theme } from "@/lib/prefs";
 import type { DayBlock } from "@/lib/date-range";
 import type { AdminTranslations } from "./admin-types";
+import type { OrderTranslations } from "./order-types";
 import { fr } from "./fr";
 import { en } from "./en";
 import { ar } from "./ar";
@@ -145,6 +146,7 @@ export interface Translations {
     whatsapp: string; whatsappCta: string; rights: string; tagline: string; signature: string;
   };
   admin: AdminTranslations;
+  order: OrderTranslations;
 }
 
 export const translations: Record<Language, Translations> = { fr, en, ar };

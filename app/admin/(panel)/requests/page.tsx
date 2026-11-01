@@ -8,7 +8,7 @@ import { StatusPill } from "@/components/ui/status";
 import { formatDateTime, formatDay, formatTND } from "@/lib/utils/formatters";
 import type { RequestStatus } from "@/lib/types";
 
-const STATUSES: RequestStatus[] = ["submitted", "validated", "confirmed", "dispatched", "completed", "cancelled", "rejected"];
+const STATUSES: RequestStatus[] = ["submitted", "validated", "accepted", "confirmed", "dispatched", "returned", "completed", "cancelled", "rejected"];
 
 type Row = {
   id: string; reference: string; customer_name: string; company_name: string | null; status: RequestStatus; tier: string;
@@ -34,7 +34,7 @@ export default async function AdminRequestsPage({ searchParams }: { searchParams
   const counts = new Map<string, number>();
   for (const r of all.data ?? []) counts.set(r.status, (counts.get(r.status) ?? 0) + 1);
   const href = (s: string | null) => `/admin/requests${s ? `?status=${s}` : ""}`;
-  const next: Partial<Record<RequestStatus, string>> = { submitted: a.nextQuote, validated: a.nextConfirm, confirmed: a.nextDispatch, dispatched: a.nextReturn };
+  const next: Partial<Record<RequestStatus, string>> = { submitted: a.nextQuote, validated: a.nextFollow, accepted: a.nextDeposit, confirmed: a.nextDispatch, dispatched: a.nextReturn, returned: a.nextInspect };
 
   return (
     <>

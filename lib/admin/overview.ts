@@ -13,8 +13,8 @@ type Req = {
   request_lines: { quantity: number; start_date: string; end_date: string; line_total: number; products: { title_fr: string; category_id: string | null } | null }[];
 };
 
-const BOOKED: RequestStatus[] = ["confirmed", "dispatched", "completed"];
-const LIVE: RequestStatus[] = ["submitted", "validated", "confirmed", "dispatched"];
+const BOOKED: RequestStatus[] = ["confirmed", "dispatched", "returned", "completed"];
+const LIVE: RequestStatus[] = ["submitted", "validated", "accepted", "confirmed", "dispatched", "returned"];
 const tunisDay = (ts: string) => new Intl.DateTimeFormat("en-CA", { timeZone: "Africa/Tunis" }).format(new Date(ts));
 
 /** Every figure comes from stored requests, lines and stock; nothing is estimated. */
@@ -22,7 +22,7 @@ export async function loadOverview(lang: Language = "fr") {
   const db = await createClient();
   const today = todayIn("TN");
   const since = addDays(today, -59);
-  const [reqs, open, stock, categories, conflicts, pending] = await Promise.all([
+  const [reqs, open, stock, categories, conflicts, pending, waiting, balances] = await Promise.all([
     db.from("rental_requests")
       .select("id, reference, customer_name, company_name, status, tier, created_at, event_type, request_lines(quantity, start_date, end_date, line_total, products(title_fr, category_id))")
       .gte("created_at", `${since}T00:00:00+01:00`).order("created_at", { ascending: false }).limit(2000),
@@ -33,8 +33,10 @@ export async function loadOverview(lang: Language = "fr") {
     db.from("categories").select("id, name_fr, name_en, name_ar"),
     db.rpc("capacity_conflicts"),
     db.from("profiles").select("id, full_name, company_name, activity, created_at").eq("status", "pending").order("created_at", { ascending: false }).limit(5),
+    db.from("rental_requests").select("id, reference, customer_name, deposit_required, deposit_paid, deposit_due_at").eq("status", "accepted").is("deposit_waived_at", null).order("deposit_due_at"),
+    db.from("rental_requests").select("id, reference, customer_name, total_ttc, paid_total").eq("payment_status", "balance_due").order("updated_at"),
   ]);
-  for (const r of [reqs, open, stock, categories, conflicts, pending]) if (r.error) throw r.error;
+  for (const r of [reqs, open, stock, categories, conflicts, pending, waiting, balances]) if (r.error) throw r.error;
 
   const recent = (reqs.data ?? []) as unknown as Req[];
   const all = [...recent, ...((open.data ?? []) as unknown as Req[])];
@@ -64,7 +66,7 @@ export async function loadOverview(lang: Language = "fr") {
   const departures: { reference: string; id: string; name: string; item: string; qty: number }[] = [];
   const returns: typeof departures = [];
   for (const r of all) {
-    const holding = r.status === "confirmed" || r.status === "dispatched";
+    const holding = r.status === "confirmed" || r.status === "dispatched" || r.status === "returned";
     for (const l of r.request_lines) {
       if (holding && l.start_date <= today && today <= (r.status === "dispatched" && l.end_date < today ? today : l.end_date)) inUse += l.quantity;
       const row = { reference: r.reference, id: r.id, name: r.customer_name, item: l.products?.title_fr ?? "", qty: l.quantity };
@@ -81,8 +83,18 @@ export async function loadOverview(lang: Language = "fr") {
     byCat.set(k, (byCat.get(k) ?? 0) + Number(l.line_total));
   }
 
+  // Overdue deposits are only flagged: staff decide what happens to the order.
+  const pendingDeposits = (waiting.data ?? []).map((r) => ({ id: r.id, reference: r.reference, name: r.customer_name, dueAt: r.deposit_due_at as string | null, amount: Math.max(0, Number(r.deposit_required ?? 0) - Number(r.deposit_paid)) }));
+  const moment = new Date().toISOString();
+
   return {
     today,
+    deposits: {
+      count: pendingDeposits.length,
+      amount: pendingDeposits.reduce((s, d) => s + d.amount, 0),
+      overdue: pendingDeposits.filter((d) => d.dueAt && d.dueAt < moment),
+    },
+    balances: (balances.data ?? []).map((r) => ({ id: r.id, reference: r.reference, name: r.customer_name })),
     daily: cur,
     kpis: {
       booked: { value: sum(cur, "booked"), delta: delta(sum(cur, "booked"), sum(prev, "booked")), spark: cur.map((d) => d.booked) },

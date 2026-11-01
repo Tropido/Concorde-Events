@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { as, freshDb, isoDate, issueQuote, productId, submit, user } from "./harness";
+import { as, confirmRequest, freshDb, isoDate, issueQuote, productId, submit, user } from "./harness";
 
 // Regression tests for the security review findings.
 let db: PGlite;
@@ -48,8 +48,7 @@ describe("request lines keep their product and price", () => {
 describe("returns", () => {
   it("rejects the same line twice in one return", async () => {
     const r = await submit(db, client, [{ product_id: sofa, quantity: 2, start_date: isoDate(1), end_date: isoDate(2) }]);
-    await issueQuote(db, manager, r.id);
-    await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'confirmed' where id = $1", [r.id]));
+    await confirmRequest(db, manager, r.id);
     await as(db, manager, (tx) => tx.query("update public.rental_requests set status = 'dispatched' where id = $1", [r.id]));
     const line = (await db.query<{ id: string }>("select id from public.request_lines where request_id = $1", [r.id])).rows[0].id;
     const dup = JSON.stringify([{ line_id: line, quantity: 2 }, { line_id: line, quantity: 2 }]);

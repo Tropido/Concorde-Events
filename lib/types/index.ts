@@ -11,11 +11,16 @@ export type PriceTier = "retail" | "pro";
 export type RequestStatus =
   | "submitted"
   | "validated"
+  | "accepted"
   | "confirmed"
   | "dispatched"
+  | "returned"
   | "completed"
   | "cancelled"
   | "rejected";
+export type PaymentStatus = "unpaid" | "deposit_due" | "deposit_paid" | "balance_due" | "paid" | "refunded";
+export type PaymentKind = "deposit" | "balance" | "caution_held" | "caution_refund" | "caution_retained" | "refund";
+export type PaymentMethod = "virement" | "especes" | "cheque" | "d17" | "flouci" | "konnect" | "carte" | "autre";
 export type MessageChannel = "site" | "contact" | "whatsapp";
 export type MessageStatus = "open" | "in_progress" | "resolved";
 export type EventType = "wedding" | "engagement" | "birthday" | "corporate" | "gala" | "private" | "other";
@@ -69,6 +74,7 @@ export interface Viewer {
   vatNumber: string | null;
   activity: string | null;
   city: string | null;
+  address: string | null;
   website: string | null;
   /** Language of emails and documents. */
   language: Language;
@@ -174,6 +180,13 @@ export interface QuoteLine {
   source_unit_price: number;
   unit_price: number;
   line_total: number;
+  /** Absent on quotes issued before invoicing existed. */
+  vat_rate?: number;
+  ttc?: number;
+}
+
+export interface QuoteExtra {
+  extra_id: string; kind: string; label: string; quantity: number; unit_price: number; line_total: number; vat_rate: number; ht: number; tva: number; ttc: number;
 }
 
 /** Frozen at issue time by public.issue_quote(); never recomputed. Older quotes may carry
@@ -193,7 +206,21 @@ export interface QuoteSnapshot {
   event?: { type: EventType | null; venue: string | null; guests: number | null; delivery_mode: DeliveryMode | null };
   notes: string | null;
   lines: QuoteLine[];
+  extras?: QuoteExtra[];
+  totals?: { ht: number; tva: number; ttc: number; by_rate: { rate: number; ht: number; tva: number; ttc: number }[] };
   total: number;
+}
+
+/** private.client_view: an order as its client may see it. */
+export interface OrderView {
+  id: string; reference: string; status: RequestStatus; created_at: string; customer_name: string; event_type: EventType | null; event_venue: string | null;
+  guest_count: number | null; delivery_mode: DeliveryMode | null; user_id: string | null; payment_status: PaymentStatus; total_ttc: number | null; paid_total: number; owed: number;
+  deposit: { rate: number; required: number; paid: number; due_at: string | null; deadline_hours: number };
+  quote: { id: string; revision: number; snapshot: QuoteSnapshot } | null; quote_valid_until: string | null; can_accept: boolean; reacceptance_required: boolean;
+  lines: { id: string; title_fr: string; title_en: string | null; title_ar: string | null; quantity: number; start_date: string; end_date: string; nights: number }[];
+  invoices: { id: string; type: "deposit" | "final" | "credit_note"; number: string; issued_at: string; due_at: string | null; ttc: number; total_due: number }[];
+  payments: { id: string; kind: PaymentKind; method: PaymentMethod; amount: number; received_at: string; reference: string | null }[];
+  company: { legal_name: string; bank_name: string | null; rib: string | null; iban: string | null; phone: string | null; email: string | null };
 }
 
 /** Published homepage content (per locale). Every field is optional: missing ones fall
@@ -202,6 +229,8 @@ export interface CMSContent {
   hero?: { title?: string; titleAccent?: string; subtitle?: string };
   /** Banner photo in the site-images bucket. A language without one uses the French one. */
   hero_image?: string | null;
+  /** Rental conditions shown on /conditions; the hash of this text is stored with each acceptance. */
+  terms?: string;
   faqs?: { question: string; answer: string }[];
   /** Real client quotes only; the section is hidden when empty. */
   testimonials?: { quote: string; author: string; role?: string }[];

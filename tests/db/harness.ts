@@ -18,6 +18,7 @@ export async function freshDb({ before }: { before?: string } = {}) {
     await db.exec(read(`supabase/migrations/${f}`));
   }
   await db.exec(read("supabase/seed.sql"));
+  await setupCompany(db);
   return db;
 }
 
@@ -83,6 +84,31 @@ export async function submit(
   );
   const { rows } = await db.query<{ id: string }>("select id from public.rental_requests where reference = $1", [ref]);
   return { id: rows[0].id, reference: ref, key };
+}
+
+/** Fills in what invoices refuse to be issued without. */
+export async function setupCompany(db: PGlite) {
+  await db.query("update public.company_settings set legal_name = 'Concorde Events', legal_form = 'SARL', tax_id = '1234567/A/M/000', address = '12 rue de la Mer', city = 'Tunis', bank_name = 'Banque Test', rib = '12345678901234567890'");
+}
+
+/** Accepts the latest quote on the client's behalf (staff, by phone) and returns the outcome. */
+export async function acceptQuote(db: PGlite, staff: string, requestId: string) {
+  const quote = (await db.query<{ id: string }>("select id from public.quotes where request_id = $1 order by revision desc limit 1", [requestId])).rows[0].id;
+  return as(db, staff, async (tx) =>
+    (await tx.query<{ r: Record<string, unknown> }>("select public.accept_quote($1, $2, 'Test Client', true, 'phone') as r", [requestId, quote])).rows[0].r);
+}
+
+export async function pay(db: PGlite, staff: string, requestId: string, kind: string, amount: number, method = "virement") {
+  return as(db, staff, async (tx) =>
+    (await tx.query<{ r: Record<string, unknown> }>("select public.record_payment($1, $2, $3, $4) as r", [requestId, kind, method, amount])).rows[0].r);
+}
+
+/** Quote, acceptance, then the deposit: a request all the way to confirmed. */
+export async function confirmRequest(db: PGlite, staff: string, requestId: string) {
+  await issueQuote(db, staff, requestId);
+  const accepted = await acceptQuote(db, staff, requestId);
+  if (accepted.status === "confirmed") return accepted;
+  return pay(db, staff, requestId, "deposit", Number(accepted.deposit_required));
 }
 
 export async function issueQuote(db: PGlite, staff: string, requestId: string, currency: "EUR" | "TND" = "TND") {

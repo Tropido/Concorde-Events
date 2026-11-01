@@ -1,6 +1,6 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import type { PGlite } from "@electric-sql/pglite";
-import { as, freshDb, isoDate, issueQuote, productId, submit, user } from "./harness";
+import { acceptQuote, as, confirmRequest, freshDb, isoDate, issueQuote, pay, productId, submit, user } from "./harness";
 
 let db: PGlite;
 let client: string, manager: string;
@@ -103,24 +103,34 @@ describe("capacity", () => {
     await setStatus(r.id, "cancelled");
   });
 
-  it("releases stock when a quote expires, and refuses to confirm an expired quote", async () => {
+  it("releases stock when a quote expires, and refuses to accept an expired quote", async () => {
     const a = await submit(db, client, [line(12, 80, 82)]);
-    await issueQuote(db, manager, a.id);
+    const q = await issueQuote(db, manager, a.id);
     await db.query("update public.rental_requests set quote_valid_until = current_date - 1 where id = $1", [a.id]);
+    await db.exec("alter table public.quotes disable trigger quotes_immutable");
+    await db.query("update public.quotes set snapshot = jsonb_set(snapshot, '{valid_until}', to_jsonb((current_date - 1)::text)) where id = $1", [q]);
+    await db.exec("alter table public.quotes enable trigger quotes_immutable");
     expect(await available(sofa, "TN", 81)).toBe(12);
-    await expect(setStatus(a.id, "confirmed")).rejects.toThrow(/quote expired/);
+    await expect(acceptQuote(db, manager, a.id)).rejects.toThrow(/quote expired/);
     await setStatus(a.id, "cancelled");
   });
 
   it("enforces the status machine", async () => {
     const r = await submit(db, client, [line(1, 90, 91)]);
     await expect(setStatus(r.id, "confirmed")).rejects.toThrow(/invalid status transition/);
-    await expect(setStatus(r.id, "validated")).rejects.toThrow(/use issue_quote/);
+    await expect(setStatus(r.id, "validated")).rejects.toThrow(/dedicated function/);
     await issueQuote(db, manager, r.id);
-    await setStatus(r.id, "confirmed");
+    await expect(setStatus(r.id, "accepted")).rejects.toThrow(/dedicated function/);
+    await expect(setStatus(r.id, "confirmed")).rejects.toThrow(/invalid status transition/);
+    await acceptQuote(db, manager, r.id);
+    await expect(setStatus(r.id, "confirmed")).rejects.toThrow(/dedicated function/);
+    await expect(setStatus(r.id, "dispatched")).rejects.toThrow(/invalid status transition/);
+    await expect(setStatus(r.id, "cancelled")).rejects.toThrow(/use cancel_order/);
+    await pay(db, manager, r.id, "deposit", 575);
     await expect(setStatus(r.id, "completed")).rejects.toThrow(/invalid status transition/);
     await setStatus(r.id, "dispatched");
-    await expect(setStatus(r.id, "completed")).rejects.toThrow(/use issue_quote \/ return_request/);
+    await expect(setStatus(r.id, "completed")).rejects.toThrow(/dedicated function/);
+    await expect(setStatus(r.id, "returned")).rejects.toThrow(/dedicated function/);
     await expect(setStatus(r.id, "cancelled")).rejects.toThrow(/invalid status transition/);
   });
 
@@ -143,21 +153,19 @@ describe("capacity", () => {
 
     // A confirmed booking keeps its stock while moving, and cannot move into a conflict.
     await move(120, 122);
-    await issueQuote(db, manager, r.id);
-    await setStatus(r.id, "confirmed");
+    await confirmRequest(db, manager, r.id);
     await expect(move(100, 102)).rejects.toThrow(/capacity_exceeded/);
     expect((await db.query<{ start_date: string }>("select start_date::text from public.request_lines where id = $1", [lineId])).rows[0].start_date).toBe(isoDate(120));
     // The earlier quote stays as an immutable revision.
     expect((await db.query("select revision from public.quotes where request_id = $1 order by revision", [r.id])).rows)
       .toEqual([{ revision: 1 }, { revision: 2 }]);
     await setStatus(blocker.id, "cancelled");
-    await setStatus(r.id, "cancelled");
+    await as(db, manager, (tx) => tx.query("select public.cancel_order($1, 'test cleanup')", [r.id]));
   });
 
   it("handles returns idempotently and keeps damaged units out until repaired", async () => {
     const r = await submit(db, client, [line(4, 1, 3)]);
-    await issueQuote(db, manager, r.id);
-    await setStatus(r.id, "confirmed");
+    await confirmRequest(db, manager, r.id);
     await setStatus(r.id, "dispatched");
     const lineId = (await db.query<{ id: string }>("select id from public.request_lines where request_id = $1", [r.id])).rows[0].id;
     const ret = () => as(db, manager, (tx) => tx.query("select public.return_request($1, $2)", [r.id, JSON.stringify([{ line_id: lineId, quantity: 1 }])]));
@@ -175,8 +183,7 @@ describe("capacity", () => {
 
   it("keeps dispatched items blocked past their end date until returned", async () => {
     const r = await submit(db, client, [line(12, 1, 2)]);
-    await issueQuote(db, manager, r.id);
-    await setStatus(r.id, "confirmed");
+    await confirmRequest(db, manager, r.id);
     await setStatus(r.id, "dispatched");
     // Simulate a rental whose end date has passed without a return (superuser bypasses the line guard).
     await db.exec("alter table public.request_lines disable trigger guard_line");

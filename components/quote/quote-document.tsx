@@ -66,8 +66,24 @@ export function QuoteDocument({ snapshot: s, lang, t }: { snapshot: QuoteSnapsho
                 <td className="whitespace-nowrap py-3 text-end font-medium tabular-nums">{money(l.line_total)}</td>
               </tr>
             ))}
+            {s.extras?.map((e) => (
+              <tr key={e.extra_id} className="break-inside-avoid border-b border-line align-top">
+                <td className="py-3 pe-3 font-medium">{e.label}</td>
+                <td className="py-3 pe-3 text-ink/50">—</td>
+                <td className="py-3 text-end tabular-nums">{e.quantity}</td>
+                <td className="py-3 text-end tabular-nums">—</td>
+                <td className="whitespace-nowrap py-3 text-end tabular-nums">{money(e.unit_price)}</td>
+                <td className="whitespace-nowrap py-3 text-end font-medium tabular-nums">{money(e.ttc)}</td>
+              </tr>
+            ))}
           </tbody>
           <tfoot>
+            {s.totals && (
+              <>
+                <tr><th scope="row" colSpan={5} className="pt-4 text-end text-xs font-normal text-ink/60">{t.order.invoicesPage.ht}</th><td className="pt-4 text-end text-xs tabular-nums text-ink/60">{money(s.totals.ht)}</td></tr>
+                <tr><th scope="row" colSpan={5} className="pt-1 text-end text-xs font-normal text-ink/60">{t.order.invoicesPage.tva}</th><td className="pt-1 text-end text-xs tabular-nums text-ink/60">{money(s.totals.tva)}</td></tr>
+              </>
+            )}
             <tr>
               <th scope="row" colSpan={5} className="pt-5 text-end text-base font-medium">{t.quote.total}</th>
               <td className="whitespace-nowrap pt-5 text-end text-2xl font-bold tabular-nums">{money(s.total)}</td>

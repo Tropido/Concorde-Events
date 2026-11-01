@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
-import { BarChart3, Boxes, ExternalLink, FileText, LayoutDashboard, LogOut, Menu, MessagesSquare, PenSquare, Settings, Truck, Users } from "lucide-react";
+import { BarChart3, Boxes, ExternalLink, FileText, LayoutDashboard, LogOut, Menu, MessagesSquare, PenSquare, Receipt, Settings, Truck, Users } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { signOut } from "@/lib/actions/auth";
 import { cn, initials } from "@/lib/utils/formatters";
@@ -34,6 +34,7 @@ function Nav({ role, counts, onNavigate }: { role: AppRole; counts: AdminCounts;
         { href: "/admin/requests", label: n.requests, icon: FileText, count: counts.requests },
         { href: "/admin/inbox", label: n.inbox, icon: MessagesSquare, count: counts.inbox },
         { href: "/admin/rentals", label: n.rentals, icon: Truck, count: counts.late, alert: counts.late > 0 },
+        { href: "/admin/invoices", label: n.invoices, icon: Receipt },
       ],
     }, {
       label: n.groupCatalogue,

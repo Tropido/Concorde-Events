@@ -2,7 +2,8 @@ import type { AccountStatus, AppRole, MessageChannel, MessageStatus, RequestStat
 
 export type AdminErrorCode =
   | "capacity_exceeded" | "quote_expired" | "invalid_transition" | "forbidden"
-  | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "tag_exists" | "generic";
+  | "invalid" | "slug_taken" | "upload_failed" | "last_admin" | "tag_exists"
+  | "company_incomplete" | "reacceptance_required" | "quote_superseded" | "terms_required" | "reason_required" | "invalid_amount" | "quote_not_accepted" | "generic";
 
 type Level = "bronze" | "argent" | "or" | "platine" | "diamant" | "royal_elite";
 
@@ -11,7 +12,7 @@ export interface AdminTranslations {
   badge: string;
   nav: {
     groupOps: string; groupCatalogue: string; groupSite: string; overview: string; requests: string; inbox: string;
-    inventory: string; rentals: string; clients: string; analytics: string; cms: string; settings: string; backToSite: string;
+    inventory: string; rentals: string; invoices: string; clients: string; analytics: string; cms: string; settings: string; backToSite: string;
   };
   errors: Record<AdminErrorCode, string>;
   saved: string;
@@ -26,8 +27,8 @@ export interface AdminTranslations {
   };
   requests: {
     subtitle: (n: number) => string; searchPlaceholder: string; empty: string; client: string; event: string; window: string;
-    nextQuote: string; nextConfirm: string; nextDispatch: string; nextReturn: string; contactConfirmed: string;
-    whatsappOpened: string; noContactYet: string; created: string; confirm: string; dispatch: string; reject: string;
+    nextQuote: string; nextFollow: string; nextDeposit: string; nextDispatch: string; nextReturn: string; nextInspect: string; contactConfirmed: string;
+    whatsappOpened: string; noContactYet: string; created: string; dispatch: string; reject: string;
     cancel: string; prefers: string; call: string; createTicket: string; markContacted: string; assignedTo: string;
     assignMe: string; unassigned: string; eventType: string; lines: string; product: string; qty: string; period: string;
     unit: string; lineTotal: string; reschedule: string; saveDates: string; quotes: string; noQuotes: string;

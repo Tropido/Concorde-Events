@@ -25,6 +25,7 @@ export function OverviewView({ data, name }: { data: OverviewData; name: string 
     { label: o.kpiBooked, value: money(data.kpis.booked.value), delta: data.kpis.booked.delta, spark: data.kpis.booked.spark },
     { label: o.kpiRequests, value: formatNumber(data.kpis.requests.value, language), delta: data.kpis.requests.delta, spark: data.kpis.requests.spark },
     { label: o.kpiPipeline, value: money(data.kpis.pipeline.value), hint: o.quotesOpen(data.kpis.pipeline.count) },
+    { label: t.order.kpi.depositsPending, value: money(data.deposits.amount), hint: t.order.kpi.depositsCount(data.deposits.count) },
     { label: o.kpiAverage, value: money(data.kpis.average.value), hint: o.last30 },
   ];
 
@@ -41,7 +42,7 @@ export function OverviewView({ data, name }: { data: OverviewData; name: string 
         </div>
       </header>
 
-      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2.5 xl:grid-cols-5">
         {kpis.map((k, i) => (
           <motion.div key={k.label} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, ease, delay: i * 0.05 }} className="card min-w-0 space-y-3 p-4 sm:p-5">
             <p className="text-sm text-ink/60">{k.label}</p>
@@ -80,6 +81,29 @@ export function OverviewView({ data, name }: { data: OverviewData; name: string 
                     <StatusPill status={r.status} label={t.requestStatus[r.status]} />
                   </Link>
                 </li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+      </div>
+
+      <div className="grid gap-2.5 lg:grid-cols-2">
+        <Panel title={t.order.kpi.overdue}>
+          {data.deposits.overdue.length === 0 ? <p className="text-sm text-ok">{t.order.kpi.overdueNone}</p> : (
+            <ul className="space-y-1">
+              {data.deposits.overdue.map((d) => (
+                <li key={d.id}><Link href={`/admin/requests/${d.id}`} className="flex justify-between gap-3 rounded-xl bg-bad-soft px-3 py-2 text-sm text-bad">
+                  <span className="truncate">{d.name} · <bdi className="font-mono text-xs">{d.reference}</bdi></span><span className="shrink-0 tabular-nums">{money(d.amount)}</span>
+                </Link></li>
+              ))}
+            </ul>
+          )}
+        </Panel>
+        <Panel title={t.order.kpi.balances}>
+          {data.balances.length === 0 ? <p className="text-sm text-ink/55">{t.order.kpi.balancesNone}</p> : (
+            <ul className="space-y-1">
+              {data.balances.map((b) => (
+                <li key={b.id}><Link href={`/admin/requests/${b.id}`} className="block rounded-xl bg-paper px-3 py-2 text-sm hover:ring-1 hover:ring-line">{b.name} · <bdi className="font-mono text-xs">{b.reference}</bdi></Link></li>
               ))}
             </ul>
           )}

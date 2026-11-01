@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getViewer } from "@/lib/auth";
+import { notifyRequest } from "@/lib/email/notify";
 import { PLUS_REQUEST_SUBJECT, type Viewer } from "@/lib/types";
 
 /** Rejected/suspended accounts keep read access to their history but cannot write. */
@@ -30,8 +31,9 @@ export async function cancelRequest(requestId: string) {
   const viewer = await getViewer();
   if (!viewer) return;
   const supabase = await createClient();
-  await supabase.from("rental_requests").update({ status: "cancelled" })
-    .eq("id", requestId).eq("user_id", viewer.id).in("status", ["submitted", "validated"]);
+  const { data } = await supabase.from("rental_requests").update({ status: "cancelled" })
+    .eq("id", requestId).eq("user_id", viewer.id).in("status", ["submitted", "validated"]).select("id");
+  if (data?.length) await notifyRequest("cancelled", requestId);
   revalidatePath("/account");
 }
 
@@ -109,6 +111,7 @@ export async function updateProfile(_: FormState, form: FormData): Promise<FormS
     activity: opt(80),
     website: opt(200),
     language: z.enum(["fr", "en", "ar"]),
+    address: opt(240),
   }).safeParse(Object.fromEntries(form));
   if (!viewer || !parsed.success) return { error: true };
   const supabase = await createClient();

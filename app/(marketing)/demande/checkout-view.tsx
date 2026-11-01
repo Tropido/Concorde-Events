@@ -22,7 +22,7 @@ export function CheckoutView() {
   const [delivery, setDelivery] = useState<DeliveryMode>("delivery");
   const [contact, setContact] = useState<ContactChannel>("whatsapp");
   const [error, setError] = useState<SubmitErrorCode | null>(null);
-  const [done, setDone] = useState<{ reference: string; key: string; message: string } | null>(null);
+  const [done, setDone] = useState<{ reference: string; key: string; message: string; trackPath: string | null } | null>(null);
   const [pending, start] = useTransition();
   // One key per attempt at a given draft: a retried submit returns the same reference.
   const keyRef = useRef<{ draft: string; key: string } | null>(null);
@@ -59,14 +59,14 @@ export function CheckoutView() {
         return;
       }
       const lines = draft.map((l) => `• ${l.quantity} × ${l.title} — ${l.startDate} → ${l.endDate} (${t.common.nights(nights(l.startDate, l.endDate) ?? 0)})`).join("\n");
-      setDone({ reference: res.reference, key, message: `${c.whatsappIntro(res.reference)}\n${lines}\n${c.whatsappContact}: ${contactInfo.name}, ${contactInfo.phone}` });
+      setDone({ reference: res.reference, key, trackPath: res.trackPath, message: `${c.whatsappIntro(res.reference)}\n${lines}\n${c.whatsappContact}: ${contactInfo.name}, ${contactInfo.phone}` });
       keyRef.current = null;
       clearDraft();
       window.scrollTo({ top: 0, behavior: "smooth" });
     });
   };
 
-  if (done) return <ThankYou reference={done.reference} onWhatsapp={() => { void markWhatsappOpened(done.key); window.open(waLink(done.message), "_blank", "noopener"); }} />;
+  if (done) return <ThankYou reference={done.reference} trackPath={done.trackPath} onWhatsapp={() => { void markWhatsappOpened(done.key); window.open(waLink(done.message), "_blank", "noopener"); }} />;
 
   if (draft.length === 0) {
     return (
@@ -179,7 +179,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   return <label className="block"><span className="field-label">{label}</span>{children}</label>;
 }
 
-function ThankYou({ reference, onWhatsapp }: { reference: string; onWhatsapp: () => void }) {
+function ThankYou({ reference, trackPath, onWhatsapp }: { reference: string; trackPath: string | null; onWhatsapp: () => void }) {
   const { t, viewer } = useApp();
   const c = t.checkout;
   return (
@@ -203,7 +203,7 @@ function ThankYou({ reference, onWhatsapp }: { reference: string; onWhatsapp: ()
           <button type="button" onClick={onWhatsapp} className="btn-ink"><MessageCircle className="h-4 w-4" aria-hidden />{c.openWhatsapp}</button>
           {viewer
             ? <Link href="/account" className="btn-light">{c.track}</Link>
-            : <Link href="/register" className="btn-light">{c.createAccount}</Link>}
+            : <Link href={trackPath ?? "/register"} className="btn-light">{trackPath ? c.track : c.createAccount}</Link>}
         </div>
       </motion.div>
     </div>

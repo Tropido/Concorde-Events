@@ -20,6 +20,7 @@ export function ProfileForm({ viewer }: { viewer: Viewer }) {
       {field(a.email, <input value={viewer.email} readOnly disabled className="field opacity-60" dir="ltr" />)}
       {field(a.phone, <input name="phone" type="tel" maxLength={40} defaultValue={viewer.phone ?? ""} className="field" dir="ltr" />)}
       {field(a.city, <input name="city" maxLength={80} defaultValue={viewer.city ?? ""} className="field" />)}
+      {field(t.order.panel.billingAddress, <input name="address" maxLength={240} defaultValue={viewer.address ?? ""} className="field" />)}
       {field(a.company, <input name="company_name" maxLength={120} defaultValue={viewer.companyName ?? ""} className="field" />)}
       {field(a.vat, <input name="vat_number" maxLength={40} defaultValue={viewer.vatNumber ?? ""} className="field" dir="ltr" />)}
       {pro && field(a.activity, (
