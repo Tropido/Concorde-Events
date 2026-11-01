@@ -3,7 +3,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import { serviceClient } from "@/lib/supabase/service";
 import { requestPath, siteUrl } from "@/lib/tracking";
-import { invoicePdf, quotePdf, receiptPdf } from "@/lib/invoicing/store";
 import type { Language } from "@/lib/i18n/translations";
 import type { EmailData, EmailKind } from "./copy";
 import { renderEmail } from "./template";
@@ -37,6 +36,9 @@ export type EmailRow = {
 export const MAX_ATTEMPTS = 5;
 
 async function resolve(db: SupabaseClient, a: Attachment, lang: string) {
+  // Loaded on demand: nearly every server action reaches this file, so a top-level import puts
+  // the PDF stack in every page that uses one, and a PDF failure takes those pages down.
+  const { invoicePdf, quotePdf, receiptPdf } = await import("@/lib/invoicing/store");
   if (a.type === "invoice") return invoicePdf(db, a.id);
   if (a.type === "quote") return quotePdf(db, a.id, lang);
   return receiptPdf(db, a.id, lang, a.method, a.remaining);
