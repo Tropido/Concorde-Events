@@ -41,7 +41,7 @@ export default async function AdminInventoryPage({ searchParams }: { searchParam
   return (
     <>
       <PageHeader title={t.admin.nav.inventory} subtitle={a.subtitle}
-        actions={<Link href="/admin/inventory/new" className="btn-ink btn-sm"><Plus className="h-4 w-4" aria-hidden />{a.newProduct}</Link>} />
+        actions={<><Link href="/admin/inventory/categories" className="btn-light btn-sm">{a.categoriesLink}</Link><Link href="/admin/inventory/new" className="btn-ink btn-sm"><Plus className="h-4 w-4" aria-hidden />{a.newProduct}</Link></>} />
       <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
         {[
           [a.kpiActive, formatNumber(active.length, prefs.lang)],

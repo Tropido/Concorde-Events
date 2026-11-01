@@ -46,13 +46,13 @@ export function SeePricesLink({ className }: { className?: string }) {
 
 /** Nightly TND price. Approved pros also see the public rate struck through. Visitors and
  *  Particuliers get "Prix sur devis" (RLS returned no price row) with the Particulier+ link. */
-export function PriceTag({ price, className, size = "md", showUnit = true }: { price: Price | null; className?: string; size?: "sm" | "md" | "lg"; showUnit?: boolean }) {
+export function PriceTag({ price, className, size = "md", showUnit = true, upsell = true }: { price: Price | null; className?: string; size?: "sm" | "md" | "lg"; showUnit?: boolean; upsell?: boolean }) {
   const { t, language, viewer } = useApp();
   if (!price) {
     return (
       <span className={cn("inline-flex flex-col gap-0.5", className)}>
         <span className={cn("font-semibold tracking-tight", size === "lg" ? "text-xl" : "text-sm")}>{t.common.priceOnRequest}</span>
-        {!pricesVisible(viewer) && <SeePricesLink />}
+        {upsell && !pricesVisible(viewer) && <SeePricesLink />}
       </span>
     );
   }
@@ -97,37 +97,19 @@ export function ProductTile({ src, alt, tone, sizes, priority, className, childr
   );
 }
 
-/** Slowly turning circular label, the one ornamental motion of the storefront. */
-export function RotatingBadge({ text, className, children }: { text: string; className?: string; children?: React.ReactNode }) {
-  const id = useId().replace(/:/g, "");
-  return (
-    <span className={cn("relative inline-flex h-20 w-20 items-center justify-center", className)} aria-hidden>
-      <svg viewBox="0 0 100 100" className="absolute inset-0 h-full w-full animate-spin-slow">
-        <defs>
-          <path id={id} d="M50,50 m-38,0 a38,38 0 1,1 76,0 a38,38 0 1,1 -76,0" />
-        </defs>
-        <text className="fill-ink/70 font-mono" fontSize="9.2" letterSpacing="2.6">
-          <textPath href={`#${id}`}>{text}</textPath>
-        </text>
-      </svg>
-      <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-card">{children}</span>
-    </span>
-  );
-}
-
-export function QuantityStepper({ value, onChange, min = 1, max, label, size = "md" }: {
-  value: number; onChange: (v: number) => void; min?: number; max?: number | null; label: string; size?: "sm" | "md";
+export function QuantityStepper({ value, onChange, min = 1, max, label, size = "md", step = 1 }: {
+  value: number; onChange: (v: number) => void; min?: number; max?: number | null; label: string; size?: "sm" | "md"; step?: number;
 }) {
   const { t } = useApp();
   const h = size === "sm" ? "h-8" : "h-12";
   return (
     <div className={cn("inline-flex items-center rounded-full bg-paper ring-1 ring-line", h)} role="group" aria-label={label}>
-      <button type="button" aria-label={t.booking.decrease} disabled={value <= min} onClick={() => onChange(value - 1)}
+      <button type="button" aria-label={t.booking.decrease} disabled={value <= min} onClick={() => onChange(value - step)}
         className={cn("flex items-center justify-center rounded-full disabled:opacity-30", size === "sm" ? "w-8" : "w-11")}>
         <Minus className="h-3.5 w-3.5" />
       </button>
       <span className="min-w-6 text-center text-sm font-semibold tabular-nums" aria-live="polite">{value}</span>
-      <button type="button" aria-label={t.booking.increase} disabled={max != null && value >= max} onClick={() => onChange(value + 1)}
+      <button type="button" aria-label={t.booking.increase} disabled={max != null && value >= max} onClick={() => onChange(value + step)}
         className={cn("flex items-center justify-center rounded-full disabled:opacity-30", size === "sm" ? "w-8" : "w-11")}>
         <Plus className="h-3.5 w-3.5" />
       </button>

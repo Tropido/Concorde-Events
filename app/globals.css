@@ -205,6 +205,55 @@
   }
 }
 
+/* Home hero: the headline sits in a notch cut out of the banner. The two concave corners are
+   paper-coloured squares masked by a circle, mirrored in RTL. */
+@layer components {
+  @media (min-width: 1024px) {
+    .hero-notch {
+      background: rgb(var(--paper));
+      border-start-end-radius: 2.25rem;
+    }
+    .hero-notch::before,
+    .hero-notch::after {
+      content: "";
+      position: absolute;
+      width: 2.25rem;
+      height: 2.25rem;
+      background: radial-gradient(circle at 100% 0, transparent 2.24rem, rgb(var(--paper)) 2.25rem);
+    }
+    [dir="rtl"] .hero-notch::before,
+    [dir="rtl"] .hero-notch::after {
+      background: radial-gradient(circle at 0 0, transparent 2.24rem, rgb(var(--paper)) 2.25rem);
+    }
+    .hero-notch::before {
+      bottom: 100%;
+      inset-inline-start: 0;
+    }
+    .hero-notch::after {
+      bottom: 0;
+      inset-inline-start: 100%;
+    }
+  }
+
+  /* Home category tiles. */
+  .group:is(:hover, :focus-visible, :active) .tile-overlay,
+  .group:is(:hover, :focus-visible, :active) .tile-more {
+    opacity: 1;
+  }
+  .group:is(:hover, :focus-visible, :active) .tile-text {
+    color: rgb(var(--espresso-fg));
+  }
+  .group:is(:hover, :focus-visible, :active) .tile-icon {
+    color: rgb(var(--almond-cream) / 0.45);
+    transform: translateY(-0.75rem);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .group:is(:hover, :focus-visible, :active) .tile-icon {
+      transform: none;
+    }
+  }
+}
+
 /* Soft grain on product tiles, so flat tones read as material rather than UI. */
 @layer components {
   /* In the components layer so positioning utilities (absolute, …) on a tile still win. */

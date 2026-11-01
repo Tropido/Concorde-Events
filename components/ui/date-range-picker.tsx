@@ -259,9 +259,9 @@ function Field({ label, shown, placeholder, chip, size, surface, ...rest }: {
 }
 
 /** Start and return dates. Inline (booking panel) or behind two field-like triggers / a chip. */
-export function DateRangePicker({ start, end, onChange, minimumNights = 1, productId, stock, inline = false, trigger = "fields", size = "md", surface = "paper", className }: {
+export function DateRangePicker({ start, end, onChange, minimumNights = 1, productId, stock, inline = false, trigger = "fields", size = "md", surface = "paper", className, label }: {
   start: string; end: string; onChange: (start: string, end: string) => void; minimumNights?: number; productId?: string; stock?: number;
-  inline?: boolean; trigger?: "fields" | "chip"; size?: "md" | "lg"; surface?: Surface; className?: string;
+  inline?: boolean; trigger?: "fields" | "chip" | "segment"; size?: "md" | "lg"; surface?: Surface; className?: string; label?: string;
 }) {
   const { t, language } = useApp();
   const locale = localeOf(language);
@@ -294,6 +294,13 @@ export function DateRangePicker({ start, end, onChange, minimumNights = 1, produ
         {start && end ? (
           <><span>{t.picker.yourDates}{language === "fr" ? " : " : ": "}<bdi className="font-semibold">{rangeSummary({ start, end }, language, t)}</bdi></span><span className="underline underline-offset-2">{t.picker.edit}</span></>
         ) : t.picker.chooseDates}
+      </button>
+    </div>
+  ) : trigger === "segment" ? (
+    <div ref={anchor} className={className}>
+      <button type="button" onClick={openPicker} aria-haspopup="dialog" aria-expanded={open} className="block w-full text-start focus:outline-none">
+        <span className="block text-[11px] font-medium text-ink/60">{label}</span>
+        <span className={cn("block truncate text-sm font-semibold", !start && "font-normal text-ink/60")}><bdi>{rangeSummary({ start, end }, language, t) ?? t.picker.choose}</bdi></span>
       </button>
     </div>
   ) : (

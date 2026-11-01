@@ -1,122 +1,52 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowUpRight, CalendarDays, ChevronDown, MessageCircle } from "lucide-react";
+import { ArrowRight, ChevronDown, MessageCircle } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { waLink } from "@/lib/utils/whatsapp";
 import { cn, tierSwatch } from "@/lib/utils/formatters";
 import { ProductCard } from "@/components/catalogue/product-card";
-import { PillTabs, PriceTag, ProductTile, RotatingBadge, ease } from "@/components/ui/kit";
-import { DateRangePicker } from "@/components/ui/date-range-picker";
-import { pricesVisible, type CatalogueProduct, type Category, type CMSContent, type ProTier } from "@/lib/types";
-
-const enter = (i: number) => ({
-  initial: { opacity: 0, y: 18, scale: 0.985 },
-  animate: { opacity: 1, y: 0, scale: 1 },
-  transition: { duration: 0.8, ease, delay: 0.08 * i },
-});
+import { HeroSearch } from "@/components/home/hero-search";
+import { CategoryIcon } from "@/lib/category-icons";
+import { PillTabs, ease } from "@/components/ui/kit";
+import type { CatalogueProduct, Category, CMSContent, ProTier } from "@/lib/types";
 
 export function HomeView({ products, categories, cms, tiers }: { products: CatalogueProduct[]; categories: Category[]; cms: CMSContent; tiers: ProTier[] }) {
-  const { t, viewer, setBookingProduct } = useApp();
+  const { t } = useApp();
   const hero = { ...t.hero, ...Object.fromEntries(Object.entries(cms.hero ?? {}).filter(([, v]) => v)) };
   const faqs = cms.faqs?.length ? cms.faqs : t.home.faqs;
   const testimonials = cms.testimonials ?? [];
   const available = products.filter((p) => p.stock > 0);
-  const featured = available.find((p) => p.featured && p.images[0]) ?? available.find((p) => p.images[0]) ?? available[0];
-  const spotlight = categories.filter((c) => c.count > 0).sort((a, b) => b.count - a.count)[0];
-  const facts = (
-    <ul className="grid gap-3 text-sm sm:grid-cols-3">
-      {(pricesVisible(viewer) ? t.hero.facts : t.hero.factsHidden).map((f) => (
-        <li key={f.title}><p className="font-semibold tracking-tight">{f.title}</p><p className="text-xs text-ink/60">{f.text}</p></li>
-      ))}
-    </ul>
-  );
-  const spotlightProduct = spotlight && available.find((p) => p.category?.id === spotlight.id && p.images[0] && p.id !== featured?.id);
 
   return (
     <div className="space-y-24 pb-6">
-      {/* Bento hero: one orchestrated entrance, nothing else moves on load. */}
-      <section className="shell pt-3">
-        <div className="grid gap-2.5 lg:grid-cols-12">
-          <motion.div {...enter(0)} className="card flex flex-col justify-between gap-10 p-6 sm:p-10 lg:col-span-7 lg:col-start-1 lg:row-start-1">
-            <span className="pill w-fit"><span className="h-1.5 w-1.5 rounded-full bg-toffeeBrown" aria-hidden />{hero.badge}</span>
-            <div className="space-y-6">
-              <h1 className="display max-w-[12ch] text-[clamp(2.75rem,7vw,5.75rem)] text-balance">{hero.title}</h1>
-              <p className="max-w-md text-[15px] leading-relaxed text-ink/65 text-pretty">{hero.subtitle}</p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/catalogue" className="btn-ink">{hero.ctaExplore}</Link>
-                <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="btn-light">
-                  <MessageCircle className="h-4 w-4" aria-hidden />{hero.ctaWhatsapp}
-                </a>
-              </div>
+      {/* The navbar floats over the banner, as in the reference. */}
+      <section className="shell -mt-14">
+        <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease }} className="relative">
+          <div className="relative">
+            <div className="grain relative h-[26rem] overflow-hidden rounded-[2.25rem] bg-[linear-gradient(135deg,rgb(var(--desert-sand)),rgb(var(--faded-copper))_55%,rgb(var(--coffee-bean)))] sm:h-[32rem] lg:h-[clamp(34rem,76vh,46rem)]">
+              {cms.hero_image && <Image src={cms.hero_image} alt="" fill priority sizes="100vw" className="object-cover" />}
+              <span className="absolute inset-0 bg-gradient-to-t from-espresso/25 via-transparent to-espresso/10" aria-hidden />
             </div>
-            <div className="hidden border-t border-line pt-5 lg:block">{facts}</div>
-          </motion.div>
-
-          <motion.div {...enter(1)} className="lg:col-span-4 lg:col-start-1 lg:row-start-2"><EventDates /></motion.div>
-          {/* On phones the dates come right after the hero text; the facts follow them. */}
-          <div className="card p-6 lg:hidden">{facts}</div>
-
-          {featured ? (
-            // Text sits above and below the stage, never on the photo.
-            <motion.article {...enter(2)} className="card group flex min-h-[460px] flex-col gap-3 p-3 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
-              <div className="flex items-start justify-between gap-3 px-3 pt-3">
-                <div lang={featured.lang} className="min-w-0">
-                  <p className="label">{t.home.featuredLabel}</p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-balance">{featured.title}</h2>
-                </div>
-                <RotatingBadge text={t.home.badgeRing} className="h-16 w-16 shrink-0"><ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" /></RotatingBadge>
-              </div>
-              <Link href={`/catalogue/${featured.slug}`} tabIndex={-1} aria-hidden className="relative block min-h-[280px] flex-1">
-                <ProductTile src={featured.images[0]} alt="" tone={featured.tone} fit={featured.imageFit} sizes="(max-width: 1024px) 100vw, 40vw" priority className="absolute inset-0 rounded-[1.4rem]" />
-              </Link>
-              <div className="flex items-center gap-2 rounded-full bg-paper p-1.5 ps-5">
-                <PriceTag price={featured.price} size="sm" />
-                <Link href={`/catalogue/${featured.slug}`} className="ms-auto rounded-full px-3 py-2 text-xs font-medium hover:bg-card">{t.common.details}</Link>
-                <button type="button" onClick={() => setBookingProduct(featured)} className="btn-ink btn-sm">{t.home.chooseDates}</button>
-              </div>
-            </motion.article>
-          ) : (
-            <motion.div {...enter(2)} className="grain tone-sand flex min-h-[320px] flex-col justify-end rounded-[1.75rem] p-8 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
-              <p className="max-w-xs text-2xl font-semibold tracking-tight">{t.home.catalogueSoon}</p>
-            </motion.div>
-          )}
-
-          {spotlight && (
-              <motion.div {...enter(3)} className="lg:col-span-3 lg:col-start-5 lg:row-start-2">
-                <Link href={`/catalogue?cat=${spotlight.slug}`} className="card group flex h-full min-h-[260px] flex-col gap-4 p-5">
-                  <div>
-                    <p className="label">{t.home.collection}</p>
-                    <p className="mt-1 text-xl font-semibold leading-tight tracking-tight text-balance">{spotlight.name}</p>
-                    <p className="text-xs text-ink/60">{t.categories.pieces(spotlight.count)}</p>
-                  </div>
-                  {spotlightProduct && (
-                    <ProductTile src={spotlightProduct.images[0]} alt="" tone={spotlightProduct.tone} fit={spotlightProduct.imageFit} sizes="(max-width: 1024px) 100vw, 25vw" className="min-h-[150px] flex-1 rounded-2xl" />
-                  )}
-                </Link>
-              </motion.div>
-          )}
-        </div>
+            <div className="absolute inset-x-0 bottom-0 z-20 flex translate-y-1/2 justify-center"><HeroSearch /></div>
+          </div>
+          <div className="hero-notch z-10 space-y-5 pt-14 lg:absolute lg:bottom-0 lg:start-0 lg:w-[min(47%,42rem)] lg:pb-[4.5rem] lg:pe-10 lg:ps-2 lg:pt-8">
+            <h1 className="display text-[clamp(2.5rem,5.4vw,5rem)] text-balance">{hero.title}</h1>
+            <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
+              <p className="max-w-md flex-1 basis-64 text-[15px] leading-relaxed text-ink/70 text-pretty">{hero.subtitle}</p>
+              <a href={waLink(t.hero.whatsappGreeting)} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sm font-medium underline underline-offset-4 hover:text-ink-soft">
+                <MessageCircle className="h-4 w-4" aria-hidden />{t.hero.ctaWhatsapp}
+              </a>
+            </div>
+          </div>
+        </motion.div>
       </section>
 
+      <Categories categories={categories.filter((c) => c.count > 0)} />
       {available.length > 0 && <Picks products={available} categories={categories} />}
-
-      {categories.some((c) => c.count > 0) && (
-        <section className="shell space-y-6" aria-labelledby="cats-title">
-          <h2 id="cats-title" className="text-3xl font-semibold tracking-tight sm:text-4xl">{t.categories.title}</h2>
-          <div className="no-scrollbar -mx-3 flex gap-2.5 overflow-x-auto px-3 pb-1 sm:mx-0 sm:grid sm:grid-cols-3 sm:px-0 lg:grid-cols-6">
-            {categories.filter((c) => c.count > 0).map((c, i) => (
-              <Link key={c.id} href={`/catalogue?cat=${c.slug}`}
-                className={cn("grain flex aspect-[4/5] w-40 shrink-0 flex-col justify-between rounded-[1.5rem] p-4 transition-transform hover:-translate-y-1 sm:w-auto", `tone-${(["almond", "sand", "cream", "tan", "stone", "copper"] as const)[i % 6]}`)}>
-                <span className="label">{t.categories.pieces(c.count)}</span>
-                <span className="text-lg font-semibold leading-tight tracking-tight text-balance">{c.name}</span>
-              </Link>
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="shell" aria-labelledby="how-title">
         <div className="card grid gap-10 p-6 sm:p-10 lg:grid-cols-[1fr_2fr]">
@@ -156,22 +86,32 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
   );
 }
 
-/** The visitor's event dates: every piece added from here on starts with them. */
-function EventDates() {
-  const { t, eventDates, setEventDates } = useApp();
+/** Big tiles with the icon as a watermark. Hover, focus or a press brings up the espresso overlay
+ *  (and the cover photo, if there is one) with the icon sliding up; reduced motion keeps the overlay only. */
+function Categories({ categories }: { categories: Category[] }) {
+  const { t } = useApp();
+  if (categories.length === 0) return null;
+  const scroller = categories.length > 8;
   return (
-    <section aria-labelledby="dates-title" className="flex h-full flex-col justify-between gap-6 rounded-[1.75rem] bg-espresso p-6 text-espresso-fg sm:p-8">
-      <div className="space-y-2">
-        <div className="flex items-start justify-between gap-3">
-          <h2 id="dates-title" className="text-2xl font-semibold tracking-tight text-balance">{t.hero.quickBooking.title}</h2>
-          <CalendarDays className="mt-1 h-5 w-5 shrink-0 text-almondCream/60" aria-hidden />
-        </div>
-        <p className="max-w-sm text-sm text-almondCream/70 text-pretty">{t.hero.quickBooking.text}</p>
-      </div>
-      <DateRangePicker start={eventDates.start} end={eventDates.end} onChange={(start, end) => setEventDates({ start, end })} size="lg" surface="espresso" />
-      <Link href="/catalogue" className="btn bg-espresso-fg text-espresso hover:bg-almondCream">
-        {t.hero.quickBooking.cta}<ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
-      </Link>
+    <section className="shell space-y-6" aria-labelledby="cats-title">
+      <h2 id="cats-title" className="display text-[clamp(2rem,4.5vw,3.5rem)]">{t.categories.title}</h2>
+      <ul className={cn(scroller ? "no-scrollbar -mx-3 flex snap-x snap-mandatory gap-2.5 overflow-x-auto px-3 pb-1 pt-1 sm:mx-0 sm:px-0" : "grid grid-cols-2 gap-2.5 pt-1 md:grid-cols-3 xl:grid-cols-4")}>
+        {categories.map((c) => (
+          <li key={c.id} className={cn(scroller && "w-[46%] shrink-0 snap-start sm:w-[31%] xl:w-[23.5%]")}>
+            <Link href={`/catalogue?cat=${c.slug}`}
+              className={cn("grain group relative flex aspect-[5/4] flex-col overflow-hidden rounded-[1.75rem] p-5 transition-transform duration-300 hover:-translate-y-1 focus-visible:-translate-y-1 motion-reduce:hover:translate-y-0 motion-reduce:focus-visible:translate-y-0 sm:p-6", `tone-${c.tone}`)}>
+              <span className="tile-overlay absolute inset-0 z-10 bg-espresso/75 opacity-0 transition-opacity duration-300" aria-hidden />
+              {c.imageUrl && <Image src={c.imageUrl} alt="" fill sizes="(max-width: 768px) 50vw, 25vw" className="tile-overlay object-cover opacity-0 transition-opacity duration-300" />}
+              <CategoryIcon name={c.icon} className="tile-icon absolute -bottom-6 -end-6 z-10 h-36 w-36 text-ink/[0.08] transition duration-300 sm:h-44 sm:w-44 rtl:-scale-x-100" />
+              <span className="tile-text relative z-20 text-lg font-semibold leading-tight tracking-tight text-balance transition-colors duration-300 sm:text-2xl">{c.name}</span>
+              <span className="tile-text relative z-20 mt-1 text-xs text-ink/60 transition-colors duration-300">{t.categories.pieces(c.count)}</span>
+              <span className="tile-more relative z-20 mt-auto inline-flex items-center gap-1.5 text-sm font-medium text-espresso-fg opacity-0 transition-opacity duration-300">
+                {t.categories.seeAll(c.count)}<ArrowRight className="h-4 w-4 rtl:-scale-x-100" aria-hidden />
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
@@ -180,24 +120,25 @@ function Picks({ products, categories }: { products: CatalogueProduct[]; categor
   const { t } = useApp();
   const [cat, setCat] = useState("all");
   const used = categories.filter((c) => products.some((p) => p.category?.id === c.id));
-  const shown = useMemo(() => products.filter((p) => cat === "all" || p.category?.slug === cat).slice(0, 8), [products, cat]);
+  const shown = useMemo(() => products.filter((p) => cat === "all" || p.category?.slug === cat).slice(0, 4), [products, cat]);
   return (
     <section className="shell space-y-6" aria-labelledby="picks-title">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h2 id="picks-title" className="display text-[clamp(2rem,4.5vw,3.5rem)]">{t.home.picksTitle}</h2>
-        <PillTabs label={t.catalogue.filterLabel} value={cat} onChange={setCat}
+        <PillTabs label={t.catalogue.filterLabel} value={cat} onChange={setCat} className="max-w-full"
           options={[{ value: "all", label: t.common.all }, ...used.map((c) => ({ value: c.slug, label: c.name }))]} />
       </div>
-      <motion.div layout className="grid grid-cols-2 gap-x-2.5 gap-y-8 md:grid-cols-3 lg:grid-cols-4">
+      <motion.div layout className="no-scrollbar -mx-3 flex snap-x snap-mandatory gap-4 overflow-x-auto px-3 pb-1 md:mx-0 md:grid md:grid-cols-4 md:gap-5 md:overflow-visible md:px-0">
         <AnimatePresence mode="popLayout">
           {shown.map((p, i) => (
-            <motion.div key={p.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease, delay: i * 0.03 }}>
-              <ProductCard product={p} />
+            <motion.div key={p.id} layout initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease, delay: i * 0.03 }}
+              className="w-[72%] shrink-0 snap-start md:w-auto">
+              <ProductCard product={p} light />
             </motion.div>
           ))}
         </AnimatePresence>
       </motion.div>
-      <div className="flex justify-center"><Link href="/catalogue" className="btn-light">{t.home.viewAll}</Link></div>
+      <div className="flex justify-center pt-2"><Link href="/catalogue" className="btn-light">{t.home.viewAll}</Link></div>
     </section>
   );
 }

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { assertStaff } from "@/lib/auth";
 import { supabaseEnv } from "@/lib/supabase/env";
+import { CATEGORY_ICON_NAMES } from "@/lib/category-icons";
 import type { AdminErrorCode } from "@/lib/i18n/admin-types";
 import { LANGUAGES, type Language } from "@/lib/i18n/translations";
 import type { AppRole } from "@/lib/types";
@@ -233,6 +234,53 @@ export async function saveProduct(input: ProductInput): Promise<AdminResult & { 
   return { ok: true, id: productId };
 }
 
+const CategoryInput = z.object({
+  id: uuid.optional(),
+  slug: z.string().trim().regex(/^[a-z0-9]+(-[a-z0-9]+)*$/).max(120),
+  name_fr: text(120).min(1),
+  name_en: optText(120),
+  name_ar: optText(120),
+  icon: z.enum(CATEGORY_ICON_NAMES as [string, ...string[]]),
+  tone: z.enum(["almond", "sand", "tan", "copper", "cream", "stone"]),
+  image_url: z.string().url().max(1000).nullable(),
+});
+export type CategoryInput = z.infer<typeof CategoryInput>;
+
+export async function saveCategory(input: CategoryInput): Promise<AdminResult> {
+  const p = CategoryInput.safeParse(input);
+  if (!p.success) return { ok: false, error: "invalid" };
+  const { id, ...fields } = p.data;
+  const result = await run(undefined, async (db) => {
+    if (id) return db.from("categories").update(fields).eq("id", id);
+    const { data } = await db.from("categories").select("display_order").order("display_order", { ascending: false }).limit(1).maybeSingle();
+    return db.from("categories").insert({ ...fields, display_order: (data?.display_order ?? 0) + 1 });
+  });
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
+/** Swaps a category with its neighbour in the display order. */
+export async function moveCategory(id: string, delta: -1 | 1): Promise<AdminResult> {
+  if (!uuid.safeParse(id).success) return { ok: false, error: "invalid" };
+  const result = await run(undefined, async (db) => {
+    const { data, error } = await db.from("categories").select("id, display_order").order("display_order").order("name_fr");
+    if (error) return { error };
+    const i = (data ?? []).findIndex((c) => c.id === id);
+    const j = i + delta;
+    if (i < 0 || j < 0 || j >= data.length) return { error: null };
+    // Rewritten as 0..n so categories sharing an order value still move.
+    const order = data.map((c) => c.id);
+    [order[i], order[j]] = [order[j], order[i]];
+    for (const [display_order, cid] of order.entries()) {
+      const { error: e } = await db.from("categories").update({ display_order }).eq("id", cid);
+      if (e) return { error: e };
+    }
+    return { error: null };
+  });
+  if (result.ok) revalidatePath("/", "layout");
+  return result;
+}
+
 export async function setProductStatus(id: string, status: "active" | "retired") {
   if (!uuid.safeParse(id).success || !["active", "retired"].includes(status)) return { ok: false, error: "invalid" } as AdminResult;
   return run(undefined, (db) => db.from("products").update({ status }).eq("id", id));
@@ -333,7 +381,8 @@ export async function saveTier(input: TierInput): Promise<AdminResult> {
 // ---------- CMS ----------
 
 const CmsInput = z.object({
-  hero: z.object({ badge: text(120), title: text(160), titleAccent: text(160), subtitle: text(600) }),
+  hero: z.object({ title: text(160), titleAccent: text(160), subtitle: text(600) }),
+  hero_image: z.string().url().max(1000).nullable(),
   faqs: z.array(z.object({ question: text(300).min(1), answer: text(2000).min(1) })).max(30),
   testimonials: z.array(z.object({ quote: text(1000).min(1), author: text(120).min(1), role: text(160) })).max(12),
 });
@@ -342,6 +391,7 @@ export type CmsInput = z.infer<typeof CmsInput>;
 export async function publishCms(locale: Language, content: CmsInput): Promise<AdminResult> {
   const p = CmsInput.safeParse(content);
   if (!LANGUAGES.includes(locale) || !p.success) return { ok: false, error: "invalid" };
+  if (p.data.hero_image && !p.data.hero_image.startsWith(`${supabaseEnv().url}/storage/v1/object/public/site-images/`)) return { ok: false, error: "upload_failed" };
   const result = await run(["editor", "manager", "admin"], (db, me) =>
     db.from("cms_content").upsert({ locale, content: p.data, updated_by: me }));
   if (result.ok) revalidatePath("/");

@@ -70,7 +70,7 @@ export async function getCatalogue(prefs: Prefs, viewer: Viewer | null, opts: { 
     supabase.from("product_stock").select("product_id, quantity_owned, quantity_maintenance").eq("country", "TN"),
     // RLS only returns pro rows to approved professionals and staff.
     supabase.from("product_prices").select("product_id, tier, amount").eq("country", "TN"),
-    supabase.from("categories").select("id, slug, name_fr, name_en, name_ar, description_fr, description_en, description_ar, image_url, display_order").order("display_order"),
+    supabase.from("categories").select("id, slug, name_fr, name_en, name_ar, description_fr, description_en, description_ar, image_url, icon, tone, display_order").order("display_order"),
   ]);
   for (const r of [products, stock, prices, categories]) if (r.error) throw r.error;
 
@@ -105,6 +105,8 @@ export async function getCatalogue(prefs: Prefs, viewer: Viewer | null, opts: { 
     name: localized(c, "name", prefs.lang) ?? c.name_fr,
     description: localized(c, "description", prefs.lang),
     imageUrl: c.image_url,
+    icon: c.icon,
+    tone: c.tone,
     count: counts.get(c.id) ?? 0,
   }));
 

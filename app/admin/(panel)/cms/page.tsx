@@ -22,7 +22,8 @@ export default async function AdminCmsPage({ searchParams }: { searchParams: Pro
         subtitle={<>{t.admin.cms.emptyFallback}{data?.updated_at && ` · ${t.admin.cms.publishedAt} ${formatDateTime(data.updated_at, prefs.lang)}`}</>}
         actions={<FilterLinks label={t.admin.cms.locale} items={LANGUAGES.map((l) => ({ href: `/admin/cms?locale=${l}`, label: { fr: "Français", en: "English", ar: "العربية" }[l], active: locale === l }))} />} />
       <CmsForm key={locale} locale={locale} initial={{
-        hero: { badge: content.hero?.badge ?? "", title: content.hero?.title ?? "", titleAccent: content.hero?.titleAccent ?? "", subtitle: content.hero?.subtitle ?? "" },
+        hero: { title: content.hero?.title ?? "", titleAccent: content.hero?.titleAccent ?? "", subtitle: content.hero?.subtitle ?? "" },
+        hero_image: content.hero_image ?? null,
         faqs: content.faqs ?? [],
         testimonials: (content.testimonials ?? []).map((x) => ({ quote: x.quote, author: x.author, role: x.role ?? "" })),
       }} />

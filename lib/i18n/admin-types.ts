@@ -61,6 +61,8 @@ export interface AdminTranslations {
     conditions: { new: string; excellent: string; good: string; fair: string }; supplier: string; storage: string;
     storagePlaceholder: string; breakEven: string; internalNotes: string; save: string; preview: string; untitled: string;
     assetValue: string; maintenance: string; repaired: string; writtenOff: string;
+    categoriesLink: string; categoriesTitle: string; categoriesHint: string; newCategory: string; nameFr: string; nameEn: string; nameAr: string;
+    icon: string; categoryCover: string; categoryCoverHint: string;
   };
   rentals: {
     subtitle: string; out: string; upcoming: string; none: string; noUpcoming: string; late: string; due: string; leaves: string;
@@ -83,7 +85,7 @@ export interface AdminTranslations {
     piece: string; nightsBooked: string; revenue: string; cost: string; roi: string; noCost: string;
   };
   cms: {
-    locale: string; hero: string; heroBadge: string; heroTitle: string; heroAccent: string; heroSubtitle: string;
+    locale: string; hero: string; heroImage: string; heroImageUpload: string; heroImageHint: string; heroTitle: string; heroSubtitle: string;
     faqs: string; question: string; answer: string; addFaq: string; testimonials: string; testimonialsHint: string;
     quote: string; author: string; role: string; addTestimonial: string; remove: string; publish: string; publishedAt: string;
     emptyFallback: string;

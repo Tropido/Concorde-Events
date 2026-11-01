@@ -39,16 +39,17 @@ export interface Translations {
   requestStatus: Record<RequestStatus, string>;
   eventTypes: Record<EventType, string>;
   hero: {
-    badge: string; title: string; titleAccent: string; subtitle: string; ctaExplore: string; ctaWhatsapp: string;
-    whatsappGreeting: string; facts: Item[]; factsHidden: Item[];
-    quickBooking: { title: string; text: string; cta: string };
+    title: string; titleAccent: string; subtitle: string; ctaWhatsapp: string; whatsappGreeting: string;
   };
   home: {
-    featuredLabel: string; badgeRing: string; chooseDates: string; catalogueSoon: string; collection: string;
+    search: {
+      label: string; event: string; anyEvent: string; dates: string; guests: string; city: string; anyCity: string;
+      submit: string; cta: string; sheetTitle: string; next: string; show: string;
+    };
     picksTitle: string; viewAll: string; howTitle: string; howIntro: string; steps: Item[];
     faqTitle: string; faqs: { question: string; answer: string }[];
   };
-  categories: { title: string; pieces: (n: number) => string };
+  categories: { title: string; pieces: (n: number) => string; seeAll: (n: number) => string };
   testimonials: { title: string };
   catalogue: {
     title: string; subtitle: string; searchPlaceholder: string; filterLabel: string; sortLabel: string; sort: Record<Sort, string>;

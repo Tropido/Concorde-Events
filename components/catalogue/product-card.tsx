@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils/formatters";
 import { PriceTag, ProductTile } from "@/components/ui/kit";
 import type { CatalogueProduct } from "@/lib/types";
 
-export function ProductCard({ product: p, priority, className }: { product: CatalogueProduct; priority?: boolean; className?: string }) {
+export function ProductCard({ product: p, priority, className, light }: { product: CatalogueProduct; priority?: boolean; className?: string; light?: boolean }) {
   const { t, setBookingProduct } = useApp();
   const soldOut = p.stock <= 0;
   return (
@@ -30,14 +30,19 @@ export function ProductCard({ product: p, priority, className }: { product: Cata
         <Plus className="h-4 w-4" />
       </button>
       </div>
-      <div className="flex items-start justify-between gap-3 px-1" lang={p.lang}>
+      {light ? (
+        <div className="flex items-baseline justify-between gap-4 px-1 pt-1" lang={p.lang}>
+          <Link href={`/catalogue/${p.slug}`} className="min-w-0 truncate text-[15px] font-semibold tracking-tight hover:underline">{p.title}</Link>
+          <PriceTag price={p.price} size="sm" showUnit={false} upsell={false} className="shrink-0 text-end" />
+        </div>
+      ) : <div className="flex items-start justify-between gap-3 px-1" lang={p.lang}>
         <div className="min-w-0">
           <p className="label">{p.category?.name ?? t.catalogue.uncategorised}</p>
           <Link href={`/catalogue/${p.slug}`} className="mt-1 block truncate text-[15px] font-semibold tracking-tight hover:underline">{p.title}</Link>
           <p className="mt-0.5 text-xs text-ink/50">{soldOut ? t.booking.soldOutShort : t.catalogue.inStock(p.stock)}</p>
         </div>
         <PriceTag price={p.price} size="sm" showUnit={false} className="shrink-0 flex-col items-end text-end" />
-      </div>
+      </div>}
     </article>
   );
 }

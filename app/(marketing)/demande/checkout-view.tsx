@@ -1,12 +1,13 @@
 "use client";
 
-import { useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { Check, Mail, MessageCircle, Phone, Store, Truck } from "lucide-react";
 import { useApp } from "@/lib/context/app-context";
 import { markWhatsappOpened, submitRequest } from "@/lib/actions/requests";
 import { nights } from "@/lib/dates";
+import { GOVERNORATES } from "@/lib/governorates";
 import { cn, formatTND } from "@/lib/utils/formatters";
 import { waLink } from "@/lib/utils/whatsapp";
 import { DraftLineRow, draftEstimate } from "@/components/catalogue/bag-drawer";
@@ -15,7 +16,7 @@ import { EVENT_TYPES, pricesVisible, type ContactChannel, type DeliveryMode, typ
 import type { SubmitErrorCode } from "@/lib/i18n/translations";
 
 export function CheckoutView() {
-  const { t, language, viewer, draft, clearDraft } = useApp();
+  const { t, language, viewer, draft, clearDraft, eventContext } = useApp();
   const c = t.checkout;
   const [eventType, setEventType] = useState<EventType | null>(null);
   const [delivery, setDelivery] = useState<DeliveryMode>("delivery");
@@ -27,6 +28,9 @@ export function CheckoutView() {
   const keyRef = useRef<{ draft: string; key: string } | null>(null);
   const shown = pricesVisible(viewer);
   const total = shown ? draftEstimate(draft) : null;
+  const city = GOVERNORATES.find((g) => g.fr === eventContext.city)?.[language];
+  // The context is read from sessionStorage after mount.
+  useEffect(() => { if (eventContext.type) setEventType(eventContext.type); }, [eventContext.type]);
 
   const submit = (form: FormData) => {
     const draftJson = JSON.stringify(draft);
@@ -106,8 +110,8 @@ export function CheckoutView() {
             </div>
           </fieldset>
           <div className="grid gap-3 sm:grid-cols-[2fr_1fr]">
-            <Field label={c.venue}><input name="venue" maxLength={200} placeholder={c.venuePlaceholder} className="field" /></Field>
-            <Field label={c.guests}><input name="guests" type="number" min={1} max={100000} inputMode="numeric" className="field" /></Field>
+            <Field label={c.venue}><input key={city} name="venue" maxLength={200} defaultValue={city} placeholder={c.venuePlaceholder} className="field" /></Field>
+            <Field label={c.guests}><input key={eventContext.guests} name="guests" type="number" min={1} max={100000} inputMode="numeric" defaultValue={eventContext.guests ?? undefined} className="field" /></Field>
           </div>
           <fieldset>
             <legend className="field-label">{c.deliveryTitle}</legend>

@@ -20,6 +20,8 @@ export type MessageChannel = "site" | "contact" | "whatsapp";
 export type MessageStatus = "open" | "in_progress" | "resolved";
 export type EventType = "wedding" | "engagement" | "birthday" | "corporate" | "gala" | "private" | "other";
 export const EVENT_TYPES: EventType[] = ["wedding", "engagement", "birthday", "corporate", "gala", "private", "other"];
+/** Collected by the home search, kept for the session. */
+export interface EventContext { type: EventType | null; guests: number | null; city: string | null }
 export type DeliveryMode = "delivery" | "pickup";
 export type ContactChannel = "whatsapp" | "phone" | "email";
 export type Tone = "almond" | "sand" | "tan" | "copper" | "cream" | "stone";
@@ -134,6 +136,8 @@ export interface Category {
   name: string;
   description: string | null;
   imageUrl: string | null;
+  icon: string;
+  tone: Tone;
   count: number;
 }
 
@@ -195,7 +199,9 @@ export interface QuoteSnapshot {
 /** Published homepage content (per locale). Every field is optional: missing ones fall
  *  back to the dictionary copy. */
 export interface CMSContent {
-  hero?: { badge?: string; title?: string; titleAccent?: string; subtitle?: string };
+  hero?: { title?: string; titleAccent?: string; subtitle?: string };
+  /** Banner photo in the site-images bucket. A language without one uses the French one. */
+  hero_image?: string | null;
   faqs?: { question: string; answer: string }[];
   /** Real client quotes only; the section is hidden when empty. */
   testimonials?: { quote: string; author: string; role?: string }[];

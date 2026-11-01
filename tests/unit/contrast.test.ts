@@ -34,11 +34,16 @@ const pairs: [string, string, number][] = [
   ["espresso-fg", "espresso", 1], ["almond-cream", "espresso", 0.65],
   ["espresso-fg", "toffee-brown", 1], // .btn-toffee
 ];
+const tones = ["tone-almond", "tone-sand", "tone-tan", "tone-copper", "tone-cream", "tone-stone"];
 
 describe.each(Object.entries(themes))("%s theme contrast", (_, vars) => {
   it.each(pairs)("%s on %s (opacity %s) passes AA", (fg, bg, alpha) => {
     expect(vars[fg], fg).toBeDefined();
     expect(vars[bg], bg).toBeDefined();
     expect(ratio(mix(vars[fg], vars[bg], alpha), vars[bg])).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(tones)("the hover overlay on %s keeps category text at AA", (tone) => {
+    expect(ratio(vars["espresso-fg"], mix(vars.espresso, vars[tone], 0.75))).toBeGreaterThanOrEqual(4.5);
   });
 });
