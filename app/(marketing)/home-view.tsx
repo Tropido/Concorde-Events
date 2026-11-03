@@ -29,7 +29,8 @@ export function HomeView({ products, categories, cms, tiers }: { products: Catal
         <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, ease }} className="relative">
           <div className="relative">
             <div className="grain relative h-[26rem] overflow-hidden rounded-[2.25rem] bg-[linear-gradient(135deg,rgb(var(--desert-sand)),rgb(var(--faded-copper))_55%,rgb(var(--coffee-bean)))] sm:h-[32rem] lg:h-[clamp(34rem,76vh,46rem)]">
-              {cms.hero_image && <Image src={cms.hero_image} alt="" fill priority sizes="100vw" className="object-cover" />}
+              {/* public/hero.jpg unless an image is set in the CMS. */}
+              <Image src={cms.hero_image || "/hero.jpg"} alt="" fill priority sizes="100vw" className="object-cover" />
               <span className="absolute inset-0 bg-gradient-to-t from-espresso/25 via-transparent to-espresso/10" aria-hidden />
             </div>
             <div className="absolute inset-x-0 bottom-0 z-20 flex translate-y-1/2 justify-center"><HeroSearch /></div>
