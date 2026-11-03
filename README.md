@@ -78,7 +78,7 @@ npm run db:catalogue                # TEST project only: provisional luxury cata
   - `20261101140000_returns_inspection.sql`: unit-by-unit inspection, stock ledger, final invoice. Removes `return_request`.
   - `20261101150000_password_reset.sql`: password help by phone number.
 - Private buckets added on 2026-11-01: `payment-proofs`, `documents` (stored invoice PDFs), `inspection-photos`. `site-images` stays public. The migrations create them.
-- Once the 2026-11-01 migrations are on a project, the app version running against it must include them: `return_request` is gone and confirming by hand is refused, so an older deployment can no longer confirm an order or record a return.
+- Code and migrations must arrive together. **Apply the migrations first, then merge.** Code without its migrations returns 500 on the home page and the catalogue. Migrations without the code leave the storefront working, but an older deployment can no longer confirm an order or record a return, because `return_request` is gone and confirming by hand is refused.
 - After a migration, open the home page and `/catalogue` signed out: an error there means the storefront's queries broke.
 - Rolling back the app on Vercel does not undo database changes.
 
@@ -141,3 +141,4 @@ npm run build
 - **Preview** environment variables point to the **test** Supabase project.
 - **Production** points to the production project. It needs the two public variables, `SUPABASE_SECRET_KEY`, `NEXT_PUBLIC_SITE_URL`, `TRACKING_TOKEN_SECRET`, `CRON_SECRET` and the email variables.
 - Pushing a branch creates a Preview deployment; merging to the production branch deploys Production.
+- Open the Preview and sign in before merging. `npm run build` can't catch a file missing from a Vercel function, or a migration that hasn't been applied.

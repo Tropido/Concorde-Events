@@ -40,7 +40,8 @@ test("booking dialog is keyboard operable", async ({ page }) => {
   await expect(book).toBeFocused();
 });
 
-test("date picker works from the keyboard and returns focus", async ({ page }) => {
+test("date picker works from the keyboard and returns focus", async ({ page, isMobile }) => {
+  test.skip(isMobile, "phones search through the step-by-step sheet, whose calendar is inline");
   await page.goto("/");
   const search = page.getByRole("form", { name: /rechercher/i });
   const start = search.getByRole("button", { name: /^dates/i });
