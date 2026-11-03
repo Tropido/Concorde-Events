@@ -23,7 +23,7 @@ export default async function AccountRequestsPage() {
   // RLS already limits rows to this user; the explicit filter keeps the intent obvious.
   const { data, error } = await supabase
     .from("rental_requests")
-    .select("id, reference, status, created_at, quote_valid_until, event_type, request_lines(id, quantity, start_date, end_date, nights, line_total, products(title_fr, title_en, title_ar)), quotes(id, revision, total:snapshot->total)")
+    .select("id, reference, status, created_at, quote_valid_until, event_type, request_lines(id, quantity, start_date, end_date, nights, line_total, products(title_fr, title_en, title_ar)), quotes!quotes_request_id_fkey(id, revision, total:snapshot->total)")
     .eq("user_id", viewer.id)
     .order("created_at", { ascending: false });
   if (error) throw error;

@@ -50,7 +50,8 @@ export async function login(page: Page, email: string, password: string, path = 
   await page.getByLabel("E-mail").fill(email);
   await page.getByLabel("Mot de passe").fill(password);
   await page.getByRole("button", { name: /se connecter/i }).click();
-  await expect(page).not.toHaveURL(/\/login/);
+  // The first sign-in of a run compiles the action and the landing page in `next dev`.
+  await expect(page).not.toHaveURL(/\/login/, { timeout: 60_000 });
 }
 
 export function isoDate(days: number) {

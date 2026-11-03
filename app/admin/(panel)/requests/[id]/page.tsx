@@ -30,7 +30,7 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ i
   const isAdmin = viewer.role === "admin";
   const db = await createClient();
   const { data: r, error } = await db.from("rental_requests")
-    .select("*, assignee:profiles!rental_requests_assignee_id_fkey(full_name), contact_by:profiles!rental_requests_contact_confirmed_by_fkey(full_name), request_lines(id, quantity, start_date, end_date, nights, unit_price, line_total, logistics_status, received_qty, products(slug, title_fr, images, image_fit, tone, product_internal(repair_fee, replacement_value, purchase_cost))), inspection_drafts(draft), return_inspection_lines(line_id, note, photo_paths), quotes(id, revision, issued_at, currency:snapshot->>currency, total:snapshot->total), payments(id, kind, method, amount, received_at, reference, proof_path, note, voided_at, void_reason, recorder:profiles!payments_recorded_by_fkey(full_name)), invoices(id, type, number, issued_at, total_due, ttc, ttn_status), request_extras(id, kind, label, quantity, unit_price, vat_rate), email_events(id, kind, subject, status, created_at, attempts, error, to_address)")
+    .select("*, assignee:profiles!rental_requests_assignee_id_fkey(full_name), contact_by:profiles!rental_requests_contact_confirmed_by_fkey(full_name), request_lines(id, quantity, start_date, end_date, nights, unit_price, line_total, logistics_status, received_qty, products(slug, title_fr, images, image_fit, tone, product_internal(repair_fee, replacement_value, purchase_cost))), inspection_drafts(draft), return_inspections(return_inspection_lines(line_id, note, photo_paths)), quotes!quotes_request_id_fkey(id, revision, issued_at, currency:snapshot->>currency, total:snapshot->total), payments(id, kind, method, amount, received_at, reference, proof_path, note, voided_at, void_reason, recorder:profiles!payments_recorded_by_fkey(full_name)), invoices(id, type, number, issued_at, total_due, ttc, ttn_status), request_extras(id, kind, label, quantity, unit_price, vat_rate), email_events(id, kind, subject, status, created_at, attempts, error, to_address)")
     .eq("id", id).maybeSingle();
   if (error) throw error;
   if (!r) notFound();
@@ -63,7 +63,7 @@ export default async function AdminRequestPage({ params }: { params: Promise<{ i
     repairFee: l.products?.product_internal?.repair_fee == null ? null : Number(l.products.product_internal.repair_fee),
     replacementValue: Number(l.products?.product_internal?.replacement_value ?? l.products?.product_internal?.purchase_cost ?? 0) || null,
   }));
-  const stored = (r.return_inspection_lines ?? []) as { line_id: string; note: string | null; photo_paths: string[] }[];
+  const stored = (r.return_inspections?.return_inspection_lines ?? []) as { line_id: string; note: string | null; photo_paths: string[] }[];
   const order = status === "completed" ? ((await db.rpc("my_request_view", { p_request: r.id })).data as OrderView | null) : null;
   // Staff see every photo, ticked or not.
   const report = order?.inspection ? (await withSignedPhotos({ ...order, inspection: { ...order.inspection, lines: order.inspection.lines.map((l) => ({ ...l, photos: stored.find((s) => s.line_id === l.line_id)?.photo_paths ?? [] })) } })).inspection : null;

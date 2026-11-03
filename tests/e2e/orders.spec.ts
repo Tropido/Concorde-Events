@@ -107,6 +107,7 @@ const netToPay = async (requestId: string) => {
 };
 
 test("a guest order from request to settled", async ({ browser }) => {
+  test.setTimeout(300_000);
   const manager = await makeUser("orders", "manager");
 
   const g = await browser.newPage();
@@ -159,6 +160,7 @@ test("an unknown tracking link says nothing", async ({ page }) => {
 });
 
 test("a professional earns points once the rental is completed and paid", async ({ browser }) => {
+  test.setTimeout(300_000);
   const pro = await makeUser("orderpro", "professional");
   const manager = await makeUser("orderstaff", "manager");
   const p = await browser.newPage();
